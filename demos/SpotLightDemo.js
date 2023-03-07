@@ -105,9 +105,8 @@ export async function spotLightDemo(mainGui) {
     0.1,
     200
   )
-  camera.position.set(6, 3, 6)
+  camera.position.set(-16, 16, 16)
   camera.name = "Camera"
-  camera.position.set(2.0404140991899564, 2.644387886134694, 3.8683136783076355)
   // scene
   scene = new Scene()
   //   scene.backgroundBlurriness = 0.8
@@ -403,9 +402,6 @@ function setupSpotLight() {
   const helper = new SpotLightHelper(spotLight)
   scene.add(spotLight)
 
-  const size = new Vector3(512, 512)
-  renderer.getSize(size)
-  const dpr = 1
   const volumeMaterial = new SpotLightMaterial()
   // const volumeMaterial = new MeshBasicMaterial({
   //   transparent: true,
@@ -414,7 +410,7 @@ function setupSpotLight() {
 
   depthBuffer = useDepthBuffer()
 
-  console.log({ depthBuffer })
+  // console.log({ depthBuffer })
 
   volumeMaterial.spotPosition = spotLight.position
   volumeMaterial.opacity = opacity
@@ -443,7 +439,7 @@ function setupSpotLight() {
   }
 
   const geom = (distance, radiusTop, radiusBottom) => {
-    console.log({ distance, radiusTop, radiusBottom })
+    // console.log({ distance, radiusTop, radiusBottom })
     const geometry = new CylinderGeometry(
       radiusTop,
       radiusBottom,
@@ -473,6 +469,7 @@ function setupSpotLight() {
     volumeMesh.lookAt(spotLight.target.getWorldPosition(vec))
     if (helper.parent) helper.update()
 
+    // useFrame from FBO
     if (test.useDepth) depthBuffer[1]()
   }
 
@@ -544,7 +541,7 @@ function useDepthBuffer({ size = 256, frames = Infinity } = {}) {
     }
   }
 
-  console.log({ depthFBO })
+  // console.log({ depthFBO })
 
   return [depthFBO.depthTexture, useFrame]
 }
