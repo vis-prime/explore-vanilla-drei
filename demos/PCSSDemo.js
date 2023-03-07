@@ -7,9 +7,8 @@ import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader"
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls"
 import { TransformControls } from "three/examples/jsm/controls/TransformControls"
 
-import { MeshTransmissionMaterial, MeshDiscardMaterial } from "@pmndrs/vanilla"
-import modelUrl from "../models/monkey.glb"
-import porscheUrl from "../models/porsche_911_1975.glb"
+import { pcss } from "@pmndrs/vanilla"
+import roomUrl from "../models/room.glb"
 
 import * as THREE from "three"
 import {
@@ -38,6 +37,8 @@ import {
   MeshBasicMaterial,
   VSMShadowMap,
   Clock,
+  PCFSoftShadowMap,
+  AmbientLight,
 } from "three"
 import { HDRI_LIST } from "../hdri/HDRI_LIST"
 
@@ -52,8 +53,8 @@ let stats,
   pointer = new Vector2()
 
 const params = {
-  environment: HDRI_LIST.ulmer_muenster,
-  groundProjection: true,
+  environment: null,
+  groundProjection: false,
   bgColor: new Color(),
   printCam: () => {},
 }
@@ -68,12 +69,10 @@ draco.setDecoderPath("https://www.gstatic.com/draco/v1/decoders/")
 gltfLoader.setDRACOLoader(draco)
 const raycaster = new Raycaster()
 const intersects = [] //raycast
-let useFrame = () => {}
 let sceneGui
-let envObject
 let pmremGenerator
 
-export async function meshTransmissionMaterialDemo(mainGui) {
+export async function pcssDemo(mainGui) {
   gui = mainGui
   sceneGui = gui.addFolder("Scene")
   stats = new Stats()
@@ -83,7 +82,7 @@ export async function meshTransmissionMaterialDemo(mainGui) {
   renderer.setPixelRatio(Math.min(1.5, window.devicePixelRatio))
   renderer.setSize(window.innerWidth, window.innerHeight)
   renderer.shadowMap.enabled = true
-  renderer.shadowMap.type = VSMShadowMap
+  //   renderer.shadowMap.type = VSMShadowMap
   renderer.outputEncoding = sRGBEncoding
   renderer.toneMapping = ACESFilmicToneMapping
 
@@ -153,11 +152,35 @@ export async function meshTransmissionMaterialDemo(mainGui) {
   //   scene.background = params.bgColor
   // })
 
-  // const light = new PointLight()
-  // light.position.set(5, 5, 5)
-  // scene.add(light)
+  const reset = pcss({
+    size: 35,
+    focus: 0.5,
+    samples: 16,
+  })
 
-  setupEnvironment()
+  console.log(pcss)
+
+  let sunLight = new DirectionalLight(0xffffeb, 5)
+  sunLight.name = "Dir. Light"
+  sunLight.castShadow = true
+  sunLight.shadow.camera.near = 0.1
+  sunLight.shadow.camera.far = 50
+  sunLight.shadow.camera.right = 8.5
+  sunLight.shadow.camera.left = -8.5
+  sunLight.shadow.camera.top = 8.5
+  sunLight.shadow.camera.bottom = -8.5
+  sunLight.shadow.mapSize.width = 2048
+  sunLight.shadow.mapSize.height = 2048
+  sunLight.shadow.bias = -0.001
+  //   sunLight.shadow.radius = 1.95
+  //   sunLight.shadow.blurSamples = 6
+  sunLight.position.set(5, 5, -8)
+  scene.add(sunLight)
+
+  const ambientLight = new AmbientLight()
+  scene.add(ambientLight)
+
+  //   setupEnvironment()
   await loadModels()
   animate()
 }
@@ -174,8 +197,8 @@ async function setupEnvironment() {
   sunLight.shadow.camera.left = -15
   sunLight.shadow.camera.top = 15
   sunLight.shadow.camera.bottom = -15
-  sunLight.shadow.mapSize.width = 1024
-  sunLight.shadow.mapSize.height = 1024
+  sunLight.shadow.mapSize.width = 2048
+  sunLight.shadow.mapSize.height = 2048
   sunLight.shadow.radius = 1.95
   sunLight.shadow.blurSamples = 6
 
@@ -277,7 +300,6 @@ function render() {
   stats.update()
   // Update the inertia on the orbit controls
   controls.update()
-  useFrame()
   renderer.render(scene, camera)
 }
 
@@ -343,199 +365,29 @@ async function loadModels() {
   cube.position.set(-2, 0, -1.5)
   mainObjects.add(cube)
 
-  setupMTM()
-}
-
-async function setupMTM() {
-  // car
-  const MatOptions = {
-    default: "def",
-    physical: "phy",
-    transmission: "tra",
-  }
-  const generalParams = {
-    carMaterial: MatOptions.default, // 'default'|'physical'|'transmission'
-  }
-
-  const mtmParams = {
-    renderEachMesh: false,
-    enabled: false,
-    customBackground: scene.background,
-    backside: true,
-    thickness: 1,
-    backsideThickness: 0.5,
-  }
-
-  const all_mats = []
-
-  const gltf = await gltfLoader.loadAsync(porscheUrl)
+  const gltf = await gltfLoader.loadAsync(roomUrl)
   const model = gltf.scene
-  model.name = "car"
-  let carBody
-  const discardMaterial = new MeshDiscardMaterial()
-  const meshTransmissionMaterial = new MeshTransmissionMaterial(6, false)
-  const meshPhysicalMaterial = new MeshPhysicalMaterial({
-    roughness: 0,
-    transmission: 1,
-    thickness: 1,
-  })
+  model.name = "room"
+  model.scale.setScalar(0.5)
+  model.position.set(0, -1, 0)
 
   model.traverse((child) => {
     if (child.isMesh) {
       child.castShadow = true
       child.receiveShadow = true
       child.selectOnRaycast = model
-      const mat = child.material
-      all_mats.push({
-        material: mat,
-        mesh: child,
-        physical: meshPhysicalMaterial,
-        transmission: meshTransmissionMaterial,
-      })
 
-      if (child.name === "body") carBody = child
+      if (child.name === "Object_13") {
+        console.log("FOUND", child)
+        child.material.opacity = 0.5
+        child.material.transparent = true
+
+        child.castShadow = false
+        child.receiveShadow = false
+      }
     }
   })
   mainObjects.add(model)
-
-  gui.add(generalParams, "carMaterial", MatOptions).onChange((v) => {
-    for (const dat of all_mats) {
-      if (v === MatOptions.default) {
-        dat.mesh.material = dat.material
-        mtmParams.enabled = false
-      }
-
-      if (v === MatOptions.physical) {
-        dat.mesh.material = dat.physical
-        mtmParams.enabled = false
-      }
-
-      if (v === MatOptions.transmission) {
-        dat.mesh.material = dat.transmission
-        mtmParams.enabled = true
-      }
-    }
-  })
-
-  addPhysicalGui(gui, meshPhysicalMaterial)
-  addTransmissionGui(gui, meshTransmissionMaterial, mtmParams)
-
-  const fboBack = new THREE.WebGLRenderTarget(512, 512, {
-    minFilter: THREE.LinearFilter,
-    magFilter: THREE.LinearFilter,
-    encoding: renderer.outputEncoding,
-    type: THREE.HalfFloatType,
-  })
-  const fboMain = new THREE.WebGLRenderTarget(512, 512, {
-    minFilter: THREE.LinearFilter,
-    magFilter: THREE.LinearFilter,
-    encoding: renderer.outputEncoding,
-    type: THREE.HalfFloatType,
-  })
-
-  const ref = meshTransmissionMaterial
-  ref.buffer = fboMain.texture
-  let oldBg
-  let oldTone
-  let oldSide
-  const state = {
-    gl: renderer,
-    scene,
-    camera,
-  }
-
-  let meshMatArray
-  const singleItemArray = [{ mesh: carBody, mat: meshTransmissionMaterial }]
-  const clock = new Clock(true)
-  useFrame = () => {
-    if (!mtmParams.enabled) {
-      return
-    }
-
-    ref.time = clock.getElapsedTime()
-
-    if (mtmParams.renderEachMesh) {
-      meshMatArray = all_mats
-    } else {
-      meshMatArray = singleItemArray
-    }
-
-    for (let index = 0; index < meshMatArray.length; index++) {
-      const parent = all_mats[index].mesh
-
-      if (ref.buffer === fboMain.texture) {
-        // Save defaults
-        oldTone = state.gl.toneMapping
-        oldBg = state.scene.background
-        oldSide = parent.material.side
-
-        // Switch off tonemapping lest it double tone maps
-        // Save the current background and set the HDR as the new BG
-        // Use discardMaterial, the parent will be invisible, but it's shadows will still be cast
-        state.gl.toneMapping = THREE.NoToneMapping
-        if (mtmParams.background) state.scene.background = mtmParams.background
-        parent.material = discardMaterial
-
-        if (mtmParams.backside) {
-          // Render into the backside buffer
-          state.gl.setRenderTarget(fboBack)
-          state.gl.render(state.scene, state.camera)
-          // And now prepare the material for the main render using the backside buffer
-          parent.material = ref
-          parent.material.buffer = fboBack.texture
-          parent.material.thickness = mtmParams.backsideThickness
-          parent.material.side = THREE.BackSide
-        }
-
-        // Render into the main buffer
-        state.gl.setRenderTarget(fboMain)
-        state.gl.render(state.scene, state.camera)
-
-        parent.material.thickness = mtmParams.thickness
-        parent.material.side = oldSide
-        parent.material.buffer = fboMain.texture
-
-        // Set old state back
-        state.scene.background = oldBg
-        state.gl.setRenderTarget(null)
-        parent.material = ref
-        state.gl.toneMapping = oldTone
-      }
-    }
-  }
-}
-
-function addPhysicalGui(gui, mat) {
-  const fol = gui.addFolder("Physical Material")
-  fol.addColor(mat, "color")
-  fol.addColor(mat, "attenuationColor")
-  fol.add(mat, "attenuationDistance", 0, 2)
-  fol.add(mat, "roughness", 0, 1)
-  fol.add(mat, "transmission", 0, 1)
-  fol.add(mat, "thickness", 0, 2)
-  fol.add(mat, "reflectivity", 0, 1)
-}
-
-function addTransmissionGui(gui, mat, mtmParams) {
-  const fol = gui.addFolder("Transmission Material")
-  fol.add(mtmParams, "enabled").name("Rendering Enabled").listen()
-  fol.add(mtmParams, "backside")
-  fol.add(mtmParams, "thickness", 0, 2)
-  fol.add(mtmParams, "backsideThickness", 0, 2)
-
-  fol.addColor(mat, "color")
-  fol.addColor(mat, "attenuationColor")
-  fol.add(mat, "_transmission", 0, 1)
-
-  fol.add(mat, "attenuationDistance", 0, 2)
-  fol.add(mat, "roughness", 0, 1)
-  fol.add(mat, "chromaticAberration", 0, 2)
-  fol.add(mat, "distortion", 0, 10)
-  fol.add(mat, "temporalDistortion", 0, 1)
-  fol.add(mat, "anisotropy", 0, 10)
-  fol.add(mat, "reflectivity", 0, 1)
-
-  fol.add(mtmParams, "renderEachMesh").name("⚠ Render Each Mesh separately")
 }
 
 const color = new Color()

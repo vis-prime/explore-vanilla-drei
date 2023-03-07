@@ -1,17 +1,3 @@
-import Stats from "three/examples/jsm/libs/stats.module"
-import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader"
-import { EXRLoader } from "three/examples/jsm/loaders/EXRLoader"
-import { GroundProjectedEnv } from "three/examples/jsm/objects/GroundProjectedEnv"
-
-import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader"
-import { OrbitControls } from "three/examples/jsm/controls/OrbitControls"
-import { TransformControls } from "three/examples/jsm/controls/TransformControls"
-
-import { MeshTransmissionMaterial, MeshDiscardMaterial } from "@pmndrs/vanilla"
-import modelUrl from "../models/monkey.glb"
-import porscheUrl from "../models/porsche_911_1975.glb"
-
-import * as THREE from "three"
 import {
   ACESFilmicToneMapping,
   Mesh,
@@ -29,17 +15,38 @@ import {
   PMREMGenerator,
   PlaneGeometry,
   TextureLoader,
-  RepeatWrapping,
   EquirectangularReflectionMapping,
-  PointLight,
-  MeshPhysicalMaterial,
   ShadowMaterial,
   DirectionalLight,
-  MeshBasicMaterial,
   VSMShadowMap,
-  Clock,
+  SpotLight,
+  SpotLightHelper,
+  CylinderGeometry,
+  Matrix4,
+  AmbientLight,
+  Vector3,
+  MeshBasicMaterial,
+  WebGLRenderTarget,
+  HalfFloatType,
+  LinearFilter,
+  FloatType,
 } from "three"
+import Stats from "three/examples/jsm/libs/stats.module"
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader"
+import { EXRLoader } from "three/examples/jsm/loaders/EXRLoader"
+import { GroundProjectedEnv } from "three/examples/jsm/objects/GroundProjectedEnv"
+
+import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader"
+import { OrbitControls } from "three/examples/jsm/controls/OrbitControls"
+import { TransformControls } from "three/examples/jsm/controls/TransformControls"
+
+import porscheUrl from "../models/porsche_911_1975.glb"
+
 import { HDRI_LIST } from "../hdri/HDRI_LIST"
+import { SpotLightMaterial } from "../wip/SpotLightMaterial"
+import { DepthTexture } from "three"
+import { DepthFormat } from "three"
+import { UnsignedShortType } from "three"
 
 let stats,
   renderer,
@@ -52,8 +59,8 @@ let stats,
   pointer = new Vector2()
 
 const params = {
-  environment: HDRI_LIST.ulmer_muenster,
-  groundProjection: true,
+  environment: null,
+  groundProjection: false,
   bgColor: new Color(),
   printCam: () => {},
 }
@@ -73,7 +80,7 @@ let sceneGui
 let envObject
 let pmremGenerator
 
-export async function meshTransmissionMaterialDemo(mainGui) {
+export async function spotLightDemo(mainGui) {
   gui = mainGui
   sceneGui = gui.addFolder("Scene")
   stats = new Stats()
@@ -202,6 +209,7 @@ async function setupEnvironment() {
     if (!envDict) {
       scene.background = null
       scene.environment = null
+      sunLight.visible = false
       return
     }
 
@@ -298,11 +306,11 @@ function raycast() {
     return
   }
 
-  if (intersects[0].object.selectOnRaycast) {
-    transformControls.attach(intersects[0].object.selectOnRaycast)
-  } else {
-    transformControls.attach(intersects[0].object)
-  }
+  // if (intersects[0].object.selectOnRaycast) {
+  //   transformControls.attach(intersects[0].object.selectOnRaycast)
+  // } else {
+  //   transformControls.attach(intersects[0].object)
+  // }
 
   intersects.length = 0
 }
@@ -343,202 +351,236 @@ async function loadModels() {
   cube.position.set(-2, 0, -1.5)
   mainObjects.add(cube)
 
-  setupMTM()
-}
-
-async function setupMTM() {
-  // car
-  const MatOptions = {
-    default: "def",
-    physical: "phy",
-    transmission: "tra",
-  }
-  const generalParams = {
-    carMaterial: MatOptions.default, // 'default'|'physical'|'transmission'
-  }
-
-  const mtmParams = {
-    renderEachMesh: false,
-    enabled: false,
-    customBackground: scene.background,
-    backside: true,
-    thickness: 1,
-    backsideThickness: 0.5,
-  }
-
-  const all_mats = []
+  // floor
+  const floor = new Mesh(
+    new PlaneGeometry(10, 10).rotateX(-Math.PI / 2),
+    new MeshStandardMaterial({
+      color: getRandomHexColor(),
+      roughness: 0.5,
+      metalness: 0,
+    })
+  )
+  floor.name = "floor"
+  floor.receiveShadow = true
+  mainObjects.add(floor)
 
   const gltf = await gltfLoader.loadAsync(porscheUrl)
   const model = gltf.scene
   model.name = "car"
-  let carBody
-  const discardMaterial = new MeshDiscardMaterial()
-  const meshTransmissionMaterial = new MeshTransmissionMaterial(6, false)
-  const meshPhysicalMaterial = new MeshPhysicalMaterial({
-    roughness: 0,
-    transmission: 1,
-    thickness: 1,
-  })
 
   model.traverse((child) => {
     if (child.isMesh) {
       child.castShadow = true
       child.receiveShadow = true
       child.selectOnRaycast = model
-      const mat = child.material
-      all_mats.push({
-        material: mat,
-        mesh: child,
-        physical: meshPhysicalMaterial,
-        transmission: meshTransmissionMaterial,
-      })
-
-      if (child.name === "body") carBody = child
     }
   })
   mainObjects.add(model)
 
-  gui.add(generalParams, "carMaterial", MatOptions).onChange((v) => {
-    for (const dat of all_mats) {
-      if (v === MatOptions.default) {
-        dat.mesh.material = dat.material
-        mtmParams.enabled = false
-      }
+  setupSpotLight()
+}
 
-      if (v === MatOptions.physical) {
-        dat.mesh.material = dat.physical
-        mtmParams.enabled = false
-      }
+function setupSpotLight() {
+  scene.add(new AmbientLight(0xffffff, 0.5))
 
-      if (v === MatOptions.transmission) {
-        dat.mesh.material = dat.transmission
-        mtmParams.enabled = true
-      }
-    }
-  })
+  let opacity = 1,
+    radiusTop,
+    radiusBottom,
+    depthBuffer,
+    color = 0xffffff,
+    distance = 5 * 4,
+    angle = 0.15 * 4,
+    attenuation = 5,
+    anglePower = 5
 
-  addPhysicalGui(gui, meshPhysicalMaterial)
-  addTransmissionGui(gui, meshTransmissionMaterial, mtmParams)
+  const spotLight = new SpotLight()
+  spotLight.position.set(5, 5, 5)
+  spotLight.angle = angle
+  spotLight.color.set(color)
+  spotLight.distance = distance
+  spotLight.castShadow = true
+  spotLight.shadow.bias = -0.0001
+  const helper = new SpotLightHelper(spotLight)
+  scene.add(spotLight)
 
-  const fboBack = new THREE.WebGLRenderTarget(512, 512, {
-    minFilter: THREE.LinearFilter,
-    magFilter: THREE.LinearFilter,
-    encoding: renderer.outputEncoding,
-    type: THREE.HalfFloatType,
-  })
-  const fboMain = new THREE.WebGLRenderTarget(512, 512, {
-    minFilter: THREE.LinearFilter,
-    magFilter: THREE.LinearFilter,
-    encoding: renderer.outputEncoding,
-    type: THREE.HalfFloatType,
-  })
+  const size = new Vector3(512, 512)
+  renderer.getSize(size)
+  const dpr = 1
+  const volumeMaterial = new SpotLightMaterial()
+  // const volumeMaterial = new MeshBasicMaterial({
+  //   transparent: true,
+  //   opacity: 0.25,
+  // })
 
-  const ref = meshTransmissionMaterial
-  ref.buffer = fboMain.texture
-  let oldBg
-  let oldTone
-  let oldSide
-  const state = {
-    gl: renderer,
-    scene,
-    camera,
+  depthBuffer = useDepthBuffer()
+
+  console.log({ depthBuffer })
+
+  volumeMaterial.spotPosition = spotLight.position
+  volumeMaterial.opacity = opacity
+  volumeMaterial.lightColor = spotLight.color
+  volumeMaterial.attenuation = spotLight.distance
+  volumeMaterial.anglePower = anglePower
+  volumeMaterial.cameraNear = camera.near
+  volumeMaterial.cameraFar = camera.far
+
+  radiusTop = radiusTop === undefined ? 0.1 : radiusTop
+  radiusBottom = radiusBottom === undefined ? spotLight.angle * 7 : radiusBottom
+
+  console.log({ volumeMaterial })
+
+  const updateVolumeGeometry = () => {
+    volumeMaterial.attenuation = spotLight.distance
+    distance = spotLight.distance
+    radiusBottom = spotLight.angle * distance
+    volumeMesh.geometry = geom(distance, radiusTop, radiusBottom)
   }
 
-  let meshMatArray
-  const singleItemArray = [{ mesh: carBody, mat: meshTransmissionMaterial }]
-  const clock = new Clock(true)
+  const test = {
+    helper: false,
+    useDepth: false,
+    updateVolumeGeometry,
+  }
+
+  const geom = (distance, radiusTop, radiusBottom) => {
+    console.log({ distance, radiusTop, radiusBottom })
+    const geometry = new CylinderGeometry(
+      radiusTop,
+      radiusBottom,
+      distance,
+      128,
+      64,
+      true
+    )
+    // geometry.applyMatrix4(new Matrix4().makeTranslation(0, -distance / 2, 0))
+    // geometry.applyMatrix4(new Matrix4().makeRotationX(-Math.PI / 2))
+    geometry.translate(0, -distance / 2, 0)
+    geometry.rotateX(-Math.PI / 2)
+    return geometry
+  }
+
+  const volumeMesh = new Mesh(
+    geom(distance, radiusTop, radiusBottom),
+    volumeMaterial
+  )
+
+  updateVolumeGeometry()
+
+  spotLight.add(volumeMesh)
+  const vec = new Vector3()
   useFrame = () => {
-    if (!mtmParams.enabled) {
-      return
-    }
+    volumeMaterial.spotPosition.copy(volumeMesh.getWorldPosition(vec))
+    volumeMesh.lookAt(spotLight.target.getWorldPosition(vec))
+    if (helper.parent) helper.update()
 
-    ref.time = clock.getElapsedTime()
-
-    if (mtmParams.renderEachMesh) {
-      meshMatArray = all_mats
-    } else {
-      meshMatArray = singleItemArray
-    }
-
-    for (let index = 0; index < meshMatArray.length; index++) {
-      const parent = all_mats[index].mesh
-
-      if (ref.buffer === fboMain.texture) {
-        // Save defaults
-        oldTone = state.gl.toneMapping
-        oldBg = state.scene.background
-        oldSide = parent.material.side
-
-        // Switch off tonemapping lest it double tone maps
-        // Save the current background and set the HDR as the new BG
-        // Use discardMaterial, the parent will be invisible, but it's shadows will still be cast
-        state.gl.toneMapping = THREE.NoToneMapping
-        if (mtmParams.background) state.scene.background = mtmParams.background
-        parent.material = discardMaterial
-
-        if (mtmParams.backside) {
-          // Render into the backside buffer
-          state.gl.setRenderTarget(fboBack)
-          state.gl.render(state.scene, state.camera)
-          // And now prepare the material for the main render using the backside buffer
-          parent.material = ref
-          parent.material.buffer = fboBack.texture
-          parent.material.thickness = mtmParams.backsideThickness
-          parent.material.side = THREE.BackSide
-        }
-
-        // Render into the main buffer
-        state.gl.setRenderTarget(fboMain)
-        state.gl.render(state.scene, state.camera)
-
-        parent.material.thickness = mtmParams.thickness
-        parent.material.side = oldSide
-        parent.material.buffer = fboMain.texture
-
-        // Set old state back
-        state.scene.background = oldBg
-        state.gl.setRenderTarget(null)
-        parent.material = ref
-        state.gl.toneMapping = oldTone
-      }
-    }
+    if (test.useDepth) depthBuffer[1]()
   }
-}
 
-function addPhysicalGui(gui, mat) {
-  const fol = gui.addFolder("Physical Material")
-  fol.addColor(mat, "color")
-  fol.addColor(mat, "attenuationColor")
-  fol.add(mat, "attenuationDistance", 0, 2)
-  fol.add(mat, "roughness", 0, 1)
-  fol.add(mat, "transmission", 0, 1)
-  fol.add(mat, "thickness", 0, 2)
-  fol.add(mat, "reflectivity", 0, 1)
-}
+  function addGui(gui) {
+    const folder = gui.addFolder("SpotLight Volume")
+    folder.open()
+    folder.add(test, "useDepth").onChange((v) => {
+      if (v) {
+        volumeMaterial.depth = depthBuffer[0]
+        volumeMaterial.resolution = renderer.getSize(new Vector2())
+      } else {
+        volumeMaterial.depth = null
+        volumeMaterial.resolution = new Vector2(0, 0)
+      }
+    })
+    folder.add(volumeMaterial, "opacity", 0, 1)
+    folder.add(volumeMaterial, "attenuation", 0, distance)
+    folder.add(volumeMaterial, "anglePower", 0, Math.PI)
+    folder.add(volumeMaterial, "cameraNear", 0, 10)
+    folder.add(volumeMaterial, "cameraFar", 0, 10)
 
-function addTransmissionGui(gui, mat, mtmParams) {
-  const fol = gui.addFolder("Transmission Material")
-  fol.add(mtmParams, "enabled").name("Rendering Enabled").listen()
-  fol.add(mtmParams, "backside")
-  fol.add(mtmParams, "thickness", 0, 2)
-  fol.add(mtmParams, "backsideThickness", 0, 2)
+    const sp = gui.addFolder("SpotLight")
+    sp.open()
+    sp.add(test, "helper").onChange((v) => {
+      if (v) {
+        scene.add(helper)
+      } else {
+        helper.removeFromParent()
+      }
+    })
+    sp.addColor(spotLight, "color")
+    sp.add(spotLight, "intensity", 0, 5)
+    sp.add(spotLight, "angle", 0, Math.PI / 2).onChange(updateVolumeGeometry)
+    sp.add(spotLight, "penumbra", 0, 1)
+    sp.add(spotLight, "distance", 0.1, 20).onChange(updateVolumeGeometry)
+    sp.add(spotLight.shadow, "bias", -0.0001, 0.0001)
+  }
 
-  fol.addColor(mat, "color")
-  fol.addColor(mat, "attenuationColor")
-  fol.add(mat, "_transmission", 0, 1)
-
-  fol.add(mat, "attenuationDistance", 0, 2)
-  fol.add(mat, "roughness", 0, 1)
-  fol.add(mat, "chromaticAberration", 0, 2)
-  fol.add(mat, "distortion", 0, 10)
-  fol.add(mat, "temporalDistortion", 0, 1)
-  fol.add(mat, "anisotropy", 0, 10)
-  fol.add(mat, "reflectivity", 0, 1)
-
-  fol.add(mtmParams, "renderEachMesh").name("⚠ Render Each Mesh separately")
+  transformControls.attach(spotLight)
+  addGui(gui)
 }
 
 const color = new Color()
 function getRandomHexColor() {
   return "#" + color.setHSL(Math.random(), 0.5, 0.5).getHexString()
+}
+
+function useDepthBuffer({ size = 256, frames = Infinity } = {}) {
+  const gl = renderer
+  const dpr = renderer.getPixelRatio()
+  const { x, y } = renderer.getSize(new Vector3())
+  const w = size || x * dpr
+  const h = size || y * dpr
+
+  const depthTexture = new DepthTexture(w, h)
+  depthTexture.format = DepthFormat
+  depthTexture.type = UnsignedShortType
+  depthTexture.name = "use_Depth_Buffer"
+
+  let count = 0
+  const depthFBO = useFBO(w, h, { depthTexture })
+
+  const useFrame = () => {
+    if (frames === Infinity || count < frames) {
+      gl.setRenderTarget(depthFBO)
+      gl.render(scene, camera)
+      gl.setRenderTarget(null)
+      count++
+    }
+  }
+
+  console.log({ depthFBO })
+
+  return [depthFBO.depthTexture, useFrame]
+}
+
+// 👇 uncomment when TS version supports function overloads
+// export function useFBO(settings?: FBOSettings)
+export function useFBO(
+  /** Width in pixels, or settings (will render fullscreen by default) */
+  width,
+  /** Height in pixels */
+  height,
+  /**Settings */
+  settings
+) {
+  const dpr = renderer.getPixelRatio()
+  const { x, y } = renderer.getSize(new Vector3())
+  const gl = renderer
+  const _width = x * dpr
+  const _height = y * dpr
+  const _settings = settings
+  const { samples = 0, depth, ...targetSettings } = _settings
+
+  let target
+  target = new WebGLRenderTarget(_width, _height, {
+    minFilter: LinearFilter,
+    magFilter: LinearFilter,
+    encoding: gl.outputEncoding,
+    type: HalfFloatType,
+    ...targetSettings,
+  })
+
+  // if (depth) {
+  //   target.depthTexture = new DepthTexture(_width, _height, FloatType)
+  // }
+
+  target.samples = samples
+
+  return target
 }

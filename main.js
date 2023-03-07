@@ -3,6 +3,8 @@ import "./style.css"
 import { version } from "./package.json"
 import { GUI } from "lil-gui"
 import { meshTransmissionMaterialDemo } from "./demos/MeshTransmissionMaterialDemo"
+import { pcssDemo } from "./demos/PCSSDemo"
+import { spotLightDemo } from "./demos/SpotLightDemo"
 
 let url_string = window.location.href
 let url = new URL(url_string)
@@ -13,9 +15,8 @@ let url = new URL(url_string)
  */
 const All_Scenes = {
   MeshTransmissionMaterial: meshTransmissionMaterialDemo,
-  PCSS: () => {
-    console.log("pcss init")
-  },
+  PCSS: pcssDemo,
+  WIP_SpotLight: spotLightDemo,
 }
 
 const params = {
@@ -44,6 +45,10 @@ gui
     updatePageDesc(v)
     window.location.reload()
   })
+
+if (!Object.keys(All_Scenes).includes(params.sceneName)) {
+  params.sceneName = Object.keys(All_Scenes)[0]
+}
 
 params.sceneInitFunction = All_Scenes[params.sceneName]
 params.sceneInitFunction(gui)
