@@ -408,7 +408,7 @@ function setupSpotLight() {
   //   opacity: 0.25,
   // })
 
-  depthBuffer = useDepthBuffer()
+  const [depthTexture, depthUseFrame] = useDepthBuffer()
 
   // console.log({ depthBuffer })
 
@@ -429,16 +429,16 @@ function setupSpotLight() {
     volumeMaterial.attenuation = spotLight.distance
     distance = spotLight.distance
     radiusBottom = spotLight.angle * distance
-    volumeMesh.geometry = geom(distance, radiusTop, radiusBottom)
+    volumeMesh.geometry = getSpotGeo(distance, radiusTop, radiusBottom)
   }
 
-  const test = {
+  const testParams = {
     helper: false,
     useDepth: false,
     updateVolumeGeometry,
   }
 
-  const geom = (distance, radiusTop, radiusBottom) => {
+  const getSpotGeo = (distance, radiusTop, radiusBottom) => {
     // console.log({ distance, radiusTop, radiusBottom })
     const geometry = new CylinderGeometry(
       radiusTop,
@@ -456,7 +456,7 @@ function setupSpotLight() {
   }
 
   const volumeMesh = new Mesh(
-    geom(distance, radiusTop, radiusBottom),
+    getSpotGeo(distance, radiusTop, radiusBottom),
     volumeMaterial
   )
 
@@ -470,15 +470,15 @@ function setupSpotLight() {
     if (helper.parent) helper.update()
 
     // useFrame from FBO
-    if (test.useDepth) depthBuffer[1]()
+    if (testParams.useDepth) depthUseFrame()
   }
 
   function addGui(gui) {
     const folder = gui.addFolder("SpotLight Volume")
     folder.open()
-    folder.add(test, "useDepth").onChange((v) => {
+    folder.add(testParams, "useDepth").onChange((v) => {
       if (v) {
-        volumeMaterial.depth = depthBuffer[0]
+        volumeMaterial.depth = depthTexture
         volumeMaterial.resolution = renderer.getSize(new Vector2())
       } else {
         volumeMaterial.depth = null
@@ -493,7 +493,7 @@ function setupSpotLight() {
 
     const sp = gui.addFolder("SpotLight")
     sp.open()
-    sp.add(test, "helper").onChange((v) => {
+    sp.add(testParams, "helper").onChange((v) => {
       if (v) {
         scene.add(helper)
       } else {
