@@ -5,6 +5,7 @@ import { GUI } from "lil-gui"
 import { meshTransmissionMaterialDemo } from "./demos/MeshTransmissionMaterialDemo"
 import { pcssDemo } from "./demos/PCSSDemo"
 import { spotLightDemo } from "./demos/SpotLightDemo"
+import { realismEffectsDemo } from "./demos/realismEffectsDemo"
 
 let url_string = window.location.href
 let url = new URL(url_string)
@@ -17,6 +18,7 @@ const All_Scenes = {
   MeshTransmissionMaterial: meshTransmissionMaterialDemo,
   PCSS: pcssDemo,
   WIP_SpotLight: spotLightDemo,
+  RealismEffects: realismEffectsDemo,
 }
 
 const params = {
