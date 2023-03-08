@@ -506,7 +506,6 @@ function useDepthBuffer({ size = 256, frames = Infinity } = {}) {
   depthTexture.format = DepthFormat
   depthTexture.type = UnsignedShortType
   depthTexture.name = "use_Depth_Buffer"
-  console.log({ w, h, depthTexture })
 
   let count = 0
   const depthFBO = useFBO(w, h, { depthTexture })
