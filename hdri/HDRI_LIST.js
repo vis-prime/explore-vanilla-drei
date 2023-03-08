@@ -4,6 +4,8 @@ import wide_street1EXR from "./wide_street_01_1k.exr?url"
 import wide_street1WebP from "./wide_street_01.webp?url"
 import wide_street2EXR from "./wide_street_02_1k.exr?url"
 import wide_street3WebP from "./wide_street_02.webp?url"
+import kloppenheimEXR from "./kloppenheim_02_1k.exr?url"
+import kloppenheimWEBP from "./kloppenheim_02.webp?url"
 
 export const HDRI_LIST = {
   ulmer_muenster: {
@@ -31,5 +33,9 @@ export const HDRI_LIST = {
     sunCol: "#ffffeb",
     shadowOpacity: 0.55,
     groundProj: { radius: 25, height: 2 },
+  },
+  kloppenheim: {
+    exr: kloppenheimEXR,
+    webP: kloppenheimWEBP,
   },
 }

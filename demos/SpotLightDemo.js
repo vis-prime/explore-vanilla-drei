@@ -48,6 +48,9 @@ import { DepthTexture } from "three"
 import { DepthFormat } from "three"
 import { UnsignedShortType } from "three"
 
+import { Easing, Tween, update } from "@tweenjs/tween.js"
+import { MathUtils } from "three"
+
 let stats,
   renderer,
   raf,
@@ -59,7 +62,7 @@ let stats,
   pointer = new Vector2()
 
 const params = {
-  environment: null,
+  environment: HDRI_LIST.kloppenheim,
   groundProjection: false,
   bgColor: new Color(),
   printCam: () => {},
@@ -99,12 +102,7 @@ export async function spotLightDemo(mainGui) {
   app.appendChild(renderer.domElement)
 
   // camera
-  camera = new PerspectiveCamera(
-    50,
-    window.innerWidth / window.innerHeight,
-    0.1,
-    200
-  )
+  camera = new PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 200)
   camera.position.set(-16, 16, 16)
   camera.name = "Camera"
   // scene
@@ -169,36 +167,6 @@ export async function spotLightDemo(mainGui) {
 }
 
 async function setupEnvironment() {
-  // light
-  let sunGroup = new Group()
-  let sunLight = new DirectionalLight(0xffffeb, 1)
-  sunLight.name = "Dir. Light"
-  sunLight.castShadow = true
-  sunLight.shadow.camera.near = 0.1
-  sunLight.shadow.camera.far = 50
-  sunLight.shadow.camera.right = 15
-  sunLight.shadow.camera.left = -15
-  sunLight.shadow.camera.top = 15
-  sunLight.shadow.camera.bottom = -15
-  sunLight.shadow.mapSize.width = 1024
-  sunLight.shadow.mapSize.height = 1024
-  sunLight.shadow.radius = 1.95
-  sunLight.shadow.blurSamples = 6
-
-  sunLight.shadow.bias = -0.0005
-  sunGroup.add(sunLight)
-  scene.add(sunGroup)
-
-  //   floor
-  const shadowFloor = new Mesh(
-    new PlaneGeometry(10, 10).rotateX(-Math.PI / 2),
-    new ShadowMaterial({})
-  )
-  shadowFloor.name = "shadowFloor"
-  shadowFloor.receiveShadow = true
-  shadowFloor.position.set(0, 0, 0)
-  scene.add(shadowFloor)
-
   /**
    * Update env
    * @param {HDRI_LIST} envDict
@@ -208,7 +176,7 @@ async function setupEnvironment() {
     if (!envDict) {
       scene.background = null
       scene.environment = null
-      sunLight.visible = false
+
       return
     }
 
@@ -218,31 +186,14 @@ async function setupEnvironment() {
         scene.environment = texture
       })
 
-    if (envDict.webP)
-      textureLoader.load(envDict.webP, (texture) => {
-        texture.mapping = EquirectangularReflectionMapping
-        texture.encoding = sRGBEncoding
-        scene.background = texture
+    // if (envDict.webP)
+    //   textureLoader.load(envDict.webP, (texture) => {
+    //     texture.mapping = EquirectangularReflectionMapping
+    //     texture.encoding = sRGBEncoding
+    //     scene.background = texture
 
-        if (params.groundProjection) loadGroundProj(params.environment)
-      })
-
-    if (envDict.sunPos) {
-      sunLight.visible = true
-      sunLight.position.fromArray(envDict.sunPos)
-    } else {
-      sunLight.visible = false
-    }
-
-    if (envDict.sunCol) {
-      sunLight.color.set(envDict.sunCol)
-    } else {
-      sunLight.color.set(0xffffff)
-    }
-
-    if (envDict.shadowOpacity) {
-      shadowFloor.material.opacity = envDict.shadowOpacity
-    }
+    //     if (params.groundProjection) loadGroundProj(params.environment)
+    //   })
   }
 
   function loadGroundProj(envDict) {
@@ -282,9 +233,9 @@ function onWindowResize() {
 
 function render() {
   stats.update()
-  // Update the inertia on the orbit controls
-  controls.update()
+  update() //tween
   useFrame()
+  controls.update()
   renderer.render(scene, camera)
 }
 
@@ -301,7 +252,7 @@ function raycast() {
   raycaster.intersectObject(mainObjects, true, intersects)
 
   if (!intersects.length) {
-    transformControls.detach()
+    // transformControls.detach()
     return
   }
 
@@ -385,14 +336,13 @@ function setupSpotLight() {
   let opacity = 1,
     radiusTop,
     radiusBottom,
-    depthBuffer,
     color = 0xffffff,
     distance = 5 * 4,
     angle = 0.15 * 4,
-    attenuation = 5,
     anglePower = 5
 
   const spotLight = new SpotLight()
+  spotLight.intensity = 3
   spotLight.position.set(5, 5, 5)
   spotLight.angle = angle
   spotLight.color.set(color)
@@ -403,12 +353,18 @@ function setupSpotLight() {
   scene.add(spotLight)
 
   const volumeMaterial = new SpotLightMaterial()
-  // const volumeMaterial = new MeshBasicMaterial({
-  //   transparent: true,
-  //   opacity: 0.25,
-  // })
 
-  const [depthTexture, depthUseFrame] = useDepthBuffer()
+  const basicMaterial = new MeshBasicMaterial({
+    transparent: true,
+    opacity: 0.25,
+  })
+
+  const matOptions = {
+    volumeMaterial,
+    basicMaterial,
+  }
+
+  const [depthTexture, depthUseFrame] = useDepthBuffer({ size: 1024 })
 
   // console.log({ depthBuffer })
 
@@ -428,26 +384,22 @@ function setupSpotLight() {
   const updateVolumeGeometry = () => {
     volumeMaterial.attenuation = spotLight.distance
     distance = spotLight.distance
-    radiusBottom = spotLight.angle * distance
+    radiusBottom = Math.tan(spotLight.angle) * spotLight.distance
     volumeMesh.geometry = getSpotGeo(distance, radiusTop, radiusBottom)
   }
 
   const testParams = {
+    materialType: matOptions.volumeMaterial,
     helper: false,
     useDepth: false,
     updateVolumeGeometry,
+    animateTarget: false,
+    animateLight: false,
   }
 
   const getSpotGeo = (distance, radiusTop, radiusBottom) => {
     // console.log({ distance, radiusTop, radiusBottom })
-    const geometry = new CylinderGeometry(
-      radiusTop,
-      radiusBottom,
-      distance,
-      128,
-      64,
-      true
-    )
+    const geometry = new CylinderGeometry(radiusTop, radiusBottom, distance, 128, 64, true)
     // geometry.applyMatrix4(new Matrix4().makeTranslation(0, -distance / 2, 0))
     // geometry.applyMatrix4(new Matrix4().makeRotationX(-Math.PI / 2))
     geometry.translate(0, -distance / 2, 0)
@@ -455,27 +407,35 @@ function setupSpotLight() {
     return geometry
   }
 
-  const volumeMesh = new Mesh(
-    getSpotGeo(distance, radiusTop, radiusBottom),
-    volumeMaterial
-  )
+  const volumeMesh = new Mesh(getSpotGeo(distance, radiusTop, radiusBottom), volumeMaterial)
 
   updateVolumeGeometry()
 
   spotLight.add(volumeMesh)
   const vec = new Vector3()
   useFrame = () => {
-    volumeMaterial.spotPosition.copy(volumeMesh.getWorldPosition(vec))
+    // volumeMaterial.spotPosition.copy(volumeMesh.getWorldPosition(vec))
     volumeMesh.lookAt(spotLight.target.getWorldPosition(vec))
     if (helper.parent) helper.update()
 
     // useFrame from FBO
-    if (testParams.useDepth) depthUseFrame()
+    if (testParams.useDepth) {
+      volumeMaterial.depth = null
+      depthUseFrame()
+      volumeMaterial.depth = depthTexture
+    }
   }
+
+  const randomMovementTarget = getRandomPosTween(spotLight.target.position, 20, 2000, 1000)
+  const randomMovementLight = getRandomPosTween(spotLight.position, 20, 2000, 1000)
 
   function addGui(gui) {
     const folder = gui.addFolder("SpotLight Volume")
     folder.open()
+    folder.add(testParams, "materialType", matOptions).onChange((v) => {
+      volumeMesh.material = v
+    })
+
     folder.add(testParams, "useDepth").onChange((v) => {
       if (v) {
         volumeMaterial.depth = depthTexture
@@ -506,6 +466,25 @@ function setupSpotLight() {
     sp.add(spotLight, "penumbra", 0, 1)
     sp.add(spotLight, "distance", 0.1, 20).onChange(updateVolumeGeometry)
     sp.add(spotLight.shadow, "bias", -0.0001, 0.0001)
+
+    sp.add(testParams, "animateTarget")
+      .name("🚲Animate target")
+      .onChange((v) => {
+        if (v) {
+          randomMovementTarget.start()
+        } else {
+          randomMovementTarget.stop()
+        }
+      })
+    sp.add(testParams, "animateLight")
+      .name("🚲Animate light")
+      .onChange((v) => {
+        if (v) {
+          randomMovementLight.start()
+        } else {
+          randomMovementLight.stop()
+        }
+      })
   }
 
   transformControls.attach(spotLight)
@@ -519,15 +498,15 @@ function getRandomHexColor() {
 
 function useDepthBuffer({ size = 256, frames = Infinity } = {}) {
   const gl = renderer
-  const dpr = renderer.getPixelRatio()
-  const { x, y } = renderer.getSize(new Vector3())
-  const w = size || x * dpr
-  const h = size || y * dpr
+
+  const w = size
+  const h = size
 
   const depthTexture = new DepthTexture(w, h)
   depthTexture.format = DepthFormat
   depthTexture.type = UnsignedShortType
   depthTexture.name = "use_Depth_Buffer"
+  console.log({ w, h, depthTexture })
 
   let count = 0
   const depthFBO = useFBO(w, h, { depthTexture })
@@ -546,6 +525,44 @@ function useDepthBuffer({ size = 256, frames = Infinity } = {}) {
   return [depthFBO.depthTexture, useFrame]
 }
 
+/**
+ * Random loc tween
+ * @param {Vector3} obj
+ * @returns
+ */
+function getRandomPosTween(vec, range, duration, delay) {
+  const tween = new Tween(vec)
+    .to(
+      {
+        x: MathUtils.randFloatSpread(range),
+        z: MathUtils.randFloatSpread(range),
+      },
+      duration
+    )
+
+    .easing(Easing.Bounce.Out)
+    .repeat(10000)
+    .repeatDelay(delay)
+    .onStart(() => {
+      updateTweenStartValues()
+    })
+    .onRepeat(() => {
+      updateTweenStartValues()
+
+      tween.to({
+        x: MathUtils.randFloatSpread(6),
+        z: MathUtils.randFloatSpread(6),
+      })
+    })
+
+  const updateTweenStartValues = () => {
+    tween._valuesStart.x = vec.x
+    tween._valuesStart.z = vec.z
+  }
+
+  return tween
+}
+
 // 👇 uncomment when TS version supports function overloads
 // export function useFBO(settings?: FBOSettings)
 export function useFBO(
@@ -556,11 +573,9 @@ export function useFBO(
   /**Settings */
   settings
 ) {
-  const dpr = renderer.getPixelRatio()
-  const { x, y } = renderer.getSize(new Vector3())
   const gl = renderer
-  const _width = x * dpr
-  const _height = y * dpr
+  const _width = width
+  const _height = height
   const _settings = settings
   const { samples = 0, depth, ...targetSettings } = _settings
 
