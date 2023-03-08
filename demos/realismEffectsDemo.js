@@ -37,6 +37,7 @@ import {
   VSMShadowMap,
   FloatType,
   PMREMGenerator,
+  CircleGeometry,
 } from "three"
 import { HDRI_LIST } from "../hdri/HDRI_LIST"
 import { SSGIDebugGUI } from "../wip/SSGIDebugGUI"
@@ -90,7 +91,7 @@ export async function realismEffectsDemo(mainGui) {
   })
   renderer.setPixelRatio(Math.min(1.5, window.devicePixelRatio))
   renderer.setSize(window.innerWidth, window.innerHeight)
-  renderer.shadowMap.enabled = true
+  //   renderer.shadowMap.enabled = true
   //   renderer.shadowMap.type = VSMShadowMap
   renderer.outputEncoding = sRGBEncoding
   renderer.toneMapping = ACESFilmicToneMapping
@@ -152,10 +153,10 @@ async function setupEnvironment() {
   sunLight.shadow.camera.left = -15
   sunLight.shadow.camera.top = 15
   sunLight.shadow.camera.bottom = -15
-  sunLight.shadow.mapSize.width = 8192
-  sunLight.shadow.mapSize.height = 8192
-  sunLight.shadow.radius = 1.95
-  sunLight.shadow.blurSamples = 6
+  sunLight.shadow.mapSize.width = 1024
+  sunLight.shadow.mapSize.height = 1024
+  //   sunLight.shadow.radius = 1.95
+  //   sunLight.shadow.blurSamples = 6
 
   sunLight.shadow.bias = -0.0005
   sunGroup.add(sunLight)
@@ -245,9 +246,11 @@ async function setupEnvironment() {
 }
 
 function onWindowResize() {
-  camera.aspect = window.innerWidth / window.innerHeight
+  const w = window.innerWidth
+  const h = window.innerHeight
+  camera.aspect = w / h
   camera.updateProjectionMatrix()
-  composer.setSize(window.innerWidth, window.innerHeight)
+  composer.setSize(w, h)
 }
 
 function render() {
@@ -315,12 +318,12 @@ async function loadModels() {
   mainObjects.add(cube)
 
   const shadowFloor = new Mesh(
-    new PlaneGeometry(10, 10).rotateX(-Math.PI / 2),
-    new MeshStandardMaterial({ color: getRandomHexColor(), roughness: 0 })
+    new CircleGeometry(5, 32).rotateX(-Math.PI / 2),
+    new MeshStandardMaterial({ color: 0x111111, roughness: 0 })
   )
   shadowFloor.name = "floor"
   shadowFloor.receiveShadow = true
-  shadowFloor.position.set(0, 0, 0)
+  shadowFloor.position.set(0, 0.001, 0)
   scene.add(shadowFloor)
 
   const gltf = await gltfLoader.loadAsync(porscheUrl)
@@ -415,10 +418,12 @@ function setupComposer() {
     console.log(composer.passes)
   }
 
-  gui.add(effectsOptions, "useGI").onChange(updatePost)
-  gui.add(effectsOptions, "gi", GI_OPTIONS).onChange(updatePost)
-  gui.add(effectsOptions, "traa").onChange(updatePost)
-  gui.add(effectsOptions, "motionBlur").onChange(updatePost)
+  const giFolder = gui.addFolder("EFFECTS")
+  giFolder.open()
+  giFolder.add(effectsOptions, "useGI").onChange(updatePost)
+  giFolder.add(effectsOptions, "gi", GI_OPTIONS).onChange(updatePost)
+  giFolder.add(effectsOptions, "traa").onChange(updatePost)
+  giFolder.add(effectsOptions, "motionBlur").onChange(updatePost)
 }
 
 const color = new Color()
