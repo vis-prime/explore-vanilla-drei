@@ -10,7 +10,6 @@ import { TransformControls } from "three/examples/jsm/controls/TransformControls
 import { pcss } from "@pmndrs/vanilla"
 import roomUrl from "../models/room.glb"
 
-import * as THREE from "three"
 import {
   ACESFilmicToneMapping,
   Mesh,
@@ -28,16 +27,9 @@ import {
   PMREMGenerator,
   PlaneGeometry,
   TextureLoader,
-  RepeatWrapping,
   EquirectangularReflectionMapping,
-  PointLight,
-  MeshPhysicalMaterial,
   ShadowMaterial,
   DirectionalLight,
-  MeshBasicMaterial,
-  VSMShadowMap,
-  Clock,
-  PCFSoftShadowMap,
   AmbientLight,
 } from "three"
 import { HDRI_LIST } from "../hdri/HDRI_LIST"
@@ -91,12 +83,7 @@ export async function pcssDemo(mainGui) {
   app.appendChild(renderer.domElement)
 
   // camera
-  camera = new PerspectiveCamera(
-    50,
-    window.innerWidth / window.innerHeight,
-    0.1,
-    200
-  )
+  camera = new PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 200)
   camera.position.set(6, 3, 6)
   camera.name = "Camera"
   camera.position.set(2.0404140991899564, 2.644387886134694, 3.8683136783076355)
@@ -207,10 +194,7 @@ async function setupEnvironment() {
   scene.add(sunGroup)
 
   //   floor
-  const shadowFloor = new Mesh(
-    new PlaneGeometry(10, 10).rotateX(-Math.PI / 2),
-    new ShadowMaterial({})
-  )
+  const shadowFloor = new Mesh(new PlaneGeometry(10, 10).rotateX(-Math.PI / 2), new ShadowMaterial({}))
   shadowFloor.name = "shadowFloor"
   shadowFloor.receiveShadow = true
   shadowFloor.position.set(0, 0, 0)

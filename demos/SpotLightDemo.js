@@ -16,20 +16,16 @@ import {
   PlaneGeometry,
   TextureLoader,
   EquirectangularReflectionMapping,
-  ShadowMaterial,
-  DirectionalLight,
   VSMShadowMap,
   SpotLight,
   SpotLightHelper,
   CylinderGeometry,
-  Matrix4,
   AmbientLight,
   Vector3,
   MeshBasicMaterial,
   WebGLRenderTarget,
   HalfFloatType,
   LinearFilter,
-  FloatType,
 } from "three"
 import Stats from "three/examples/jsm/libs/stats.module"
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader"

@@ -22,7 +22,6 @@ import {
   Group,
   BoxGeometry,
   Color,
-  PMREMGenerator,
   PlaneGeometry,
   TextureLoader,
   EquirectangularReflectionMapping,

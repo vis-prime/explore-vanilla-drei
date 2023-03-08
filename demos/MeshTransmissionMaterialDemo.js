@@ -8,10 +8,8 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls"
 import { TransformControls } from "three/examples/jsm/controls/TransformControls"
 
 import { MeshTransmissionMaterial, MeshDiscardMaterial } from "@pmndrs/vanilla"
-import modelUrl from "../models/monkey.glb"
 import porscheUrl from "../models/porsche_911_1975.glb"
 
-import * as THREE from "three"
 import {
   ACESFilmicToneMapping,
   Mesh,
@@ -29,15 +27,17 @@ import {
   PMREMGenerator,
   PlaneGeometry,
   TextureLoader,
-  RepeatWrapping,
   EquirectangularReflectionMapping,
-  PointLight,
   MeshPhysicalMaterial,
   ShadowMaterial,
   DirectionalLight,
-  MeshBasicMaterial,
   VSMShadowMap,
   Clock,
+  WebGLRenderTarget,
+  LinearFilter,
+  HalfFloatType,
+  NoToneMapping,
+  BackSide,
 } from "three"
 import { HDRI_LIST } from "../hdri/HDRI_LIST"
 
@@ -92,12 +92,7 @@ export async function meshTransmissionMaterialDemo(mainGui) {
   app.appendChild(renderer.domElement)
 
   // camera
-  camera = new PerspectiveCamera(
-    50,
-    window.innerWidth / window.innerHeight,
-    0.1,
-    200
-  )
+  camera = new PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 200)
   camera.position.set(6, 3, 6)
   camera.name = "Camera"
   camera.position.set(2.0404140991899564, 2.644387886134694, 3.8683136783076355)
@@ -184,10 +179,7 @@ async function setupEnvironment() {
   scene.add(sunGroup)
 
   //   floor
-  const shadowFloor = new Mesh(
-    new PlaneGeometry(10, 10).rotateX(-Math.PI / 2),
-    new ShadowMaterial({})
-  )
+  const shadowFloor = new Mesh(new PlaneGeometry(10, 10).rotateX(-Math.PI / 2), new ShadowMaterial({}))
   shadowFloor.name = "shadowFloor"
   shadowFloor.receiveShadow = true
   shadowFloor.position.set(0, 0, 0)
@@ -420,17 +412,17 @@ async function setupMTM() {
   addPhysicalGui(gui, meshPhysicalMaterial)
   addTransmissionGui(gui, meshTransmissionMaterial, mtmParams)
 
-  const fboBack = new THREE.WebGLRenderTarget(512, 512, {
-    minFilter: THREE.LinearFilter,
-    magFilter: THREE.LinearFilter,
+  const fboBack = new WebGLRenderTarget(512, 512, {
+    minFilter: LinearFilter,
+    magFilter: LinearFilter,
     encoding: renderer.outputEncoding,
-    type: THREE.HalfFloatType,
+    type: HalfFloatType,
   })
-  const fboMain = new THREE.WebGLRenderTarget(512, 512, {
-    minFilter: THREE.LinearFilter,
-    magFilter: THREE.LinearFilter,
+  const fboMain = new WebGLRenderTarget(512, 512, {
+    minFilter: LinearFilter,
+    magFilter: LinearFilter,
     encoding: renderer.outputEncoding,
-    type: THREE.HalfFloatType,
+    type: HalfFloatType,
   })
 
   const ref = meshTransmissionMaterial
@@ -472,7 +464,7 @@ async function setupMTM() {
         // Switch off tonemapping lest it double tone maps
         // Save the current background and set the HDR as the new BG
         // Use discardMaterial, the parent will be invisible, but it's shadows will still be cast
-        state.gl.toneMapping = THREE.NoToneMapping
+        state.gl.toneMapping = NoToneMapping
         if (mtmParams.background) state.scene.background = mtmParams.background
         parent.material = discardMaterial
 
@@ -484,7 +476,7 @@ async function setupMTM() {
           parent.material = ref
           parent.material.buffer = fboBack.texture
           parent.material.thickness = mtmParams.backsideThickness
-          parent.material.side = THREE.BackSide
+          parent.material.side = BackSide
         }
 
         // Render into the main buffer
