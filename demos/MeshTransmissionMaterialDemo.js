@@ -40,6 +40,7 @@ import {
   BackSide,
 } from "three"
 import { HDRI_LIST } from "../hdri/HDRI_LIST"
+import { RGBELoader } from "three/examples/jsm/loaders/RGBELoader"
 
 let stats,
   renderer,
@@ -60,6 +61,7 @@ const params = {
 const mainObjects = new Group()
 const textureLoader = new TextureLoader()
 const exrLoader = new EXRLoader()
+const rgbeLoader = new RGBELoader()
 const gltfLoader = new GLTFLoader()
 const draco = new DRACOLoader()
 let transformControls
@@ -190,27 +192,36 @@ async function setupEnvironment() {
    * @param {HDRI_LIST} envDict
    * @returns
    */
-  function loadEnv(envDict) {
+  async function loadEnv(envDict) {
     if (!envDict) {
       scene.background = null
       scene.environment = null
       return
     }
 
-    if (envDict.exr)
-      exrLoader.load(envDict.exr, (texture) => {
-        texture.mapping = EquirectangularReflectionMapping
-        scene.environment = texture
-      })
+    if (envDict.exr) {
+      const texture = await exrLoader.loadAsync(envDict.exr)
+      texture.mapping = EquirectangularReflectionMapping
+      scene.environment = texture
+      console.log("exr loaded")
+    }
 
-    if (envDict.webP)
-      textureLoader.load(envDict.webP, (texture) => {
-        texture.mapping = EquirectangularReflectionMapping
-        texture.encoding = sRGBEncoding
-        scene.background = texture
+    if (envDict.hdr) {
+      const texture = await rgbeLoader.loadAsync(envDict.hdr)
+      texture.mapping = EquirectangularReflectionMapping
+      scene.environment = texture
+      console.log("exr loaded")
+    }
 
-        if (params.groundProjection) loadGroundProj(params.environment)
-      })
+    if (envDict.webP || envDict.avif) {
+      const texture = await textureLoader.loadAsync(envDict.webP || envDict.avif)
+      texture.mapping = EquirectangularReflectionMapping
+      texture.encoding = sRGBEncoding
+      scene.background = texture
+      console.log("bg loaded")
+
+      if (params.groundProjection) loadGroundProj(params.environment)
+    }
 
     if (envDict.sunPos) {
       sunLight.visible = true

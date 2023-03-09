@@ -36,7 +36,7 @@ function updatePageDesc(path) {
   document.title = `Explore | ${path}`
 }
 const gui = new GUI({
-  title: "Explore Vanilla Drei" + version,
+  title: "Explore Vanilla Drei " + version,
   closeFolders: true,
 })
 

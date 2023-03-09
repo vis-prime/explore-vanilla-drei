@@ -45,6 +45,7 @@ import { HDRI_LIST } from "../hdri/HDRI_LIST"
 import { MeshReflectorMaterial } from "../wip/MeshReflectorMaterial"
 import { BlurPass } from "../wip/BlurPass"
 import { TEXTURES_LIST } from "../textures/TEXTURES_LIST"
+import { RGBELoader } from "three/examples/jsm/loaders/RGBELoader"
 
 let stats,
   renderer,
@@ -57,7 +58,7 @@ let stats,
   pointer = new Vector2()
 
 const params = {
-  environment: HDRI_LIST.ulmer_muenster,
+  environment: HDRI_LIST.dancing_hall,
   groundProjection: true,
   bgColor: new Color(),
   printCam: () => {},
@@ -65,6 +66,7 @@ const params = {
 const mainObjects = new Group()
 const textureLoader = new TextureLoader()
 const exrLoader = new EXRLoader()
+const rgbeLoader = new RGBELoader()
 const gltfLoader = new GLTFLoader()
 const draco = new DRACOLoader()
 let transformControls
@@ -190,27 +192,36 @@ async function setupEnvironment() {
    * @param {HDRI_LIST} envDict
    * @returns
    */
-  function loadEnv(envDict) {
+  async function loadEnv(envDict) {
     if (!envDict) {
       scene.background = null
       scene.environment = null
       return
     }
 
-    if (envDict.exr)
-      exrLoader.load(envDict.exr, (texture) => {
-        texture.mapping = EquirectangularReflectionMapping
-        scene.environment = texture
-      })
+    if (envDict.exr) {
+      const texture = await exrLoader.loadAsync(envDict.exr)
+      texture.mapping = EquirectangularReflectionMapping
+      scene.environment = texture
+      console.log("exr loaded")
+    }
 
-    if (envDict.webP)
-      textureLoader.load(envDict.webP, (texture) => {
-        texture.mapping = EquirectangularReflectionMapping
-        texture.encoding = sRGBEncoding
-        scene.background = texture
+    if (envDict.hdr) {
+      const texture = await rgbeLoader.loadAsync(envDict.hdr)
+      texture.mapping = EquirectangularReflectionMapping
+      scene.environment = texture
+      console.log("exr loaded")
+    }
 
-        if (params.groundProjection) loadGroundProj(params.environment)
-      })
+    if (envDict.webP || envDict.avif) {
+      const texture = await textureLoader.loadAsync(envDict.webP || envDict.avif)
+      texture.mapping = EquirectangularReflectionMapping
+      texture.encoding = sRGBEncoding
+      scene.background = texture
+      console.log("bg loaded")
+
+      if (params.groundProjection) loadGroundProj(params.environment)
+    }
 
     if (envDict.sunPos) {
       sunLight.visible = true
@@ -225,9 +236,9 @@ async function setupEnvironment() {
       sunLight.color.set(0xffffff)
     }
 
-    if (envDict.shadowOpacity) {
-      reflectionMesh.material.opacity = envDict.shadowOpacity
-    }
+    // if (envDict.shadowOpacity) {
+    //   shadowFloor.material.opacity = envDict.shadowOpacity
+    // }
   }
 
   function loadGroundProj(envDict) {
@@ -240,10 +251,14 @@ async function setupEnvironment() {
       groundProjectedEnv.radius = envDict.groundProj.radius
       groundProjectedEnv.height = envDict.groundProj.height
       if (!groundProjectedEnv.parent) {
+        console.log("ground Proj added")
         scene.add(groundProjectedEnv)
+        gui.add(groundProjectedEnv, "radius", 1, 50)
+        gui.add(groundProjectedEnv, "height", 1, 50)
       }
     } else {
       if (groundProjectedEnv && groundProjectedEnv.parent) {
+        console.log("ground Proj removed")
         groundProjectedEnv.removeFromParent()
       }
     }
@@ -376,7 +391,7 @@ async function setupMRM() {
     depthScale = 1,
     depthToBlurRatioBias = 0.25,
     mirror = 0,
-    distortion = 1,
+    distortion = 0.25,
     mixContrast = 1,
     distortionMap,
     reflectorOffset = 0,

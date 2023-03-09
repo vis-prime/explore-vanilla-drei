@@ -46,6 +46,7 @@ import { UnsignedShortType } from "three"
 
 import { Easing, Tween, update } from "@tweenjs/tween.js"
 import { MathUtils } from "three"
+import { RGBELoader } from "three/examples/jsm/loaders/RGBELoader"
 
 let stats,
   renderer,
@@ -66,6 +67,7 @@ const params = {
 const mainObjects = new Group()
 const textureLoader = new TextureLoader()
 const exrLoader = new EXRLoader()
+const rgbeLoader = new RGBELoader()
 const gltfLoader = new GLTFLoader()
 const draco = new DRACOLoader()
 let transformControls
@@ -182,14 +184,11 @@ async function setupEnvironment() {
         scene.environment = texture
       })
 
-    // if (envDict.webP)
-    //   textureLoader.load(envDict.webP, (texture) => {
-    //     texture.mapping = EquirectangularReflectionMapping
-    //     texture.encoding = sRGBEncoding
-    //     scene.background = texture
-
-    //     if (params.groundProjection) loadGroundProj(params.environment)
-    //   })
+    if (envDict.hdr)
+      rgbeLoader.load(envDict.hdr, (texture) => {
+        texture.mapping = EquirectangularReflectionMapping
+        scene.environment = texture
+      })
   }
 
   function loadGroundProj(envDict) {

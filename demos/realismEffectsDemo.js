@@ -1,8 +1,8 @@
 import Stats from "three/examples/jsm/libs/stats.module"
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader"
 import { EXRLoader } from "three/examples/jsm/loaders/EXRLoader"
+import { RGBELoader } from "three/examples/jsm/loaders/RGBELoader"
 import { GroundProjectedEnv } from "three/examples/jsm/objects/GroundProjectedEnv"
-
 import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader"
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls"
 import { EffectComposer, EffectPass, RenderPass } from "postprocessing"
@@ -14,8 +14,6 @@ import {
   SSDGIEffect,
   SSREffect,
 } from "realism-effects"
-import porscheUrl from "../models/porsche_911_1975.glb"
-
 import {
   ACESFilmicToneMapping,
   Mesh,
@@ -39,6 +37,7 @@ import {
 } from "three"
 import { HDRI_LIST } from "../hdri/HDRI_LIST"
 import { SSGIDebugGUI } from "../wip/SSGIDebugGUI"
+import porscheUrl from "../models/porsche_911_1975.glb"
 
 let stats,
   renderer,
@@ -59,6 +58,7 @@ const params = {
 const mainObjects = new Group()
 const textureLoader = new TextureLoader()
 const exrLoader = new EXRLoader().setDataType(FloatType)
+const rgbeLoader = new RGBELoader().setDataType(FloatType)
 const gltfLoader = new GLTFLoader()
 const draco = new DRACOLoader()
 // draco.setDecoderPath("https://www.gstatic.com/draco/versioned/decoders/1.5.5/")
@@ -89,7 +89,7 @@ export async function realismEffectsDemo(mainGui) {
   })
   renderer.setPixelRatio(Math.min(1.5, window.devicePixelRatio))
   renderer.setSize(window.innerWidth, window.innerHeight)
-  //   renderer.shadowMap.enabled = true
+  // renderer.shadowMap.enabled = true
   //   renderer.shadowMap.type = VSMShadowMap
   renderer.outputEncoding = sRGBEncoding
   renderer.toneMapping = ACESFilmicToneMapping
@@ -186,8 +186,15 @@ async function setupEnvironment() {
       console.log("exr loaded")
     }
 
-    if (envDict.webP) {
-      const texture = await textureLoader.loadAsync(envDict.webP)
+    if (envDict.hdr) {
+      const texture = await rgbeLoader.loadAsync(envDict.hdr)
+      texture.mapping = EquirectangularReflectionMapping
+      scene.environment = texture
+      console.log("exr loaded")
+    }
+
+    if (envDict.webP || envDict.avif) {
+      const texture = await textureLoader.loadAsync(envDict.webP || envDict.avif)
       texture.mapping = EquirectangularReflectionMapping
       texture.encoding = sRGBEncoding
       scene.background = texture
@@ -339,8 +346,7 @@ async function loadModels() {
 
 function setupComposer() {
   composer = new EffectComposer(renderer)
-  const renderPass = new RenderPass(scene, camera)
-  composer.addPass(renderPass)
+  const renderPass = new RenderPass(scene, camera) // used only when GI is off
 
   const velocityDepthNormalPass = new VelocityDepthNormalPass(scene, camera)
 
@@ -387,14 +393,18 @@ function setupComposer() {
     SSR: ssrEffect,
   }
   const effectsOptions = {
-    useGI: false,
+    useGI: true,
     gi: GI_OPTIONS.SSGI,
     traa: false,
     motionBlur: false,
   }
   function updatePost() {
     composer.removeAllPasses()
-    composer.addPass(velocityDepthNormalPass)
+
+    if (effectsOptions.useGI || effectsOptions.traa || effectsOptions.motionBlur) {
+      composer.addPass(velocityDepthNormalPass)
+    }
+
     let effectsArray = []
     if (effectsOptions.useGI) {
       effectsArray.push(effectsOptions.gi)
@@ -422,6 +432,8 @@ function setupComposer() {
   giFolder.add(effectsOptions, "gi", GI_OPTIONS).onChange(updatePost)
   giFolder.add(effectsOptions, "traa").onChange(updatePost)
   giFolder.add(effectsOptions, "motionBlur").onChange(updatePost)
+
+  updatePost()
 }
 
 const color = new Color()
