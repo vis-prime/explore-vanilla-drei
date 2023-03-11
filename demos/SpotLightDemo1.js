@@ -26,6 +26,7 @@ import {
   WebGLRenderTarget,
   HalfFloatType,
   LinearFilter,
+  DoubleSide,
 } from 'three'
 import Stats from 'three/examples/jsm/libs/stats.module'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
@@ -246,15 +247,15 @@ function raycast() {
   raycaster.intersectObject(mainObjects, true, intersects)
 
   if (!intersects.length) {
-    // transformControls.detach()
+    transformControls.detach()
     return
   }
 
-  // if (intersects[0].object.selectOnRaycast) {
-  //   transformControls.attach(intersects[0].object.selectOnRaycast)
-  // } else {
-  //   transformControls.attach(intersects[0].object)
-  // }
+  if (intersects[0].object.selectOnRaycast) {
+    transformControls.attach(intersects[0].object.selectOnRaycast)
+  } else {
+    transformControls.attach(intersects[0].object)
+  }
 
   intersects.length = 0
 }
@@ -329,23 +330,143 @@ async function addCarWithSpotlight() {
   mainObjects.add(model)
 
   const headLightL = new SpotLight()
+  headLightL.castShadow = true
   headLightL.color.set('gold')
   headLightL.angle = MathUtils.degToRad(35)
   headLightL.penumbra = 0
-  headLightL.distance = 10
+  headLightL.distance = 5
   const headLightR = headLightL.clone()
 
   model.add(headLightL, headLightR)
+  model.add(headLightL.target, headLightR.target)
 
   headLightL.position.set(-0.66, 0.66, 2)
-  headLightL.target.position.set(-0.66, 0.66, 10)
+  headLightL.target.position.set(-0.66, 0.5, 10)
 
   headLightR.position.set(0.66, 0.66, 2)
-  headLightR.target.position.set(0.66, 0.66, 10)
+  headLightR.target.position.set(0.66, 0.5, 10)
 
-  const helperL = new SpotLightHelper(headLightL)
-  const helperR = new SpotLightHelper(headLightR)
-  scene.add(helperL, helperR)
+  //   const helperL = new SpotLightHelper(headLightL)
+  //   const helperR = new SpotLightHelper(headLightR)
+  //   scene.add(helperL, helperR)
+
+  // cone meshes
+
+  const getSpotGeo = (distance, radiusTop, radiusBottom) => {
+    const geometry = new CylinderGeometry(radiusTop, radiusBottom, distance, 128, 64, true)
+    geometry.translate(0, -distance / 2, 0)
+    geometry.rotateX(-Math.PI / 2)
+    return geometry
+  }
+  let radiusTop = 0.08
+  let volumeMaterial = new SpotLightMaterial()
+  volumeMaterial.spotPosition = headLightL.position
+  volumeMaterial.opacity = 1
+  volumeMaterial.lightColor = headLightL.color
+  volumeMaterial.attenuation = headLightL.distance
+  volumeMaterial.anglePower = 3
+  volumeMaterial.cameraNear = camera.near
+  volumeMaterial.cameraFar = camera.far
+
+  const volumeMeshL = new Mesh(getSpotGeo(headLightL.distance, radiusTop, 0.5), volumeMaterial)
+  const volumeMeshR = new Mesh(getSpotGeo(headLightL.distance, radiusTop, 0.5), volumeMaterial)
+
+  const updateVolumeGeometry = () => {
+    volumeMaterial.attenuation = headLightL.distance
+    let radiusBottom = Math.tan(headLightL.angle) * headLightL.distance
+    volumeMeshL.geometry = getSpotGeo(headLightL.distance, radiusTop, radiusBottom)
+    volumeMeshR.geometry = getSpotGeo(headLightL.distance, radiusTop, radiusBottom)
+  }
+
+  headLightL.add(volumeMeshL)
+  headLightR.add(volumeMeshR)
+
+  const vec = new Vector3()
+
+  useFrame = () => {
+    // volumeMaterial.spotPosition.copy(volumeMesh.getWorldPosition(vec))
+    volumeMeshL.lookAt(headLightL.target.getWorldPosition(vec))
+    volumeMeshR.lookAt(headLightR.target.getWorldPosition(vec))
+
+    // if (helper.parent) helper.update()
+
+    // useFrame from FBO
+    // if (testParams.useDepth) {
+    //   volumeMaterial.depth = null
+    //   depthUseFrame()
+    //   volumeMaterial.depth = depthTexture
+    // }
+  }
+
+  updateVolumeGeometry()
+
+  function addGui(gui) {
+    const folder = gui.addFolder('SpotLight Volume')
+    folder.open()
+    // folder.add(testParams, 'materialType', matOptions).onChange((v) => {
+    //   volumeMesh.material = v
+    // })
+
+    // folder.add(testParams, 'useDepth').onChange(updateDepthTexture)
+    // folder.add(testParams, 'depthResolution', 128, 2048, 1).onChange(updateDepthTexture)
+
+    folder.add(volumeMaterial, 'opacity', 0, 2)
+    folder.add(volumeMaterial, 'attenuation', 0, headLightL.distance)
+    folder.add(volumeMaterial, 'anglePower', 0, 15)
+    folder.add(volumeMaterial, 'cameraNear', 0, 10)
+    folder.add(volumeMaterial, 'cameraFar', 0, 10)
+
+    const sp = gui.addFolder('SpotLight')
+    sp.open()
+    // sp.add(testParams, 'helper').onChange((v) => {
+    //   if (v) {
+    //     scene.add(helper)
+    //   } else {
+    //     helper.removeFromParent()
+    //   }
+    // })
+    sp.addColor(headLightL, 'color').onChange(() => {
+      headLightR.color.copy(headLightL.color)
+    })
+    sp.add(headLightL, 'intensity', 0, 5).onChange(() => {
+      headLightR.intensity = headLightL.intensity
+    })
+    sp.add(headLightL, 'angle', 0, Math.PI / 2).onChange(() => {
+      headLightR.angle = headLightL.angle
+      updateVolumeGeometry()
+    })
+    sp.add(headLightL, 'penumbra', 0, 1).onChange(() => {
+      headLightR.penumbra = headLightL.penumbra
+    })
+    sp.add(headLightL, 'distance', 0.1, 20).onChange(() => {
+      headLightR.distance = headLightL.distance
+      updateVolumeGeometry()
+    })
+    sp.add(headLightL.shadow, 'bias', -0.0001, 0.0001).onChange(() => {
+      headLightR.shadow.bias = headLightL.shadow.bias
+    })
+
+    // sp.add(testParams, 'animateTarget')
+    //   .name('🚲Animate target')
+    //   .onChange((v) => {
+    //     if (v) {
+    //       randomMovementTarget.start()
+    //     } else {
+    //       randomMovementTarget.stop()
+    //     }
+    //   })
+    // sp.add(testParams, 'animateLight')
+    //   .name('🚲Animate light')
+    //   .onChange((v) => {
+    //     if (v) {
+    //       randomMovementLight.start()
+    //     } else {
+    //       randomMovementLight.stop()
+    //     }
+    //   })
+  }
+
+  addGui(gui)
 }
 
 function setupSpotLight() {

@@ -26,27 +26,27 @@ import {
   WebGLRenderTarget,
   HalfFloatType,
   LinearFilter,
-} from "three"
-import Stats from "three/examples/jsm/libs/stats.module"
-import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader"
-import { EXRLoader } from "three/examples/jsm/loaders/EXRLoader"
-import { GroundProjectedEnv } from "three/examples/jsm/objects/GroundProjectedEnv"
+} from 'three'
+import Stats from 'three/examples/jsm/libs/stats.module'
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
+import { EXRLoader } from 'three/examples/jsm/loaders/EXRLoader'
+import { GroundProjectedEnv } from 'three/examples/jsm/objects/GroundProjectedEnv'
 
-import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader"
-import { OrbitControls } from "three/examples/jsm/controls/OrbitControls"
-import { TransformControls } from "three/examples/jsm/controls/TransformControls"
+import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader'
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
+import { TransformControls } from 'three/examples/jsm/controls/TransformControls'
 
-import porscheUrl from "../models/porsche_911_1975.glb"
+import porscheUrl from '../models/porsche_911_1975.glb'
 
-import { HDRI_LIST } from "../hdri/HDRI_LIST"
-import { SpotLightMaterial } from "../wip/SpotLightMaterial"
-import { DepthTexture } from "three"
-import { DepthFormat } from "three"
-import { UnsignedShortType } from "three"
+import { HDRI_LIST } from '../hdri/HDRI_LIST'
+import { SpotLightMaterial } from '../wip/SpotLightMaterial'
+import { DepthTexture } from 'three'
+import { DepthFormat } from 'three'
+import { UnsignedShortType } from 'three'
 
-import { Easing, Tween, update } from "@tweenjs/tween.js"
-import { MathUtils } from "three"
-import { RGBELoader } from "three/examples/jsm/loaders/RGBELoader"
+import { Easing, Tween, update } from '@tweenjs/tween.js'
+import { MathUtils } from 'three'
+import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader'
 
 let stats,
   renderer,
@@ -72,7 +72,7 @@ const gltfLoader = new GLTFLoader()
 const draco = new DRACOLoader()
 let transformControls
 // draco.setDecoderPath("https://www.gstatic.com/draco/versioned/decoders/1.5.5/")
-draco.setDecoderPath("https://www.gstatic.com/draco/v1/decoders/")
+draco.setDecoderPath('https://www.gstatic.com/draco/v1/decoders/')
 gltfLoader.setDRACOLoader(draco)
 const raycaster = new Raycaster()
 const intersects = [] //raycast
@@ -83,7 +83,7 @@ let pmremGenerator
 
 export async function spotLightDemo(mainGui) {
   gui = mainGui
-  sceneGui = gui.addFolder("Scene")
+  sceneGui = gui.addFolder('Scene')
   stats = new Stats()
   app.appendChild(stats.dom)
   // renderer
@@ -102,7 +102,7 @@ export async function spotLightDemo(mainGui) {
   // camera
   camera = new PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 200)
   camera.position.set(-16, 16, 16)
-  camera.name = "Camera"
+  camera.name = 'Camera'
   // scene
   scene = new Scene()
   //   scene.backgroundBlurriness = 0.8
@@ -120,13 +120,13 @@ export async function spotLightDemo(mainGui) {
   controls.target.set(0, 0, 0)
 
   transformControls = new TransformControls(camera, renderer.domElement)
-  transformControls.addEventListener("dragging-changed", (event) => {
+  transformControls.addEventListener('dragging-changed', (event) => {
     controls.enabled = !event.value
     if (!event.value) {
     }
   })
 
-  transformControls.addEventListener("change", () => {
+  transformControls.addEventListener('change', () => {
     if (transformControls.object) {
       if (transformControls.object.position.y < 0) {
         transformControls.object.position.y = 0
@@ -135,21 +135,21 @@ export async function spotLightDemo(mainGui) {
   })
   scene.add(transformControls)
 
-  window.addEventListener("resize", onWindowResize)
-  document.addEventListener("pointermove", onPointerMove)
+  window.addEventListener('resize', onWindowResize)
+  document.addEventListener('pointermove', onPointerMove)
 
   let downTime = Date.now()
-  app.addEventListener("pointerdown", () => {
+  app.addEventListener('pointerdown', () => {
     downTime = Date.now()
   })
-  app.addEventListener("pointerup", (e) => {
+  app.addEventListener('pointerup', (e) => {
     if (Date.now() - downTime < 200) {
       onPointerMove(e)
       raycast()
     }
   })
 
-  sceneGui.add(transformControls, "mode", ["translate", "rotate", "scale"])
+  sceneGui.add(transformControls, 'mode', ['translate', 'rotate', 'scale'])
   // sceneGui.add(scene, "backgroundBlurriness", 0, 1, 0.01)
   // sceneGui.addColor(params, "bgColor").onChange(() => {
   //   scene.background = params.bgColor
@@ -212,10 +212,10 @@ async function setupEnvironment() {
 
   loadEnv(params.environment)
 
-  sceneGui.add(params, "environment", HDRI_LIST).onChange((v) => {
+  sceneGui.add(params, 'environment', HDRI_LIST).onChange((v) => {
     loadEnv(v)
   })
-  sceneGui.add(params, "groundProjection").onChange((v) => {
+  sceneGui.add(params, 'groundProjection').onChange((v) => {
     loadGroundProj(params.environment)
   })
 }
@@ -275,7 +275,7 @@ async function loadModels() {
       metalness: 1,
     })
   )
-  sphere.name = "sphere"
+  sphere.name = 'sphere'
   sphere.castShadow = true
   sphere.receiveShadow = true
   sphere.position.set(2, 0, -1.5)
@@ -290,7 +290,7 @@ async function loadModels() {
       metalness: 1,
     })
   )
-  cube.name = "cube"
+  cube.name = 'cube'
   cube.castShadow = true
   cube.receiveShadow = true
   cube.position.set(-2, 0, -1.5)
@@ -305,13 +305,13 @@ async function loadModels() {
       metalness: 0,
     })
   )
-  floor.name = "floor"
+  floor.name = 'floor'
   floor.receiveShadow = true
   mainObjects.add(floor)
 
   const gltf = await gltfLoader.loadAsync(porscheUrl)
   const model = gltf.scene
-  model.name = "car"
+  model.name = 'car'
 
   model.traverse((child) => {
     if (child.isMesh) {
@@ -331,7 +331,7 @@ async function loadModels() {
         metalness: 0,
       })
     )
-    sphere.name = "sphere"
+    sphere.name = 'sphere'
     sphere.castShadow = true
     sphere.receiveShadow = true
     sphere.position.set(MathUtils.randFloatSpread(10), MathUtils.randFloat(0, 5), MathUtils.randFloatSpread(10))
@@ -427,10 +427,7 @@ function setupSpotLight() {
   }
 
   const getSpotGeo = (distance, radiusTop, radiusBottom) => {
-    // console.log({ distance, radiusTop, radiusBottom })
     const geometry = new CylinderGeometry(radiusTop, radiusBottom, distance, 128, 64, true)
-    // geometry.applyMatrix4(new Matrix4().makeTranslation(0, -distance / 2, 0))
-    // geometry.applyMatrix4(new Matrix4().makeRotationX(-Math.PI / 2))
     geometry.translate(0, -distance / 2, 0)
     geometry.rotateX(-Math.PI / 2)
     return geometry
@@ -463,39 +460,39 @@ function setupSpotLight() {
   }
 
   function addGui(gui) {
-    const folder = gui.addFolder("SpotLight Volume")
+    const folder = gui.addFolder('SpotLight Volume')
     folder.open()
-    folder.add(testParams, "materialType", matOptions).onChange((v) => {
+    folder.add(testParams, 'materialType', matOptions).onChange((v) => {
       volumeMesh.material = v
     })
 
-    folder.add(testParams, "useDepth").onChange(updateDepthTexture)
-    folder.add(testParams, "depthResolution", 128, 2048, 1).onChange(updateDepthTexture)
+    folder.add(testParams, 'useDepth').onChange(updateDepthTexture)
+    folder.add(testParams, 'depthResolution', 128, 2048, 1).onChange(updateDepthTexture)
 
-    folder.add(volumeMaterial, "opacity", 0, 2)
-    folder.add(volumeMaterial, "attenuation", 0, distance)
-    folder.add(volumeMaterial, "anglePower", 0, Math.PI)
-    folder.add(volumeMaterial, "cameraNear", 0, 10)
-    folder.add(volumeMaterial, "cameraFar", 0, 10)
+    folder.add(volumeMaterial, 'opacity', 0, 2)
+    folder.add(volumeMaterial, 'attenuation', 0, distance)
+    folder.add(volumeMaterial, 'anglePower', 0, Math.PI)
+    folder.add(volumeMaterial, 'cameraNear', 0, 10)
+    folder.add(volumeMaterial, 'cameraFar', 0, 10)
 
-    const sp = gui.addFolder("SpotLight")
+    const sp = gui.addFolder('SpotLight')
     sp.open()
-    sp.add(testParams, "helper").onChange((v) => {
+    sp.add(testParams, 'helper').onChange((v) => {
       if (v) {
         scene.add(helper)
       } else {
         helper.removeFromParent()
       }
     })
-    sp.addColor(spotLight, "color")
-    sp.add(spotLight, "intensity", 0, 5)
-    sp.add(spotLight, "angle", 0, Math.PI / 2).onChange(updateVolumeGeometry)
-    sp.add(spotLight, "penumbra", 0, 1)
-    sp.add(spotLight, "distance", 0.1, 20).onChange(updateVolumeGeometry)
-    sp.add(spotLight.shadow, "bias", -0.0001, 0.0001)
+    sp.addColor(spotLight, 'color')
+    sp.add(spotLight, 'intensity', 0, 5)
+    sp.add(spotLight, 'angle', 0, Math.PI / 2).onChange(updateVolumeGeometry)
+    sp.add(spotLight, 'penumbra', 0, 1)
+    sp.add(spotLight, 'distance', 0.1, 20).onChange(updateVolumeGeometry)
+    sp.add(spotLight.shadow, 'bias', -0.0001, 0.0001)
 
-    sp.add(testParams, "animateTarget")
-      .name("🚲Animate target")
+    sp.add(testParams, 'animateTarget')
+      .name('🚲Animate target')
       .onChange((v) => {
         if (v) {
           randomMovementTarget.start()
@@ -503,8 +500,8 @@ function setupSpotLight() {
           randomMovementTarget.stop()
         }
       })
-    sp.add(testParams, "animateLight")
-      .name("🚲Animate light")
+    sp.add(testParams, 'animateLight')
+      .name('🚲Animate light')
       .onChange((v) => {
         if (v) {
           randomMovementLight.start()
@@ -520,7 +517,7 @@ function setupSpotLight() {
 
 const color = new Color()
 function getRandomHexColor() {
-  return "#" + color.setHSL(Math.random(), 0.5, 0.5).getHexString()
+  return '#' + color.setHSL(Math.random(), 0.5, 0.5).getHexString()
 }
 
 function useDepthBuffer({ size, frames = Infinity } = {}) {
@@ -531,12 +528,12 @@ function useDepthBuffer({ size, frames = Infinity } = {}) {
   const w = size || rendererSize.x
   const h = size || rendererSize.y
 
-  console.log("depth tex res", w, h)
+  console.log('depth tex res', w, h)
 
   const depthTexture = new DepthTexture(w, h)
   depthTexture.format = DepthFormat
   depthTexture.type = UnsignedShortType
-  depthTexture.name = "Depth_Buffer"
+  depthTexture.name = 'Depth_Buffer'
 
   let count = 0
   const depthFBO = useFBO(w, h, { depthTexture })
