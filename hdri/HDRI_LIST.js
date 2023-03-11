@@ -19,12 +19,15 @@ import empty_warehouse_exr from "./empty_warehouse_01_1k.exr?url"
 import old_hall_avif from "./old_hall.avif?url"
 import old_hall_exr from "./old_hall_1k.exr?url"
 
+/**
+ * @enum
+ */
 export const HDRI_LIST = {
   ulmer_muenster: {
     exr: ulmer_muensterEXR,
     webP: ulmer_muensterWebP,
     sunPos: [17, 14, 12],
-    sunCol: "#ffffeb",
+    sunColor: "#ffffeb",
     shadowOpacity: 0.72,
     groundProj: { radius: 25, height: 2 },
   },
@@ -33,7 +36,7 @@ export const HDRI_LIST = {
     exr: wide_street1EXR,
     webP: wide_street1WebP,
     sunPos: [15, 24, 11],
-    sunCol: "#ffffeb",
+    sunColor: "#ffffeb",
     shadowOpacity: 0.85,
     groundProj: { radius: 12, height: 2 },
   },
@@ -42,7 +45,7 @@ export const HDRI_LIST = {
     exr: wide_street2EXR,
     webP: wide_street3WebP,
     sunPos: [16, 8, 12],
-    sunCol: "#ffffeb",
+    sunColor: "#ffffeb",
     shadowOpacity: 0.55,
     groundProj: { radius: 25, height: 2 },
   },

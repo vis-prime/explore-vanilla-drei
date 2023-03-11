@@ -1,7 +1,5 @@
 import Stats from "three/examples/jsm/libs/stats.module"
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader"
-import { EXRLoader } from "three/examples/jsm/loaders/EXRLoader"
-import { GroundProjectedEnv } from "three/examples/jsm/objects/GroundProjectedEnv"
 import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader"
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls"
 import { TransformControls } from "three/examples/jsm/controls/TransformControls"
@@ -40,12 +38,14 @@ import {
   LinearFilter,
   HalfFloatType,
   RepeatWrapping,
+  MathUtils,
 } from "three"
 import { HDRI_LIST } from "../hdri/HDRI_LIST"
 import { MeshReflectorMaterial } from "../wip/MeshReflectorMaterial"
 import { BlurPass } from "../wip/BlurPass"
 import { TEXTURES_LIST } from "../textures/TEXTURES_LIST"
-import { RGBELoader } from "three/examples/jsm/loaders/RGBELoader"
+import { Easing, Tween, update } from "@tweenjs/tween.js"
+import { BG_ENV } from "./BG_ENV"
 
 let stats,
   renderer,
@@ -54,19 +54,14 @@ let stats,
   scene,
   controls,
   gui,
-  groundProjectedEnv,
   pointer = new Vector2()
 
 const params = {
-  environment: HDRI_LIST.dancing_hall,
-  groundProjection: true,
-  bgColor: new Color(),
   printCam: () => {},
 }
 const mainObjects = new Group()
 const textureLoader = new TextureLoader()
-const exrLoader = new EXRLoader()
-const rgbeLoader = new RGBELoader()
+
 const gltfLoader = new GLTFLoader()
 const draco = new DRACOLoader()
 let transformControls
@@ -154,124 +149,13 @@ export async function meshReflectorMaterialDemo(mainGui) {
   // light.position.set(5, 5, 5)
   // scene.add(light)
 
-  setupEnvironment()
+  const bgEnv = new BG_ENV(scene, sceneGui)
+  bgEnv.preset = HDRI_LIST.dancing_hall
+  bgEnv.setEnvType("HDRI")
+  bgEnv.setBGType("GroundProjection")
+  bgEnv.updateAll()
   await loadModels()
   animate()
-}
-
-async function setupEnvironment() {
-  // light
-  let sunGroup = new Group()
-  let sunLight = new DirectionalLight(0xffffeb, 1)
-  sunLight.name = "Dir. Light"
-  sunLight.castShadow = true
-  sunLight.shadow.camera.near = 0.1
-  sunLight.shadow.camera.far = 50
-  sunLight.shadow.camera.right = 15
-  sunLight.shadow.camera.left = -15
-  sunLight.shadow.camera.top = 15
-  sunLight.shadow.camera.bottom = -15
-  sunLight.shadow.mapSize.width = 1024
-  sunLight.shadow.mapSize.height = 1024
-  sunLight.shadow.radius = 1.95
-  sunLight.shadow.blurSamples = 6
-
-  sunLight.shadow.bias = -0.0005
-  sunGroup.add(sunLight)
-  scene.add(sunGroup)
-
-  //   floor
-  const reflectionMesh = new Mesh(new PlaneGeometry(10, 10).rotateX(-Math.PI / 2), new ShadowMaterial({}))
-  reflectionMesh.name = "reflectionMesh"
-  reflectionMesh.receiveShadow = true
-  reflectionMesh.position.set(0, 0, 0)
-  //   scene.add(reflectionMesh)
-
-  /**
-   * Update env
-   * @param {HDRI_LIST} envDict
-   * @returns
-   */
-  async function loadEnv(envDict) {
-    if (!envDict) {
-      scene.background = null
-      scene.environment = null
-      return
-    }
-
-    if (envDict.exr) {
-      const texture = await exrLoader.loadAsync(envDict.exr)
-      texture.mapping = EquirectangularReflectionMapping
-      scene.environment = texture
-      console.log("exr loaded")
-    }
-
-    if (envDict.hdr) {
-      const texture = await rgbeLoader.loadAsync(envDict.hdr)
-      texture.mapping = EquirectangularReflectionMapping
-      scene.environment = texture
-      console.log("exr loaded")
-    }
-
-    if (envDict.webP || envDict.avif) {
-      const texture = await textureLoader.loadAsync(envDict.webP || envDict.avif)
-      texture.mapping = EquirectangularReflectionMapping
-      texture.encoding = sRGBEncoding
-      scene.background = texture
-      console.log("bg loaded")
-
-      if (params.groundProjection) loadGroundProj(params.environment)
-    }
-
-    if (envDict.sunPos) {
-      sunLight.visible = true
-      sunLight.position.fromArray(envDict.sunPos)
-    } else {
-      sunLight.visible = false
-    }
-
-    if (envDict.sunCol) {
-      sunLight.color.set(envDict.sunCol)
-    } else {
-      sunLight.color.set(0xffffff)
-    }
-
-    // if (envDict.shadowOpacity) {
-    //   shadowFloor.material.opacity = envDict.shadowOpacity
-    // }
-  }
-
-  function loadGroundProj(envDict) {
-    if (params.groundProjection && scene.background && envDict.groundProj) {
-      if (!groundProjectedEnv) {
-        groundProjectedEnv = new GroundProjectedEnv(scene.background)
-        groundProjectedEnv.scale.setScalar(100)
-      }
-      groundProjectedEnv.material.uniforms.map.value = scene.background
-      groundProjectedEnv.radius = envDict.groundProj.radius
-      groundProjectedEnv.height = envDict.groundProj.height
-      if (!groundProjectedEnv.parent) {
-        console.log("ground Proj added")
-        scene.add(groundProjectedEnv)
-        gui.add(groundProjectedEnv, "radius", 1, 50)
-        gui.add(groundProjectedEnv, "height", 1, 50)
-      }
-    } else {
-      if (groundProjectedEnv && groundProjectedEnv.parent) {
-        console.log("ground Proj removed")
-        groundProjectedEnv.removeFromParent()
-      }
-    }
-  }
-
-  loadEnv(params.environment)
-
-  sceneGui.add(params, "environment", HDRI_LIST).onChange((v) => {
-    loadEnv(v)
-  })
-  sceneGui.add(params, "groundProjection").onChange((v) => {
-    loadGroundProj(params.environment)
-  })
 }
 
 function onWindowResize() {
@@ -282,6 +166,7 @@ function onWindowResize() {
 
 function render() {
   stats.update()
+  update() // tween
   // Update the inertia on the orbit controls
   controls.update()
   useFrame()
@@ -365,6 +250,35 @@ async function loadModels() {
     }
   })
   mainObjects.add(model)
+
+  // wheel references
+  const wheels = {
+    FL: null,
+    FR: null,
+    R: null,
+    steerL: null,
+    steerR: null,
+    steerVal: 0,
+  }
+
+  wheels.R = model.getObjectByName("wheels_rear")
+
+  wheels.steerL = model.getObjectByName("wheel_L")
+  wheels.steerR = model.getObjectByName("wheel_R")
+  const steerLimit = MathUtils.degToRad(30)
+  const tween = new Tween(wheels)
+    .to({ steerVal: 1 }, 3000)
+    .easing(Easing.Elastic.Out)
+    .delay(3000)
+    .repeatDelay(5000)
+    .repeat(10000)
+    .yoyo(true)
+    .onUpdate(() => {
+      const rotY = MathUtils.mapLinear(wheels.steerVal, 0, 1, -steerLimit, steerLimit)
+      wheels.steerL.rotation.y = rotY
+      wheels.steerR.rotation.y = rotY
+    })
+    .start()
 
   setupMRM()
 }
@@ -558,6 +472,11 @@ async function setupMRM() {
   const roughMap = await textureLoader.loadAsync(TEXTURES_LIST.rgh)
   roughMap.wrapS = RepeatWrapping
   roughMap.wrapT = RepeatWrapping
+  const nrmMap = await textureLoader.loadAsync(TEXTURES_LIST.paper_normal)
+  nrmMap.wrapS = RepeatWrapping
+  nrmMap.wrapT = RepeatWrapping
+  nrmMap.repeat.set(5, 5)
+
   roughMap.repeat.set(5, 5)
   standardMat.roughnessMap = roughMap
   standardMat.color.set(color)
@@ -566,6 +485,9 @@ async function setupMRM() {
     materialType: MaterialOptions.reflector,
     useRoughnessMap: false,
     useDistortionMap: false,
+    useNormalMap: false,
+    normalScale: 1,
+    repeat: 5,
   }
 
   const reflectionMesh = new Mesh(new CircleGeometry(5, 32), params.materialType)
@@ -581,16 +503,19 @@ async function setupMRM() {
   gui.add(params, "materialType", MaterialOptions).onChange((v) => {
     reflectionMesh.material = v
   })
-  const msmFol = gui.addFolder("MeshStandardMaterial")
+
   const mrmFol = gui.addFolder("MeshReflectorMaterial")
   mrmFol.open()
   mrmFol.add(params, "useRoughnessMap").onChange((v) => {
     if (v) {
       material.roughnessMap = roughMap
+      standardMat.roughnessMap = roughMap
     } else {
       material.roughnessMap = null
+      standardMat.roughnessMap = null
     }
     material.needsUpdate = true
+    standardMat.needsUpdate = true
   })
   mrmFol.add(params, "useDistortionMap").onChange((v) => {
     if (v) {
@@ -601,6 +526,29 @@ async function setupMRM() {
     }
     material.needsUpdate = true
   })
+  mrmFol.add(params, "useNormalMap").onChange((v) => {
+    if (v) {
+      material.normalMap = nrmMap
+      standardMat.normalMap = nrmMap
+    } else {
+      material.normalMap = null
+      standardMat.normalMap = null
+    }
+    material.needsUpdate = true
+    standardMat.needsUpdate = true
+  })
+  mrmFol.addColor(material, "color").onChange(() => {
+    standardMat.color.copy(material.color)
+  })
+  mrmFol.add(params, "normalScale", 0, 1).onChange((v) => {
+    material.normalScale.setScalar(v)
+    standardMat.normalScale.setScalar(v)
+  })
+  mrmFol.add(params, "repeat", 1, 15, 1).onChange((v) => {
+    roughMap.repeat.setScalar(v)
+    nrmMap.repeat.setScalar(v)
+  })
+
   mrmFol.add(material, "mixStrength", 0, 15)
   mrmFol.add(material, "mixBlur", 0, 6)
   mrmFol.add(material, "mixContrast", 0, 5)

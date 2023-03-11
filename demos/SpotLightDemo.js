@@ -322,12 +322,28 @@ async function loadModels() {
   })
   mainObjects.add(model)
 
+  for (let index = 0; index < 30; index++) {
+    const sphere = new Mesh(
+      new SphereGeometry(0.3),
+      new MeshStandardMaterial({
+        color: getRandomHexColor(),
+        roughness: 0,
+        metalness: 0,
+      })
+    )
+    sphere.name = "sphere"
+    sphere.castShadow = true
+    sphere.receiveShadow = true
+    sphere.position.set(MathUtils.randFloatSpread(10), MathUtils.randFloat(0, 5), MathUtils.randFloatSpread(10))
+    mainObjects.add(sphere)
+  }
+
   setupSpotLight()
 }
 
 function setupSpotLight() {
   scene.add(new AmbientLight(0xffffff, 0.5))
-
+  const rendererSize = new Vector2()
   let opacity = 1,
     radiusTop,
     radiusBottom,
@@ -359,7 +375,24 @@ function setupSpotLight() {
     basicMaterial,
   }
 
-  const [depthTexture, depthUseFrame] = useDepthBuffer({ size: 1024 })
+  let depthTexture,
+    depthUseFrame = () => {}
+  function updateDepthTexture() {
+    if (testParams.useDepth) {
+      const dat = useDepthBuffer({ size: testParams.depthResolution })
+      let oldTex = depthTexture
+      depthTexture = dat[0]
+      volumeMaterial.depth = dat[0]
+      depthUseFrame = dat[1]
+      volumeMaterial.resolution.copy(renderer.getSize(rendererSize))
+      if (oldTex) {
+        oldTex.dispose()
+      }
+    } else {
+      volumeMaterial.depth = null
+      volumeMaterial.resolution.set(0, 0)
+    }
+  }
 
   // console.log({ depthBuffer })
 
@@ -387,6 +420,7 @@ function setupSpotLight() {
     materialType: matOptions.volumeMaterial,
     helper: false,
     useDepth: false,
+    depthResolution: 256,
     updateVolumeGeometry,
     animateTarget: false,
     animateLight: false,
@@ -424,6 +458,10 @@ function setupSpotLight() {
   const randomMovementTarget = getRandomPosTween(spotLight.target.position, 20, 2000, 1000)
   const randomMovementLight = getRandomPosTween(spotLight.position, 20, 2000, 1000)
 
+  window.onresize = () => {
+    volumeMaterial.resolution = renderer.getSize(rendererSize)
+  }
+
   function addGui(gui) {
     const folder = gui.addFolder("SpotLight Volume")
     folder.open()
@@ -431,16 +469,10 @@ function setupSpotLight() {
       volumeMesh.material = v
     })
 
-    folder.add(testParams, "useDepth").onChange((v) => {
-      if (v) {
-        volumeMaterial.depth = depthTexture
-        volumeMaterial.resolution = renderer.getSize(new Vector2())
-      } else {
-        volumeMaterial.depth = null
-        volumeMaterial.resolution = new Vector2(0, 0)
-      }
-    })
-    folder.add(volumeMaterial, "opacity", 0, 1)
+    folder.add(testParams, "useDepth").onChange(updateDepthTexture)
+    folder.add(testParams, "depthResolution", 128, 2048, 1).onChange(updateDepthTexture)
+
+    folder.add(volumeMaterial, "opacity", 0, 2)
     folder.add(volumeMaterial, "attenuation", 0, distance)
     folder.add(volumeMaterial, "anglePower", 0, Math.PI)
     folder.add(volumeMaterial, "cameraNear", 0, 10)
@@ -491,16 +523,20 @@ function getRandomHexColor() {
   return "#" + color.setHSL(Math.random(), 0.5, 0.5).getHexString()
 }
 
-function useDepthBuffer({ size = 256, frames = Infinity } = {}) {
+function useDepthBuffer({ size, frames = Infinity } = {}) {
   const gl = renderer
 
-  const w = size
-  const h = size
+  const rendererSize = new Vector3()
+  gl.getSize(rendererSize)
+  const w = size || rendererSize.x
+  const h = size || rendererSize.y
+
+  console.log("depth tex res", w, h)
 
   const depthTexture = new DepthTexture(w, h)
   depthTexture.format = DepthFormat
   depthTexture.type = UnsignedShortType
-  depthTexture.name = "use_Depth_Buffer"
+  depthTexture.name = "Depth_Buffer"
 
   let count = 0
   const depthFBO = useFBO(w, h, { depthTexture })
