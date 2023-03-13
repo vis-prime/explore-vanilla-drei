@@ -26,6 +26,7 @@ import {
   AxesHelper,
   Clock,
   FogExp2,
+  PointLight,
 } from 'three'
 import Stats from 'three/examples/jsm/libs/stats.module'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
@@ -44,9 +45,9 @@ import { Easing, Tween, update } from '@tweenjs/tween.js'
 import { MathUtils } from 'three'
 import { EffectComposer, EffectPass, RenderPass, SelectiveBloomEffect } from 'postprocessing'
 
-import porscheUrl from '../models/porsche_911_1975.glb'
-import poleUrl from '../models/pole.glb'
-import roadUrl from '../models/road.glb'
+import porscheUrl from '../models/porsche_911_1975_comp.glb?url'
+import poleUrl from '../models/pole_comp.glb?url'
+import roadUrl from '../models/road_comp.glb?url'
 
 import { BG_ENV } from './BG_ENV'
 
@@ -123,11 +124,11 @@ export async function spotLightDemo1(mainGui) {
   bloomEffect.mipmapBlurPass.radius = 0.3
   bloomEffect.mipmapBlurPass.levels = 4
 
-  gui.add(bloomEffect, 'intensity', 0, 1000)
-  gui.add(bloomEffect.luminanceMaterial, 'threshold', 0, 10)
-  gui.add(bloomEffect.luminanceMaterial, 'smoothing', 0, 10)
-  gui.add(bloomEffect.mipmapBlurPass, 'levels', 0, 10)
-  gui.add(bloomEffect.mipmapBlurPass, 'radius', 0, 10)
+  // gui.add(bloomEffect, 'intensity', 0, 1000)
+  // gui.add(bloomEffect.luminanceMaterial, 'threshold', 0, 10)
+  // gui.add(bloomEffect.luminanceMaterial, 'smoothing', 0, 10)
+  // gui.add(bloomEffect.mipmapBlurPass, 'levels', 0, 10)
+  // gui.add(bloomEffect.mipmapBlurPass, 'radius', 0, 10)
 
   const effectPass = new EffectPass(camera, bloomEffect)
   composer.addPass(effectPass)
@@ -173,7 +174,7 @@ export async function spotLightDemo1(mainGui) {
     }
   })
 
-  sceneGui.add(transformControls, 'mode', ['translate', 'rotate', 'scale'])
+  // sceneGui.add(transformControls, 'mode', ['translate', 'rotate', 'scale'])
   // sceneGui.add(scene, "backgroundBlurriness", 0, 1, 0.01)
   // sceneGui.addColor(params, "bgColor").onChange(() => {
   //   scene.background = params.bgColor
@@ -198,6 +199,9 @@ export async function spotLightDemo1(mainGui) {
     scene.traverse((node) => {
       if (node.material && node.material.envMapIntensity !== undefined) {
         node.material.envMapIntensity = envVals.int
+        if (node.material.type === 'MeshPhysicalMaterial') {
+          console.log(node.material)
+        }
       }
     })
   }
@@ -230,6 +234,7 @@ function animate() {
 }
 
 function raycast() {
+  return
   // update the picking ray with the camera and pointer position
   raycaster.setFromCamera(pointer, camera)
 
@@ -257,52 +262,10 @@ function onPointerMove(event) {
 }
 
 async function loadModels() {
-  // sphere
-  const sphere = new Mesh(
-    new SphereGeometry(0.5).translate(0, 0.5, 0),
-    new MeshStandardMaterial({
-      color: getRandomHexColor(),
-      roughness: 0,
-      metalness: 1,
-    })
-  )
-  sphere.name = 'sphere'
-  sphere.castShadow = true
-  sphere.receiveShadow = true
-  sphere.position.set(2, 0, -1.5)
-  // mainObjects.add(sphere)
-
-  // cube
-  const cube = new Mesh(
-    new BoxGeometry(1, 1, 1).translate(0, 0.5, 0),
-    new MeshStandardMaterial({
-      color: getRandomHexColor(),
-      roughness: 0,
-      metalness: 1,
-    })
-  )
-  cube.name = 'cube'
-  cube.castShadow = true
-  cube.receiveShadow = true
-  cube.position.set(-2, 0, -1.5)
-  // mainObjects.add(cube)
-
-  // floor
-  const floor = new Mesh(
-    new PlaneGeometry(100, 100).rotateX(-Math.PI / 2),
-    new MeshStandardMaterial({
-      color: getRandomHexColor(),
-      roughness: 0.5,
-      metalness: 0,
-    })
-  )
-  floor.name = 'floor'
-  floor.receiveShadow = true
-  // mainObjects.add(floor)
-
   await setupScene()
   renderer.compile(scene, camera)
 }
+
 const getSpotGeo = (distance, radiusTop, radiusBottom) => {
   const geometry = new CylinderGeometry(radiusTop, radiusBottom, distance, 128, 64, true)
   geometry.translate(0, -distance / 2, 0)
@@ -435,14 +398,19 @@ async function setupScene() {
 
   const params = {
     speed: 10,
-    useDepth: true,
+    useDepth: false,
     depthResolution: 1024,
   }
 
-  const roadOnFrame = await addRoad()
+  // const roadOnFrame = await addRoad()
+  // const carOnFrame = await addCar(AllVolumeMaterials)
+  // const poleOnFrame = await addPoles(AllVolumeMaterials)
 
-  const carOnFrame = await addCar(AllVolumeMaterials)
-  const poleOnFrame = await addPoles(AllVolumeMaterials)
+  const [roadOnFrame, carOnFrame, poleOnFrame] = await Promise.all([
+    addRoad(),
+    addCar(AllVolumeMaterials),
+    addPoles(AllVolumeMaterials),
+  ])
 
   const rendererSize = new Vector3()
   window.onresize = () => {
@@ -473,23 +441,25 @@ async function setupScene() {
     }
   }
 
-  updateDepthTexture()
+  // updateDepthTexture()
 
   gui.add(params, 'useDepth').onChange(updateDepthTexture)
+  gui.add(params, 'depthResolution', 128, 1024, 128).onChange(updateDepthTexture)
+
   gui.add(params, 'speed', 0.1, 20).onChange()
   const clock = new Clock(true)
 
-  let depTex
+  let depTex, tick
+
   useFrame = () => {
-    const tick = clock.getDelta()
+    tick = clock.getDelta() * params.speed
 
-    const factor = tick * params.speed
-
-    roadOnFrame(factor)
-    carOnFrame(factor)
-    poleOnFrame(factor)
+    roadOnFrame(tick)
+    carOnFrame(tick)
+    poleOnFrame(tick)
 
     if (params.useDepth) {
+      //remove depth from material to avoid webgl warnings
       for (const mat of AllVolumeMaterials) {
         depTex = mat.depth
         mat.depth = null
@@ -521,43 +491,33 @@ async function addCar(AllVolumeMaterials) {
   mainObjects.add(model)
 
   // wheel references
-  const wheels = {
-    FL: null,
-    FR: null,
-    R: null,
-    steerL: null,
-    steerR: null,
+  const carParams = {
+    FL: model.getObjectByName('wheel_L'),
+    FR: model.getObjectByName('wheel_R'),
+    R: model.getObjectByName('wheels_rear'),
+    body: model.getObjectByName('body'),
+    steerL: model.getObjectByName('steer_L'),
+    steerR: model.getObjectByName('steer_R'),
     steerVal: 0,
-    emit: null,
-    lights: null,
+    emit: model.getObjectByName('emit'),
+    lights: model.getObjectByName('lights'),
     wheenSpinMultiplier: 1.8,
   }
 
-  wheels.R = model.getObjectByName('wheels_rear')
-
-  wheels.FL = model.getObjectByName('wheel_L')
-  wheels.FR = model.getObjectByName('wheel_R')
-
-  wheels.steerL = model.getObjectByName('steer_L')
-  wheels.steerR = model.getObjectByName('steer_R')
-
-  wheels.emit = model.getObjectByName('emit')
-  wheels.lights = model.getObjectByName('lights')
-  wheels.emit.material = new MeshStandardMaterial()
-  wheels.emit.material.color.set(0x000000)
-  wheels.emit.material.emissive.set('#ffbb73')
-
-  gui.add(wheels.emit.material, 'emissiveIntensity', 0, 50)
-  gui.add(wheels.lights.material, 'emissiveIntensity', 0, 50)
+  carParams.emit.material = new MeshStandardMaterial()
+  carParams.emit.material.color.set(0x000000)
+  carParams.emit.material.emissive.set('#ffbb73')
+  carParams.lights.material.emissiveIntensity = 3
+  // gui.add(carParams.emit.material, 'emissiveIntensity', 0, 50)
+  // gui.add(carParams.lights.material, 'emissiveIntensity', 0, 50)
 
   const params = {
-    distance: 5,
+    distance: 8,
   }
   const headLightL = new SpotLight()
   headLightL.intensity = 5
-  headLightL.castShadow = true
   headLightL.color.set('#ffbb73')
-  headLightL.angle = MathUtils.degToRad(25)
+  headLightL.angle = MathUtils.degToRad(20)
   headLightL.penumbra = 0.2
   headLightL.distance = params.distance
   const headLightR = headLightL.clone()
@@ -571,8 +531,8 @@ async function addCar(AllVolumeMaterials) {
   headLightR.position.set(0.66, 0.66, 2)
   headLightR.target.position.set(0.66, 0.25, 10)
 
-  const helperL = new SpotLightHelper(headLightL)
-  const helperR = new SpotLightHelper(headLightR)
+  // const helperL = new SpotLightHelper(headLightL)
+  // const helperR = new SpotLightHelper(headLightR)
   // scene.add(helperL, helperR)
 
   // cone meshes
@@ -609,24 +569,31 @@ async function addCar(AllVolumeMaterials) {
   updateVolumeGeometry(headLightL, volumeMeshL, radiusTop)
   updateVolumeGeometry(headLightR, volumeMeshR, radiusTop)
 
+  //BRAKE LIGHTS
+  const bLightL = new SpotLight(0xff0000, 0.05)
+  bLightL.penumbra = 1
+  bLightL.position.set(0.62, 0.64, -2)
+  bLightL.target.position.set(0.62, 0.0, -4)
+
+  const bLightR = bLightL.clone()
+  bLightR.position.set(-0.62, 0.64, -2)
+  bLightR.target.position.set(-0.62, 0.0, -4)
+  model.add(bLightL, bLightL.target, bLightR, bLightR.target)
+
   function addGui(gui) {
-    const folder = gui.addFolder('SpotLight Volume')
-    folder.open()
-    // folder.add(testParams, 'materialType', matOptions).onChange((v) => {
-    //   volumeMesh.material = v
-    // })
+    const folder = gui.addFolder('Headlights Volume')
+    // folder.open()
 
-    // folder.add(testParams, 'useDepth').onChange(updateDepthTexture)
-    // folder.add(testParams, 'depthResolution', 128, 2048, 1).onChange(updateDepthTexture)
+    folder.add(volumeMaterialL, 'opacity', 0, 2).onChange((v) => {
+      volumeMaterialR.opacity = v
+    })
 
-    // folder.add(volumeMaterial, 'opacity', 0, 2)
-    // folder.add(volumeMaterial, 'attenuation', 0, headLightL.distance)
-    // folder.add(volumeMaterial, 'anglePower', 0, 15)
-    // folder.add(volumeMaterial, 'cameraNear', 0, 10)
-    // folder.add(volumeMaterial, 'cameraFar', 0, 10)
+    folder.add(volumeMaterialL, 'anglePower', 0, 15).onChange((v) => {
+      volumeMaterialR.anglePower = v
+    })
 
-    const sp = gui.addFolder('SpotLight')
-    sp.open()
+    const sp = gui.addFolder('HeadLight')
+    // sp.open()
     // sp.add(testParams, 'helper').onChange((v) => {
     //   if (v) {
     //     scene.add(helper)
@@ -654,9 +621,6 @@ async function addCar(AllVolumeMaterials) {
       updateVolumeGeometry(headLightL, volumeMeshL, radiusTop)
       updateVolumeGeometry(headLightR, volumeMeshR, radiusTop)
     })
-    sp.add(headLightL.shadow, 'bias', -0.0001, 0.0001).onChange(() => {
-      headLightR.shadow.bias = headLightL.shadow.bias
-    })
 
     // sp.add(testParams, 'animateTarget')
     //   .name('🚲Animate target')
@@ -681,30 +645,32 @@ async function addCar(AllVolumeMaterials) {
   addGui(gui)
 
   const steerLimit = MathUtils.degToRad(15)
+  const tiltLimit = MathUtils.degToRad(5)
   const distanceMoved = 0.25
 
   function steer() {
-    const rY = MathUtils.mapLinear(wheels.steerVal, -1, 1, -steerLimit, steerLimit)
-    wheels.steerL.rotation.y = rY
-    wheels.steerR.rotation.y = rY
+    const rY = MathUtils.mapLinear(carParams.steerVal, -1, 1, -steerLimit, steerLimit)
+    carParams.steerL.rotation.y = rY
+    carParams.steerR.rotation.y = rY
+    carParams.body.rotation.z = MathUtils.mapLinear(carParams.steerVal, -1, 1, -tiltLimit, tiltLimit)
   }
 
-  const straightSteer = new Tween(wheels)
+  const straightSteer = new Tween(carParams)
     .to({ steerVal: 0 })
     .duration(1000)
-    .easing(Easing.Quadratic.InOut)
+    .easing(Easing.Elastic.Out)
     .onStart(() => {
-      straightSteer._valuesStart.steerVal = wheels.steerVal
+      straightSteer._valuesStart.steerVal = carParams.steerVal
     })
     .onUpdate(() => {
       steer()
     })
 
   let pingPong = true
-  const randomSteer = new Tween(wheels)
+  const randomSteer = new Tween(carParams)
     .to({ steerVal: 1 })
     .duration(1000)
-    .easing(Easing.Quadratic.InOut)
+    .easing(Easing.Back.Out)
     .delay(1000)
     .onStart(() => {
       randomSteer.delay(MathUtils.randInt(100, 4000))
@@ -717,7 +683,7 @@ async function addCar(AllVolumeMaterials) {
       }
       pingPong = !pingPong
 
-      randomSteer._valuesStart.steerVal = wheels.steerVal
+      randomSteer._valuesStart.steerVal = carParams.steerVal
 
       moveTween.start()
     })
@@ -727,7 +693,9 @@ async function addCar(AllVolumeMaterials) {
 
   randomSteer.chain(straightSteer)
   straightSteer.chain(randomSteer)
-  randomSteer.start()
+  setTimeout(() => {
+    randomSteer.start()
+  }, 2000)
 
   const moveTween = new Tween(model.position)
     .to({ x: 0 })
@@ -736,19 +704,15 @@ async function addCar(AllVolumeMaterials) {
     .onStart(() => {
       moveTween._valuesStart.x = model.position.x
     })
-    .onUpdate(() => {
-      console.log('move')
-    })
 
-  gui.add(wheels, 'steerVal', -1, 1).onChange(steer)
-  bloomEffect.selection.add(wheels.emit)
+  bloomEffect.selection.add(carParams.emit)
 
   return (tick) => {
     volumeMaterialL.spotPosition.copy(volumeMeshL.getWorldPosition(vec))
     volumeMaterialR.spotPosition.copy(volumeMeshR.getWorldPosition(vec))
-    wheels.FL.rotation.x += tick * wheels.wheenSpinMultiplier
-    wheels.FR.rotation.x += tick * wheels.wheenSpinMultiplier
-    wheels.R.rotation.x += tick * wheels.wheenSpinMultiplier
+    carParams.FL.rotation.x += tick * carParams.wheenSpinMultiplier
+    carParams.FR.rotation.x += tick * carParams.wheenSpinMultiplier
+    carParams.R.rotation.x += tick * carParams.wheenSpinMultiplier
   }
 }
 
@@ -825,8 +789,19 @@ async function addPoles(AllVolumeMaterials) {
   const volMeshes = []
 
   const lampParams = {
-    gap: 20,
+    gap: 15,
   }
+  const folder = gui.addFolder('Street Lamps')
+  folder.add(lampParams, 'gap', 10, 30, 1).onChange(() => {
+    for (let index = 0; index < lamps.length; index++) {
+      const pole = lamps[index]
+      pole.position.z = index * lampParams.gap
+      console.log(index, pole.position.z)
+    }
+  })
+
+  bloomEffect.selection.add(poleEmit)
+
   for (let index = 0; index < 4; index++) {
     const pole = modelPole.clone()
     lamps.push(pole)
@@ -859,7 +834,7 @@ async function addPoles(AllVolumeMaterials) {
     volMeshes.push(volMesh)
     // lampVolMat.attenuation = 10
 
-    const lampGui = gui.addFolder('lamp' + index)
+    const lampGui = folder.addFolder('lamp ' + index)
     lampGui.add(spotLight.shadow, 'bias', -0.0001, 0.0001).onChange(() => {})
 
     lampGui.add(lampVolMat, 'opacity', 0, 2)
@@ -873,15 +848,6 @@ async function addPoles(AllVolumeMaterials) {
     // scene.add(helper)
     mainObjects.add(pole)
   }
-  bloomEffect.selection.add(poleEmit)
-
-  gui.add(lampParams, 'gap', 10, 30, 1).onChange(() => {
-    for (let index = 0; index < lamps.length; index++) {
-      const pole = lamps[index]
-      pole.position.z = index * lampParams.gap
-      console.log(index, pole.position.z)
-    }
-  })
 
   for (let index = 0; index < lamps.length; index++) {
     const pole = lamps[index]

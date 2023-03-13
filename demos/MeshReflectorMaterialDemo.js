@@ -1,10 +1,10 @@
-import Stats from "three/examples/jsm/libs/stats.module"
-import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader"
-import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader"
-import { OrbitControls } from "three/examples/jsm/controls/OrbitControls"
-import { TransformControls } from "three/examples/jsm/controls/TransformControls"
+import Stats from 'three/examples/jsm/libs/stats.module'
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
+import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader'
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
+import { TransformControls } from 'three/examples/jsm/controls/TransformControls'
 
-import porscheUrl from "../models/porsche_911_1975.glb"
+import porscheUrl from '../models/porsche_911_1975_comp.glb?url'
 
 import {
   ACESFilmicToneMapping,
@@ -39,13 +39,13 @@ import {
   HalfFloatType,
   RepeatWrapping,
   MathUtils,
-} from "three"
-import { HDRI_LIST } from "../hdri/HDRI_LIST"
-import { MeshReflectorMaterial } from "../wip/MeshReflectorMaterial"
-import { BlurPass } from "../wip/BlurPass"
-import { TEXTURES_LIST } from "../textures/TEXTURES_LIST"
-import { Easing, Tween, update } from "@tweenjs/tween.js"
-import { BG_ENV } from "./BG_ENV"
+} from 'three'
+import { HDRI_LIST } from '../hdri/HDRI_LIST'
+import { MeshReflectorMaterial } from '../wip/MeshReflectorMaterial'
+import { BlurPass } from '../wip/BlurPass'
+import { TEXTURES_LIST } from '../textures/TEXTURES_LIST'
+import { Easing, Tween, update } from '@tweenjs/tween.js'
+import { BG_ENV } from './BG_ENV'
 
 let stats,
   renderer,
@@ -65,7 +65,7 @@ const textureLoader = new TextureLoader()
 const gltfLoader = new GLTFLoader()
 const draco = new DRACOLoader()
 let transformControls
-draco.setDecoderPath("https://www.gstatic.com/draco/v1/decoders/")
+draco.setDecoderPath('https://www.gstatic.com/draco/v1/decoders/')
 gltfLoader.setDRACOLoader(draco)
 const raycaster = new Raycaster()
 const intersects = [] //raycast
@@ -74,7 +74,7 @@ let sceneGui
 
 export async function meshReflectorMaterialDemo(mainGui) {
   gui = mainGui
-  sceneGui = gui.addFolder("Scene")
+  sceneGui = gui.addFolder('Scene')
   stats = new Stats()
   app.appendChild(stats.dom)
   // renderer
@@ -91,7 +91,7 @@ export async function meshReflectorMaterialDemo(mainGui) {
   // camera
   camera = new PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 200)
   camera.position.set(6, 3, 6)
-  camera.name = "Camera"
+  camera.name = 'Camera'
   camera.position.set(2.0404140991899564, 2.644387886134694, 3.8683136783076355)
   // scene
   scene = new Scene()
@@ -110,13 +110,13 @@ export async function meshReflectorMaterialDemo(mainGui) {
   controls.target.set(0, 0, 0)
 
   transformControls = new TransformControls(camera, renderer.domElement)
-  transformControls.addEventListener("dragging-changed", (event) => {
+  transformControls.addEventListener('dragging-changed', (event) => {
     controls.enabled = !event.value
     if (!event.value) {
     }
   })
 
-  transformControls.addEventListener("change", () => {
+  transformControls.addEventListener('change', () => {
     if (transformControls.object) {
       if (transformControls.object.position.y < 0) {
         transformControls.object.position.y = 0
@@ -125,21 +125,21 @@ export async function meshReflectorMaterialDemo(mainGui) {
   })
   scene.add(transformControls)
 
-  window.addEventListener("resize", onWindowResize)
-  document.addEventListener("pointermove", onPointerMove)
+  window.addEventListener('resize', onWindowResize)
+  document.addEventListener('pointermove', onPointerMove)
 
   let downTime = Date.now()
-  app.addEventListener("pointerdown", () => {
+  app.addEventListener('pointerdown', () => {
     downTime = Date.now()
   })
-  app.addEventListener("pointerup", (e) => {
+  app.addEventListener('pointerup', (e) => {
     if (Date.now() - downTime < 200) {
       onPointerMove(e)
       raycast()
     }
   })
 
-  sceneGui.add(transformControls, "mode", ["translate", "rotate", "scale"])
+  sceneGui.add(transformControls, 'mode', ['translate', 'rotate', 'scale'])
   // sceneGui.add(scene, "backgroundBlurriness", 0, 1, 0.01)
   // sceneGui.addColor(params, "bgColor").onChange(() => {
   //   scene.background = params.bgColor
@@ -151,8 +151,8 @@ export async function meshReflectorMaterialDemo(mainGui) {
 
   const bgEnv = new BG_ENV(scene, sceneGui)
   bgEnv.preset = HDRI_LIST.dancing_hall
-  bgEnv.setEnvType("HDRI")
-  bgEnv.setBGType("GroundProjection")
+  bgEnv.setEnvType('HDRI')
+  bgEnv.setBGType('GroundProjection')
   bgEnv.updateAll()
   await loadModels()
   animate()
@@ -214,7 +214,7 @@ async function loadModels() {
       metalness: 1,
     })
   )
-  sphere.name = "sphere"
+  sphere.name = 'sphere'
   sphere.castShadow = true
   sphere.receiveShadow = true
   sphere.position.set(2, 0, -1.5)
@@ -229,7 +229,7 @@ async function loadModels() {
       metalness: 1,
     })
   )
-  cube.name = "cube"
+  cube.name = 'cube'
   cube.castShadow = true
   cube.receiveShadow = true
   cube.position.set(-2, 0, -1.5)
@@ -238,7 +238,7 @@ async function loadModels() {
   // car
   const gltf = await gltfLoader.loadAsync(porscheUrl)
   const model = gltf.scene
-  model.name = "car"
+  model.name = 'car'
   let carBody
   model.traverse((child) => {
     if (child.isMesh) {
@@ -246,7 +246,7 @@ async function loadModels() {
       child.receiveShadow = true
       child.selectOnRaycast = model
 
-      if (child.name === "body") carBody = child
+      if (child.name === 'body') carBody = child
     }
   })
   mainObjects.add(model)
@@ -261,10 +261,10 @@ async function loadModels() {
     steerVal: 0,
   }
 
-  wheels.R = model.getObjectByName("wheels_rear")
+  wheels.R = model.getObjectByName('wheels_rear')
 
-  wheels.steerL = model.getObjectByName("wheel_L")
-  wheels.steerR = model.getObjectByName("wheel_R")
+  wheels.steerL = model.getObjectByName('wheel_L')
+  wheels.steerR = model.getObjectByName('wheel_R')
   const steerLimit = MathUtils.degToRad(30)
   const tween = new Tween(wheels)
     .to({ steerVal: 1 }, 3000)
@@ -311,7 +311,7 @@ async function setupMRM() {
     reflectorOffset = 0,
     metalness = 0.6,
     roughness = 1,
-    color = new Color("#151515")
+    color = new Color('#151515')
 
   const gl = renderer
   //   const camera = camera
@@ -450,9 +450,9 @@ async function setupMRM() {
     }
 
     const defines = {
-      "defines-USE_BLUR": hasBlur ? "" : undefined,
-      "defines-USE_DEPTH": depthScale > 0 ? "" : undefined,
-      "defines-USE_DISTORTION": distortionMap ? "" : undefined,
+      'defines-USE_BLUR': hasBlur ? '' : undefined,
+      'defines-USE_DEPTH': depthScale > 0 ? '' : undefined,
+      'defines-USE_DISTORTION': distortionMap ? '' : undefined,
     }
     return [fbo1, fbo2, blurpass, reflectorProps, defines]
   }
@@ -465,9 +465,9 @@ async function setupMRM() {
   }
   const material = MaterialOptions.reflector
   const standardMat = MaterialOptions.standard
-  material.defines.USE_BLUR = defines["defines-USE_BLUR"]
-  material.defines.USE_DEPTH = defines["defines-USE_DEPTH"]
-  material.defines.USE_DISTORTION = defines["defines-USE_DISTORTION"]
+  material.defines.USE_BLUR = defines['defines-USE_BLUR']
+  material.defines.USE_DEPTH = defines['defines-USE_DEPTH']
+  material.defines.USE_DISTORTION = defines['defines-USE_DISTORTION']
 
   const roughMap = await textureLoader.loadAsync(TEXTURES_LIST.rgh)
   roughMap.wrapS = RepeatWrapping
@@ -493,20 +493,20 @@ async function setupMRM() {
   const reflectionMesh = new Mesh(new CircleGeometry(5, 32), params.materialType)
   reflectionMesh.rotateX(-Math.PI / 2)
 
-  reflectionMesh.name = "floor"
+  reflectionMesh.name = 'floor'
   reflectionMesh.receiveShadow = true
   reflectionMesh.position.set(0, 0.001, 0)
   scene.add(reflectionMesh)
   console.log({ reflectorProps, material })
 
   // GUI
-  gui.add(params, "materialType", MaterialOptions).onChange((v) => {
+  gui.add(params, 'materialType', MaterialOptions).onChange((v) => {
     reflectionMesh.material = v
   })
 
-  const mrmFol = gui.addFolder("MeshReflectorMaterial")
+  const mrmFol = gui.addFolder('MeshReflectorMaterial')
   mrmFol.open()
-  mrmFol.add(params, "useRoughnessMap").onChange((v) => {
+  mrmFol.add(params, 'useRoughnessMap').onChange((v) => {
     if (v) {
       material.roughnessMap = roughMap
       standardMat.roughnessMap = roughMap
@@ -517,7 +517,7 @@ async function setupMRM() {
     material.needsUpdate = true
     standardMat.needsUpdate = true
   })
-  mrmFol.add(params, "useDistortionMap").onChange((v) => {
+  mrmFol.add(params, 'useDistortionMap').onChange((v) => {
     if (v) {
       //   material.defines.USE_DISTORTION = ""
       material.distortionMap = roughMap
@@ -526,7 +526,7 @@ async function setupMRM() {
     }
     material.needsUpdate = true
   })
-  mrmFol.add(params, "useNormalMap").onChange((v) => {
+  mrmFol.add(params, 'useNormalMap').onChange((v) => {
     if (v) {
       material.normalMap = nrmMap
       standardMat.normalMap = nrmMap
@@ -537,24 +537,24 @@ async function setupMRM() {
     material.needsUpdate = true
     standardMat.needsUpdate = true
   })
-  mrmFol.addColor(material, "color").onChange(() => {
+  mrmFol.addColor(material, 'color').onChange(() => {
     standardMat.color.copy(material.color)
   })
-  mrmFol.add(params, "normalScale", 0, 1).onChange((v) => {
+  mrmFol.add(params, 'normalScale', 0, 1).onChange((v) => {
     material.normalScale.setScalar(v)
     standardMat.normalScale.setScalar(v)
   })
-  mrmFol.add(params, "repeat", 1, 15, 1).onChange((v) => {
+  mrmFol.add(params, 'repeat', 1, 15, 1).onChange((v) => {
     roughMap.repeat.setScalar(v)
     nrmMap.repeat.setScalar(v)
   })
 
-  mrmFol.add(material, "mixStrength", 0, 15)
-  mrmFol.add(material, "mixBlur", 0, 6)
-  mrmFol.add(material, "mixContrast", 0, 5)
-  mrmFol.add(material, "metalness", 0, 1)
-  mrmFol.add(material, "roughness", 0, 1)
-  mrmFol.add(material, "distortion", -2, 2)
+  mrmFol.add(material, 'mixStrength', 0, 15)
+  mrmFol.add(material, 'mixBlur', 0, 6)
+  mrmFol.add(material, 'mixContrast', 0, 5)
+  mrmFol.add(material, 'metalness', 0, 1)
+  mrmFol.add(material, 'roughness', 0, 1)
+  mrmFol.add(material, 'distortion', -2, 2)
 
   const parent = reflectionMesh
   useFrame = () => {
@@ -579,5 +579,5 @@ async function setupMRM() {
 
 const color = new Color()
 function getRandomHexColor() {
-  return "#" + color.setHSL(Math.random(), 0.5, 0.5).getHexString()
+  return '#' + color.setHSL(Math.random(), 0.5, 0.5).getHexString()
 }

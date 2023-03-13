@@ -1,11 +1,11 @@
-import Stats from "three/examples/jsm/libs/stats.module"
-import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader"
-import { EXRLoader } from "three/examples/jsm/loaders/EXRLoader"
-import { RGBELoader } from "three/examples/jsm/loaders/RGBELoader"
-import { GroundProjectedEnv } from "three/examples/jsm/objects/GroundProjectedEnv"
-import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader"
-import { OrbitControls } from "three/examples/jsm/controls/OrbitControls"
-import { EffectComposer, EffectPass, RenderPass } from "postprocessing"
+import Stats from 'three/examples/jsm/libs/stats.module'
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
+import { EXRLoader } from 'three/examples/jsm/loaders/EXRLoader'
+import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader'
+import { GroundProjectedEnv } from 'three/examples/jsm/objects/GroundProjectedEnv'
+import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader'
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
+import { EffectComposer, EffectPass, RenderPass } from 'postprocessing'
 import {
   SSGIEffect,
   TRAAEffect,
@@ -13,7 +13,7 @@ import {
   VelocityDepthNormalPass,
   SSDGIEffect,
   SSREffect,
-} from "realism-effects"
+} from 'realism-effects'
 import {
   ACESFilmicToneMapping,
   Mesh,
@@ -34,10 +34,10 @@ import {
   FloatType,
   PMREMGenerator,
   CircleGeometry,
-} from "three"
-import { HDRI_LIST } from "../hdri/HDRI_LIST"
-import { SSGIDebugGUI } from "../wip/SSGIDebugGUI"
-import porscheUrl from "../models/porsche_911_1975.glb"
+} from 'three'
+import { HDRI_LIST } from '../hdri/HDRI_LIST'
+import { SSGIDebugGUI } from '../wip/SSGIDebugGUI'
+import porscheUrl from '../models/porsche_911_1975_comp.glb?url'
 
 let stats,
   renderer,
@@ -62,7 +62,7 @@ const rgbeLoader = new RGBELoader().setDataType(FloatType)
 const gltfLoader = new GLTFLoader()
 const draco = new DRACOLoader()
 // draco.setDecoderPath("https://www.gstatic.com/draco/versioned/decoders/1.5.5/")
-draco.setDecoderPath("https://www.gstatic.com/draco/v1/decoders/")
+draco.setDecoderPath('https://www.gstatic.com/draco/v1/decoders/')
 gltfLoader.setDRACOLoader(draco)
 const raycaster = new Raycaster()
 const intersects = [] //raycast
@@ -75,12 +75,12 @@ let composer
 
 export async function realismEffectsDemo(mainGui) {
   gui = mainGui
-  sceneGui = gui.addFolder("Scene")
+  sceneGui = gui.addFolder('Scene')
   stats = new Stats()
   app.appendChild(stats.dom)
   // renderer
   renderer = new WebGLRenderer({
-    powerPreference: "high-performance",
+    powerPreference: 'high-performance',
     premultipliedAlpha: false,
     stencil: false,
     antialias: false,
@@ -103,10 +103,10 @@ export async function realismEffectsDemo(mainGui) {
   // camera
   camera = new PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 200)
   camera.position.set(6, 3, 6)
-  camera.name = "Camera"
+  camera.name = 'Camera'
   // scene
   scene = new Scene()
-  scene.background = new Color("grey")
+  scene.background = new Color('grey')
   scene.add(mainObjects)
 
   // controls
@@ -117,14 +117,14 @@ export async function realismEffectsDemo(mainGui) {
   controls.maxDistance = 100
   controls.maxPolarAngle = Math.PI / 1.5
 
-  window.addEventListener("resize", onWindowResize)
-  document.addEventListener("pointermove", onPointerMove)
+  window.addEventListener('resize', onWindowResize)
+  document.addEventListener('pointermove', onPointerMove)
 
   let downTime = Date.now()
-  app.addEventListener("pointerdown", () => {
+  app.addEventListener('pointerdown', () => {
     downTime = Date.now()
   })
-  app.addEventListener("pointerup", (e) => {
+  app.addEventListener('pointerup', (e) => {
     if (Date.now() - downTime < 200) {
       onPointerMove(e)
       raycast()
@@ -143,7 +143,7 @@ async function setupEnvironment() {
   // light
   let sunGroup = new Group()
   let sunLight = new DirectionalLight(0xffffeb, 1)
-  sunLight.name = "Dir. Light"
+  sunLight.name = 'Dir. Light'
   sunLight.castShadow = true
   sunLight.shadow.camera.near = 0.1
   sunLight.shadow.camera.far = 50
@@ -183,14 +183,14 @@ async function setupEnvironment() {
       const texture = await exrLoader.loadAsync(envDict.exr)
       texture.mapping = EquirectangularReflectionMapping
       scene.environment = texture
-      console.log("exr loaded")
+      console.log('exr loaded')
     }
 
     if (envDict.hdr) {
       const texture = await rgbeLoader.loadAsync(envDict.hdr)
       texture.mapping = EquirectangularReflectionMapping
       scene.environment = texture
-      console.log("exr loaded")
+      console.log('exr loaded')
     }
 
     if (envDict.webP || envDict.avif) {
@@ -198,7 +198,7 @@ async function setupEnvironment() {
       texture.mapping = EquirectangularReflectionMapping
       texture.encoding = sRGBEncoding
       scene.background = texture
-      console.log("bg loaded")
+      console.log('bg loaded')
 
       if (params.groundProjection) loadGroundProj(params.environment)
     }
@@ -242,10 +242,10 @@ async function setupEnvironment() {
 
   await loadEnv(params.environment)
 
-  sceneGui.add(params, "environment", HDRI_LIST).onChange((v) => {
+  sceneGui.add(params, 'environment', HDRI_LIST).onChange((v) => {
     loadEnv(v)
   })
-  sceneGui.add(params, "groundProjection").onChange((v) => {
+  sceneGui.add(params, 'groundProjection').onChange((v) => {
     loadGroundProj(params.environment)
   })
 }
@@ -301,7 +301,7 @@ async function loadModels() {
       //   metalness: 1,
     })
   )
-  sphere.name = "sphere"
+  sphere.name = 'sphere'
   sphere.castShadow = true
   sphere.receiveShadow = true
   sphere.position.set(2, 0, -1.5)
@@ -316,7 +316,7 @@ async function loadModels() {
       //   metalness: 1,
     })
   )
-  cube.name = "cube"
+  cube.name = 'cube'
   cube.castShadow = true
   cube.receiveShadow = true
   cube.position.set(-2, 0, -1.5)
@@ -326,14 +326,14 @@ async function loadModels() {
     new CircleGeometry(5, 32).rotateX(-Math.PI / 2),
     new MeshStandardMaterial({ color: 0x111111, roughness: 0 })
   )
-  shadowFloor.name = "floor"
+  shadowFloor.name = 'floor'
   shadowFloor.receiveShadow = true
   shadowFloor.position.set(0, 0.001, 0)
   scene.add(shadowFloor)
 
   const gltf = await gltfLoader.loadAsync(porscheUrl)
   const model = gltf.scene
-  model.name = "car"
+  model.name = 'car'
   model.traverse((child) => {
     if (child.isMesh) {
       child.castShadow = true
@@ -426,17 +426,17 @@ function setupComposer() {
     console.log(composer.passes)
   }
 
-  const giFolder = gui.addFolder("EFFECTS")
+  const giFolder = gui.addFolder('EFFECTS')
   giFolder.open()
-  giFolder.add(effectsOptions, "useGI").onChange(updatePost)
-  giFolder.add(effectsOptions, "gi", GI_OPTIONS).onChange(updatePost)
-  giFolder.add(effectsOptions, "traa").onChange(updatePost)
-  giFolder.add(effectsOptions, "motionBlur").onChange(updatePost)
+  giFolder.add(effectsOptions, 'useGI').onChange(updatePost)
+  giFolder.add(effectsOptions, 'gi', GI_OPTIONS).onChange(updatePost)
+  giFolder.add(effectsOptions, 'traa').onChange(updatePost)
+  giFolder.add(effectsOptions, 'motionBlur').onChange(updatePost)
 
   updatePost()
 }
 
 const color = new Color()
 function getRandomHexColor() {
-  return "#" + color.setHSL(Math.random(), 0.5, 0.5).getHexString()
+  return '#' + color.setHSL(Math.random(), 0.5, 0.5).getHexString()
 }

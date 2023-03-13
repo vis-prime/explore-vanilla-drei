@@ -36,7 +36,7 @@ import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { TransformControls } from 'three/examples/jsm/controls/TransformControls'
 
-import porscheUrl from '../models/porsche_911_1975.glb'
+import porscheUrl from '../models/porsche_911_1975_comp.glb?url'
 
 import { HDRI_LIST } from '../hdri/HDRI_LIST'
 import { SpotLightMaterial } from '../wip/SpotLightMaterial'

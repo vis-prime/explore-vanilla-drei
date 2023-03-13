@@ -1,14 +1,14 @@
-import Stats from "three/examples/jsm/libs/stats.module"
-import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader"
-import { EXRLoader } from "three/examples/jsm/loaders/EXRLoader"
-import { GroundProjectedEnv } from "three/examples/jsm/objects/GroundProjectedEnv"
+import Stats from 'three/examples/jsm/libs/stats.module'
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
+import { EXRLoader } from 'three/examples/jsm/loaders/EXRLoader'
+import { GroundProjectedEnv } from 'three/examples/jsm/objects/GroundProjectedEnv'
 
-import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader"
-import { OrbitControls } from "three/examples/jsm/controls/OrbitControls"
-import { TransformControls } from "three/examples/jsm/controls/TransformControls"
+import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader'
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
+import { TransformControls } from 'three/examples/jsm/controls/TransformControls'
 
-import { MeshTransmissionMaterial, MeshDiscardMaterial } from "@pmndrs/vanilla"
-import porscheUrl from "../models/porsche_911_1975.glb"
+import { MeshTransmissionMaterial, MeshDiscardMaterial } from '@pmndrs/vanilla'
+import porscheUrl from '../models/porsche_911_1975_comp.glb?url'
 
 import {
   ACESFilmicToneMapping,
@@ -38,9 +38,9 @@ import {
   HalfFloatType,
   NoToneMapping,
   BackSide,
-} from "three"
-import { HDRI_LIST } from "../hdri/HDRI_LIST"
-import { RGBELoader } from "three/examples/jsm/loaders/RGBELoader"
+} from 'three'
+import { HDRI_LIST } from '../hdri/HDRI_LIST'
+import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader'
 
 let stats,
   renderer,
@@ -66,7 +66,7 @@ const gltfLoader = new GLTFLoader()
 const draco = new DRACOLoader()
 let transformControls
 // draco.setDecoderPath("https://www.gstatic.com/draco/versioned/decoders/1.5.5/")
-draco.setDecoderPath("https://www.gstatic.com/draco/v1/decoders/")
+draco.setDecoderPath('https://www.gstatic.com/draco/v1/decoders/')
 gltfLoader.setDRACOLoader(draco)
 const raycaster = new Raycaster()
 const intersects = [] //raycast
@@ -77,7 +77,7 @@ let pmremGenerator
 
 export async function meshTransmissionMaterialDemo(mainGui) {
   gui = mainGui
-  sceneGui = gui.addFolder("Scene")
+  sceneGui = gui.addFolder('Scene')
   stats = new Stats()
   app.appendChild(stats.dom)
   // renderer
@@ -96,7 +96,7 @@ export async function meshTransmissionMaterialDemo(mainGui) {
   // camera
   camera = new PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 200)
   camera.position.set(6, 3, 6)
-  camera.name = "Camera"
+  camera.name = 'Camera'
   camera.position.set(2.0404140991899564, 2.644387886134694, 3.8683136783076355)
   // scene
   scene = new Scene()
@@ -115,13 +115,13 @@ export async function meshTransmissionMaterialDemo(mainGui) {
   controls.target.set(0, 0, 0)
 
   transformControls = new TransformControls(camera, renderer.domElement)
-  transformControls.addEventListener("dragging-changed", (event) => {
+  transformControls.addEventListener('dragging-changed', (event) => {
     controls.enabled = !event.value
     if (!event.value) {
     }
   })
 
-  transformControls.addEventListener("change", () => {
+  transformControls.addEventListener('change', () => {
     if (transformControls.object) {
       if (transformControls.object.position.y < 0) {
         transformControls.object.position.y = 0
@@ -130,21 +130,21 @@ export async function meshTransmissionMaterialDemo(mainGui) {
   })
   scene.add(transformControls)
 
-  window.addEventListener("resize", onWindowResize)
-  document.addEventListener("pointermove", onPointerMove)
+  window.addEventListener('resize', onWindowResize)
+  document.addEventListener('pointermove', onPointerMove)
 
   let downTime = Date.now()
-  app.addEventListener("pointerdown", () => {
+  app.addEventListener('pointerdown', () => {
     downTime = Date.now()
   })
-  app.addEventListener("pointerup", (e) => {
+  app.addEventListener('pointerup', (e) => {
     if (Date.now() - downTime < 200) {
       onPointerMove(e)
       raycast()
     }
   })
 
-  sceneGui.add(transformControls, "mode", ["translate", "rotate", "scale"])
+  sceneGui.add(transformControls, 'mode', ['translate', 'rotate', 'scale'])
   // sceneGui.add(scene, "backgroundBlurriness", 0, 1, 0.01)
   // sceneGui.addColor(params, "bgColor").onChange(() => {
   //   scene.background = params.bgColor
@@ -163,7 +163,7 @@ async function setupEnvironment() {
   // light
   let sunGroup = new Group()
   let sunLight = new DirectionalLight(0xffffeb, 1)
-  sunLight.name = "Dir. Light"
+  sunLight.name = 'Dir. Light'
   sunLight.castShadow = true
   sunLight.shadow.camera.near = 0.1
   sunLight.shadow.camera.far = 50
@@ -182,7 +182,7 @@ async function setupEnvironment() {
 
   //   floor
   const shadowFloor = new Mesh(new PlaneGeometry(10, 10).rotateX(-Math.PI / 2), new ShadowMaterial({}))
-  shadowFloor.name = "shadowFloor"
+  shadowFloor.name = 'shadowFloor'
   shadowFloor.receiveShadow = true
   shadowFloor.position.set(0, 0, 0)
   scene.add(shadowFloor)
@@ -203,14 +203,14 @@ async function setupEnvironment() {
       const texture = await exrLoader.loadAsync(envDict.exr)
       texture.mapping = EquirectangularReflectionMapping
       scene.environment = texture
-      console.log("exr loaded")
+      console.log('exr loaded')
     }
 
     if (envDict.hdr) {
       const texture = await rgbeLoader.loadAsync(envDict.hdr)
       texture.mapping = EquirectangularReflectionMapping
       scene.environment = texture
-      console.log("exr loaded")
+      console.log('exr loaded')
     }
 
     if (envDict.webP || envDict.avif) {
@@ -218,7 +218,7 @@ async function setupEnvironment() {
       texture.mapping = EquirectangularReflectionMapping
       texture.encoding = sRGBEncoding
       scene.background = texture
-      console.log("bg loaded")
+      console.log('bg loaded')
 
       if (params.groundProjection) loadGroundProj(params.environment)
     }
@@ -262,10 +262,10 @@ async function setupEnvironment() {
 
   loadEnv(params.environment)
 
-  sceneGui.add(params, "environment", HDRI_LIST).onChange((v) => {
+  sceneGui.add(params, 'environment', HDRI_LIST).onChange((v) => {
     loadEnv(v)
   })
-  sceneGui.add(params, "groundProjection").onChange((v) => {
+  sceneGui.add(params, 'groundProjection').onChange((v) => {
     loadGroundProj(params.environment)
   })
 }
@@ -325,7 +325,7 @@ async function loadModels() {
       metalness: 1,
     })
   )
-  sphere.name = "sphere"
+  sphere.name = 'sphere'
   sphere.castShadow = true
   sphere.receiveShadow = true
   sphere.position.set(2, 0, -1.5)
@@ -340,7 +340,7 @@ async function loadModels() {
       metalness: 1,
     })
   )
-  cube.name = "cube"
+  cube.name = 'cube'
   cube.castShadow = true
   cube.receiveShadow = true
   cube.position.set(-2, 0, -1.5)
@@ -352,9 +352,9 @@ async function loadModels() {
 async function setupMTM() {
   // car
   const MatOptions = {
-    default: "def",
-    physical: "phy",
-    transmission: "tra",
+    default: 'def',
+    physical: 'phy',
+    transmission: 'tra',
   }
   const generalParams = {
     carMaterial: MatOptions.default, // 'default'|'physical'|'transmission'
@@ -373,7 +373,7 @@ async function setupMTM() {
 
   const gltf = await gltfLoader.loadAsync(porscheUrl)
   const model = gltf.scene
-  model.name = "car"
+  model.name = 'car'
   let carBody
   const discardMaterial = new MeshDiscardMaterial()
   const meshTransmissionMaterial = new MeshTransmissionMaterial(6, false)
@@ -396,12 +396,12 @@ async function setupMTM() {
         transmission: meshTransmissionMaterial,
       })
 
-      if (child.name === "body") carBody = child
+      if (child.name === 'body') carBody = child
     }
   })
   mainObjects.add(model)
 
-  gui.add(generalParams, "carMaterial", MatOptions).onChange((v) => {
+  gui.add(generalParams, 'carMaterial', MatOptions).onChange((v) => {
     for (const dat of all_mats) {
       if (v === MatOptions.default) {
         dat.mesh.material = dat.material
@@ -509,39 +509,39 @@ async function setupMTM() {
 }
 
 function addPhysicalGui(gui, mat) {
-  const fol = gui.addFolder("Physical Material")
-  fol.addColor(mat, "color")
-  fol.addColor(mat, "attenuationColor")
-  fol.add(mat, "attenuationDistance", 0, 2)
-  fol.add(mat, "roughness", 0, 1)
-  fol.add(mat, "transmission", 0, 1)
-  fol.add(mat, "thickness", 0, 2)
-  fol.add(mat, "reflectivity", 0, 1)
+  const fol = gui.addFolder('Physical Material')
+  fol.addColor(mat, 'color')
+  fol.addColor(mat, 'attenuationColor')
+  fol.add(mat, 'attenuationDistance', 0, 2)
+  fol.add(mat, 'roughness', 0, 1)
+  fol.add(mat, 'transmission', 0, 1)
+  fol.add(mat, 'thickness', 0, 2)
+  fol.add(mat, 'reflectivity', 0, 1)
 }
 
 function addTransmissionGui(gui, mat, mtmParams) {
-  const fol = gui.addFolder("Transmission Material")
-  fol.add(mtmParams, "enabled").name("Rendering Enabled").listen()
-  fol.add(mtmParams, "backside")
-  fol.add(mtmParams, "thickness", 0, 2)
-  fol.add(mtmParams, "backsideThickness", 0, 2)
+  const fol = gui.addFolder('Transmission Material')
+  fol.add(mtmParams, 'enabled').name('Rendering Enabled').listen()
+  fol.add(mtmParams, 'backside')
+  fol.add(mtmParams, 'thickness', 0, 2)
+  fol.add(mtmParams, 'backsideThickness', 0, 2)
 
-  fol.addColor(mat, "color")
-  fol.addColor(mat, "attenuationColor")
-  fol.add(mat, "_transmission", 0, 1)
+  fol.addColor(mat, 'color')
+  fol.addColor(mat, 'attenuationColor')
+  fol.add(mat, '_transmission', 0, 1)
 
-  fol.add(mat, "attenuationDistance", 0, 2)
-  fol.add(mat, "roughness", 0, 1)
-  fol.add(mat, "chromaticAberration", 0, 2)
-  fol.add(mat, "distortion", 0, 10)
-  fol.add(mat, "temporalDistortion", 0, 1)
-  fol.add(mat, "anisotropy", 0, 10)
-  fol.add(mat, "reflectivity", 0, 1)
+  fol.add(mat, 'attenuationDistance', 0, 2)
+  fol.add(mat, 'roughness', 0, 1)
+  fol.add(mat, 'chromaticAberration', 0, 2)
+  fol.add(mat, 'distortion', 0, 10)
+  fol.add(mat, 'temporalDistortion', 0, 1)
+  fol.add(mat, 'anisotropy', 0, 10)
+  fol.add(mat, 'reflectivity', 0, 1)
 
-  fol.add(mtmParams, "renderEachMesh").name("⚠ Render Each Mesh separately")
+  fol.add(mtmParams, 'renderEachMesh').name('⚠ Render Each Mesh separately')
 }
 
 const color = new Color()
 function getRandomHexColor() {
-  return "#" + color.setHSL(Math.random(), 0.5, 0.5).getHexString()
+  return '#' + color.setHSL(Math.random(), 0.5, 0.5).getHexString()
 }

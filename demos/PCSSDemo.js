@@ -1,14 +1,14 @@
-import Stats from "three/examples/jsm/libs/stats.module"
-import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader"
-import { EXRLoader } from "three/examples/jsm/loaders/EXRLoader"
-import { GroundProjectedEnv } from "three/examples/jsm/objects/GroundProjectedEnv"
+import Stats from 'three/examples/jsm/libs/stats.module'
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
+import { EXRLoader } from 'three/examples/jsm/loaders/EXRLoader'
+import { GroundProjectedEnv } from 'three/examples/jsm/objects/GroundProjectedEnv'
 
-import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader"
-import { OrbitControls } from "three/examples/jsm/controls/OrbitControls"
-import { TransformControls } from "three/examples/jsm/controls/TransformControls"
+import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader'
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
+import { TransformControls } from 'three/examples/jsm/controls/TransformControls'
 
-import { pcss } from "@pmndrs/vanilla"
-import roomUrl from "../models/room.glb"
+import { pcss } from '@pmndrs/vanilla'
+import roomUrl from '../models/room_comp.glb?url'
 
 import {
   ACESFilmicToneMapping,
@@ -31,8 +31,8 @@ import {
   ShadowMaterial,
   DirectionalLight,
   AmbientLight,
-} from "three"
-import { HDRI_LIST } from "../hdri/HDRI_LIST"
+} from 'three'
+import { HDRI_LIST } from '../hdri/HDRI_LIST'
 
 let stats,
   renderer,
@@ -57,7 +57,7 @@ const gltfLoader = new GLTFLoader()
 const draco = new DRACOLoader()
 let transformControls
 // draco.setDecoderPath("https://www.gstatic.com/draco/versioned/decoders/1.5.5/")
-draco.setDecoderPath("https://www.gstatic.com/draco/v1/decoders/")
+draco.setDecoderPath('https://www.gstatic.com/draco/v1/decoders/')
 gltfLoader.setDRACOLoader(draco)
 const raycaster = new Raycaster()
 const intersects = [] //raycast
@@ -66,7 +66,7 @@ let pmremGenerator
 
 export async function pcssDemo(mainGui) {
   gui = mainGui
-  sceneGui = gui.addFolder("Scene")
+  sceneGui = gui.addFolder('Scene')
   stats = new Stats()
   app.appendChild(stats.dom)
   // renderer
@@ -85,7 +85,7 @@ export async function pcssDemo(mainGui) {
   // camera
   camera = new PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 200)
   camera.position.set(6, 3, 6)
-  camera.name = "Camera"
+  camera.name = 'Camera'
   camera.position.set(2.0404140991899564, 2.644387886134694, 3.8683136783076355)
   // scene
   scene = new Scene()
@@ -104,13 +104,13 @@ export async function pcssDemo(mainGui) {
   controls.target.set(0, 0, 0)
 
   transformControls = new TransformControls(camera, renderer.domElement)
-  transformControls.addEventListener("dragging-changed", (event) => {
+  transformControls.addEventListener('dragging-changed', (event) => {
     controls.enabled = !event.value
     if (!event.value) {
     }
   })
 
-  transformControls.addEventListener("change", () => {
+  transformControls.addEventListener('change', () => {
     if (transformControls.object) {
       if (transformControls.object.position.y < 0) {
         transformControls.object.position.y = 0
@@ -119,21 +119,21 @@ export async function pcssDemo(mainGui) {
   })
   scene.add(transformControls)
 
-  window.addEventListener("resize", onWindowResize)
-  document.addEventListener("pointermove", onPointerMove)
+  window.addEventListener('resize', onWindowResize)
+  document.addEventListener('pointermove', onPointerMove)
 
   let downTime = Date.now()
-  app.addEventListener("pointerdown", () => {
+  app.addEventListener('pointerdown', () => {
     downTime = Date.now()
   })
-  app.addEventListener("pointerup", (e) => {
+  app.addEventListener('pointerup', (e) => {
     if (Date.now() - downTime < 200) {
       onPointerMove(e)
       raycast()
     }
   })
 
-  sceneGui.add(transformControls, "mode", ["translate", "rotate", "scale"])
+  sceneGui.add(transformControls, 'mode', ['translate', 'rotate', 'scale'])
   // sceneGui.add(scene, "backgroundBlurriness", 0, 1, 0.01)
   // sceneGui.addColor(params, "bgColor").onChange(() => {
   //   scene.background = params.bgColor
@@ -148,7 +148,7 @@ export async function pcssDemo(mainGui) {
   console.log(pcss)
 
   let sunLight = new DirectionalLight(0xffffeb, 5)
-  sunLight.name = "Dir. Light"
+  sunLight.name = 'Dir. Light'
   sunLight.castShadow = true
   sunLight.shadow.camera.near = 0.1
   sunLight.shadow.camera.far = 50
@@ -176,7 +176,7 @@ async function setupEnvironment() {
   // light
   let sunGroup = new Group()
   let sunLight = new DirectionalLight(0xffffeb, 1)
-  sunLight.name = "Dir. Light"
+  sunLight.name = 'Dir. Light'
   sunLight.castShadow = true
   sunLight.shadow.camera.near = 0.1
   sunLight.shadow.camera.far = 50
@@ -195,7 +195,7 @@ async function setupEnvironment() {
 
   //   floor
   const shadowFloor = new Mesh(new PlaneGeometry(10, 10).rotateX(-Math.PI / 2), new ShadowMaterial({}))
-  shadowFloor.name = "shadowFloor"
+  shadowFloor.name = 'shadowFloor'
   shadowFloor.receiveShadow = true
   shadowFloor.position.set(0, 0, 0)
   scene.add(shadowFloor)
@@ -266,10 +266,10 @@ async function setupEnvironment() {
 
   loadEnv(params.environment)
 
-  sceneGui.add(params, "environment", HDRI_LIST).onChange((v) => {
+  sceneGui.add(params, 'environment', HDRI_LIST).onChange((v) => {
     loadEnv(v)
   })
-  sceneGui.add(params, "groundProjection").onChange((v) => {
+  sceneGui.add(params, 'groundProjection').onChange((v) => {
     loadGroundProj(params.environment)
   })
 }
@@ -328,7 +328,7 @@ async function loadModels() {
       metalness: 1,
     })
   )
-  sphere.name = "sphere"
+  sphere.name = 'sphere'
   sphere.castShadow = true
   sphere.receiveShadow = true
   sphere.position.set(2, 0, -1.5)
@@ -343,7 +343,7 @@ async function loadModels() {
       metalness: 1,
     })
   )
-  cube.name = "cube"
+  cube.name = 'cube'
   cube.castShadow = true
   cube.receiveShadow = true
   cube.position.set(-2, 0, -1.5)
@@ -351,7 +351,7 @@ async function loadModels() {
 
   const gltf = await gltfLoader.loadAsync(roomUrl)
   const model = gltf.scene
-  model.name = "room"
+  model.name = 'room'
   model.scale.setScalar(0.5)
   model.position.set(0, -1, 0)
 
@@ -361,8 +361,8 @@ async function loadModels() {
       child.receiveShadow = true
       child.selectOnRaycast = model
 
-      if (child.name === "Object_13") {
-        console.log("FOUND", child)
+      if (child.name === 'Object_13') {
+        console.log('FOUND', child)
         child.material.opacity = 0.5
         child.material.transparent = true
 
@@ -376,5 +376,5 @@ async function loadModels() {
 
 const color = new Color()
 function getRandomHexColor() {
-  return "#" + color.setHSL(Math.random(), 0.5, 0.5).getHexString()
+  return '#' + color.setHSL(Math.random(), 0.5, 0.5).getHexString()
 }
