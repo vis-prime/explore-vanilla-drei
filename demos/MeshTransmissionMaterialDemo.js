@@ -8,7 +8,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { TransformControls } from 'three/examples/jsm/controls/TransformControls'
 
 import { MeshTransmissionMaterial, MeshDiscardMaterial } from '@pmndrs/vanilla'
-import porscheUrl from '../models/porsche_911_1975_comp.glb?url'
+import porscheUrl from '../models/porsche_911_1975_comp.glb'
 
 import {
   ACESFilmicToneMapping,

@@ -8,7 +8,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { TransformControls } from 'three/examples/jsm/controls/TransformControls'
 
 import { pcss } from '@pmndrs/vanilla'
-import roomUrl from '../models/room_comp.glb?url'
+import roomUrl from '../models/room_comp.glb'
 
 import {
   ACESFilmicToneMapping,

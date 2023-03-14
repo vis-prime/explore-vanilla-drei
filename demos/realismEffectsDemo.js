@@ -37,7 +37,7 @@ import {
 } from 'three'
 import { HDRI_LIST } from '../hdri/HDRI_LIST'
 import { SSGIDebugGUI } from '../wip/SSGIDebugGUI'
-import porscheUrl from '../models/porsche_911_1975_comp.glb?url'
+import porscheUrl from '../models/porsche_911_1975_comp.glb'
 
 let stats,
   renderer,
