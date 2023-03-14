@@ -1,4 +1,3 @@
-import * as POSTPROCESSING from 'postprocessing'
 import { MotionBlurEffect, SSGIEffect, TRAAEffect, VelocityDepthNormalPass } from 'realism-effects'
 import Stats from 'three/examples/jsm/libs/stats.module'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
@@ -26,6 +25,16 @@ import {
   Vector3,
   WebGLRenderer,
 } from 'three'
+import {
+  BloomEffect,
+  EffectComposer,
+  EffectPass,
+  FXAAEffect,
+  KernelSize,
+  LUT3DEffect,
+  LUT3dlLoader,
+  VignetteEffect,
+} from 'postprocessing'
 export function realismEffectsDemo(gui) {
   let traaEffect
   let traaPass
@@ -87,7 +96,7 @@ export function realismEffectsDemo(gui) {
 
   renderer.setSize(window.innerWidth, window.innerHeight)
 
-  const effectPass = new POSTPROCESSING.EffectPass(camera)
+  const effectPass = new EffectPass(camera)
 
   const setAA = (value) => {
     composer.multisampling = 0
@@ -96,28 +105,18 @@ export function realismEffectsDemo(gui) {
     composer.removePass(fxaaPass)
     composer.removePass(effectPass)
 
-    // switch (value) {
-    //   case 'TRAA':
-    // composer.addPass(traaPass)
-    //     break
+    switch (value) {
+      case 'TRAA':
+        composer.addPass(traaPass)
+        break
 
-    //   case 'MSAA':
-    //     const ctx = renderer.getContext()
-    //     composer.multisampling = Math.min(4, ctx.getParameter(ctx.MAX_SAMPLES))
-    //     composer.addPass(effectPass)
-    //     break
+      case 'FXAA':
+        composer.addPass(fxaaPass)
+        break
 
-    //   case 'FXAA':
-    composer.addPass(fxaaPass)
-    //     break
-
-    //   case 'SMAA':
-    //     composer.addPass(smaaPass)
-    //     break
-
-    //   default:
-    //     composer.addPass(effectPass)
-    // }
+      default:
+        composer.addPass(effectPass)
+    }
     console.log('composer', composer.passes)
   }
 
@@ -132,7 +131,7 @@ export function realismEffectsDemo(gui) {
   controls.minDistance = 7.5
   window.controls = controls
 
-  const composer = new POSTPROCESSING.EffectComposer(renderer)
+  const composer = new EffectComposer(renderer)
 
   const lightParams = {
     yaw: 55,
@@ -251,15 +250,15 @@ export function realismEffectsDemo(gui) {
 
     pane = gui
 
-    const bloomEffect = new POSTPROCESSING.BloomEffect({
+    const bloomEffect = new BloomEffect({
       intensity: 1,
       mipmapBlur: true,
       luminanceSmoothing: 0.75,
       luminanceThreshold: 0.75,
-      kernelSize: POSTPROCESSING.KernelSize.MEDIUM,
+      kernelSize: KernelSize.MEDIUM,
     })
 
-    const vignetteEffect = new POSTPROCESSING.VignetteEffect({
+    const vignetteEffect = new VignetteEffect({
       darkness: 0.8,
       offset: 0.3,
     })
@@ -268,24 +267,20 @@ export function realismEffectsDemo(gui) {
 
     new SSGIDebugGUI(pane, ssgiEffect, options)
 
-    new POSTPROCESSING.LUT3dlLoader().load(TEXTURES_LIST.lut).then((lutTexture) => {
-      const lutEffect = new POSTPROCESSING.LUT3DEffect(lutTexture)
+    new LUT3dlLoader().load(TEXTURES_LIST.lut).then((lutTexture) => {
+      const lutEffect = new LUT3DEffect(lutTexture)
 
-      composer.addPass(new POSTPROCESSING.EffectPass(camera, ssgiEffect, bloomEffect, vignetteEffect, lutEffect))
+      composer.addPass(new EffectPass(camera, ssgiEffect, bloomEffect, vignetteEffect, lutEffect))
 
       const motionBlurEffect = new MotionBlurEffect(velocityDepthNormalPass)
 
-      composer.addPass(new POSTPROCESSING.EffectPass(camera, motionBlurEffect))
+      composer.addPass(new EffectPass(camera, motionBlurEffect))
 
-      traaPass = new POSTPROCESSING.EffectPass(camera, traaEffect)
+      traaPass = new EffectPass(camera, traaEffect)
 
-      const smaaEffect = new POSTPROCESSING.SMAAEffect()
+      const fxaaEffect = new FXAAEffect()
 
-      smaaPass = new POSTPROCESSING.EffectPass(camera, smaaEffect)
-
-      const fxaaEffect = new POSTPROCESSING.FXAAEffect()
-
-      fxaaPass = new POSTPROCESSING.EffectPass(camera, fxaaEffect)
+      fxaaPass = new EffectPass(camera, fxaaEffect)
 
       //     setAA('TRAA')
       setAA('FXAA')
