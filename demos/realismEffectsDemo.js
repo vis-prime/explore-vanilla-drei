@@ -1,85 +1,78 @@
+import * as POSTPROCESSING from 'postprocessing'
+import { MotionBlurEffect, SSGIEffect, TRAAEffect, VelocityDepthNormalPass } from 'realism-effects'
 import Stats from 'three/examples/jsm/libs/stats.module'
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
-import { EXRLoader } from 'three/examples/jsm/loaders/EXRLoader'
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
+import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader'
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader'
 import { GroundProjectedEnv } from 'three/examples/jsm/objects/GroundProjectedEnv'
-import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader'
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
-import { EffectComposer, EffectPass, RenderPass } from 'postprocessing'
+import { HDRI_LIST } from '../hdri/HDRI_LIST'
+import modelUrl from '../models/porsche_911_1975_comp.glb'
+import { SSGIDebugGUI } from '../wip/SSGIDebugGUI'
+import { TEXTURES_LIST } from '../textures/TEXTURES_LIST'
 import {
-  SSGIEffect,
-  TRAAEffect,
-  MotionBlurEffect,
-  VelocityDepthNormalPass,
-  SSDGIEffect,
-  SSREffect,
-} from 'realism-effects'
-import {
-  ACESFilmicToneMapping,
+  Box3,
+  CircleGeometry,
+  DirectionalLight,
+  EquirectangularReflectionMapping,
+  FloatType,
+  LinearFilter,
   Mesh,
   MeshStandardMaterial,
   PerspectiveCamera,
   Scene,
-  SphereGeometry,
   sRGBEncoding,
-  WebGLRenderer,
-  Vector2,
-  Raycaster,
-  Group,
-  BoxGeometry,
-  Color,
   TextureLoader,
-  EquirectangularReflectionMapping,
-  DirectionalLight,
-  FloatType,
-  PMREMGenerator,
-  CircleGeometry,
+  Vector3,
+  WebGLRenderer,
 } from 'three'
-import { HDRI_LIST } from '../hdri/HDRI_LIST'
-import { SSGIDebugGUI } from '../wip/SSGIDebugGUI'
-import porscheUrl from '../models/porsche_911_1975_comp.glb'
+export function realismEffectsDemo(gui) {
+  let traaEffect
+  let traaPass
+  let smaaPass
+  let fxaaPass
+  let ssgiEffect
+  let postprocessingEnabled = true
+  let pane
+  let envMesh
+  let fps
 
-let stats,
-  renderer,
-  raf,
-  camera,
-  scene,
-  controls,
-  gui,
-  groundProjectedEnv,
-  pointer = new Vector2()
+  const scene = new Scene()
+  //   scene.matrixWorldAutoUpdate = false
+  //   window.scene = scene
 
-const params = {
-  environment: HDRI_LIST.ulmer_muenster,
-  groundProjection: true,
-  bgColor: new Color(),
-  printCam: () => {},
-}
-const mainObjects = new Group()
-const textureLoader = new TextureLoader()
-const exrLoader = new EXRLoader().setDataType(FloatType)
-const rgbeLoader = new RGBELoader().setDataType(FloatType)
-const gltfLoader = new GLTFLoader()
-const draco = new DRACOLoader()
-// draco.setDecoderPath("https://www.gstatic.com/draco/versioned/decoders/1.5.5/")
-draco.setDecoderPath('https://www.gstatic.com/draco/v1/decoders/')
-gltfLoader.setDRACOLoader(draco)
-const raycaster = new Raycaster()
-const intersects = [] //raycast
-let sceneGui
+  const camera = new PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.1, 250)
+  scene.add(camera)
 
-/**
- * @type {EffectComposer}
- */
-let composer
+  const canvas = document.createElement('canvas')
+  document.body.appendChild(canvas)
+  canvas.style.left = 0
+  canvas.style.top = 0
+  canvas.style.position = 'fixed'
 
-export async function realismEffectsDemo(mainGui) {
-  gui = mainGui
-  sceneGui = gui.addFolder('Scene')
-  stats = new Stats()
-  app.appendChild(stats.dom)
-  // renderer
-  renderer = new WebGLRenderer({
+  const orbitDiv = document.createElement('div')
+  orbitDiv.id = 'orbitControlsDomElem'
+  orbitDiv.style.position = 'absolute'
+  orbitDiv.style.left = 0
+  orbitDiv.style.top = 0
+  orbitDiv.style.width = '100vw'
+  orbitDiv.style.height = '100vh'
+  orbitDiv.style.opacity = 0
+  orbitDiv.style.cursor = 'grab'
+  document.body.appendChild(orbitDiv)
+
+  let rendererCanvas = canvas
+
+  // use an offscreen canvas if available
+  // if (window.OffscreenCanvas && !navigator.userAgent.toLowerCase().includes('firefox')) {
+  //   rendererCanvas = canvas.transferControlToOffscreen()
+  //   rendererCanvas.style = canvas.style
+  //   rendererCanvas.toDataURL = canvas.toDataURL.bind(canvas)
+  // }
+
+  // Renderer
+  const renderer = new WebGLRenderer({
+    canvas: rendererCanvas,
     powerPreference: 'high-performance',
     premultipliedAlpha: false,
     stencil: false,
@@ -87,356 +80,347 @@ export async function realismEffectsDemo(mainGui) {
     alpha: false,
     preserveDrawingBuffer: true,
   })
-  renderer.setPixelRatio(Math.min(1.5, window.devicePixelRatio))
-  renderer.setSize(window.innerWidth, window.innerHeight)
-  // renderer.shadowMap.enabled = true
-  //   renderer.shadowMap.type = VSMShadowMap
-  renderer.outputEncoding = sRGBEncoding
-  renderer.toneMapping = ACESFilmicToneMapping
+
   renderer.autoClear = false
 
-  app.appendChild(renderer.domElement)
+  renderer.outputEncoding = sRGBEncoding
 
-  const pmremGenerator = new PMREMGenerator(renderer)
-  pmremGenerator.compileEquirectangularShader()
+  renderer.setSize(window.innerWidth, window.innerHeight)
 
-  // camera
-  camera = new PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 200)
-  camera.position.set(6, 3, 6)
-  camera.name = 'Camera'
-  // scene
-  scene = new Scene()
-  scene.background = new Color('grey')
-  scene.add(mainObjects)
+  const effectPass = new POSTPROCESSING.EffectPass(camera)
 
-  // controls
-  controls = new OrbitControls(camera, renderer.domElement)
-  controls.enableDamping = true // an animation loop is required when either damping or auto-rotation are enabled
-  controls.dampingFactor = 0.05
-  controls.minDistance = 0.1
-  controls.maxDistance = 100
-  controls.maxPolarAngle = Math.PI / 1.5
+  const setAA = (value) => {
+    composer.multisampling = 0
+    composer.removePass(smaaPass)
+    composer.removePass(traaPass)
+    composer.removePass(fxaaPass)
+    composer.removePass(effectPass)
 
-  window.addEventListener('resize', onWindowResize)
-  document.addEventListener('pointermove', onPointerMove)
+    // switch (value) {
+    //   case 'TRAA':
+    // composer.addPass(traaPass)
+    //     break
 
-  let downTime = Date.now()
-  app.addEventListener('pointerdown', () => {
-    downTime = Date.now()
-  })
-  app.addEventListener('pointerup', (e) => {
-    if (Date.now() - downTime < 200) {
-      onPointerMove(e)
-      raycast()
-    }
-  })
+    //   case 'MSAA':
+    //     const ctx = renderer.getContext()
+    //     composer.multisampling = Math.min(4, ctx.getParameter(ctx.MAX_SAMPLES))
+    //     composer.addPass(effectPass)
+    //     break
 
-  await loadModels()
-  await setupEnvironment()
-  setupComposer()
-  onWindowResize()
+    //   case 'FXAA':
+    composer.addPass(fxaaPass)
+    //     break
 
-  animate()
-}
+    //   case 'SMAA':
+    //     composer.addPass(smaaPass)
+    //     break
 
-async function setupEnvironment() {
-  // light
-  let sunGroup = new Group()
-  let sunLight = new DirectionalLight(0xffffeb, 1)
-  sunLight.name = 'Dir. Light'
-  sunLight.castShadow = true
-  sunLight.shadow.camera.near = 0.1
-  sunLight.shadow.camera.far = 50
-  sunLight.shadow.camera.right = 15
-  sunLight.shadow.camera.left = -15
-  sunLight.shadow.camera.top = 15
-  sunLight.shadow.camera.bottom = -15
-  sunLight.shadow.mapSize.width = 1024
-  sunLight.shadow.mapSize.height = 1024
-  //   sunLight.shadow.radius = 1.95
-  //   sunLight.shadow.blurSamples = 6
-
-  sunLight.shadow.bias = -0.0005
-  sunGroup.add(sunLight)
-  scene.add(sunGroup)
-
-  //   floor
-  //   const shadowFloor = new Mesh(new PlaneGeometry(10, 10).rotateX(-Math.PI / 2), new ShadowMaterial({}))
-  //   shadowFloor.name = "shadowFloor"
-  //   shadowFloor.receiveShadow = true
-  //   shadowFloor.position.set(0, 0, 0)
-  //   scene.add(shadowFloor)
-
-  /**
-   * Update env
-   * @param {HDRI_LIST} envDict
-   * @returns
-   */
-  async function loadEnv(envDict) {
-    if (!envDict) {
-      scene.background = null
-      scene.environment = null
-      return
-    }
-
-    if (envDict.exr) {
-      const texture = await exrLoader.loadAsync(envDict.exr)
-      texture.mapping = EquirectangularReflectionMapping
-      scene.environment = texture
-      console.log('exr loaded')
-    }
-
-    if (envDict.hdr) {
-      const texture = await rgbeLoader.loadAsync(envDict.hdr)
-      texture.mapping = EquirectangularReflectionMapping
-      scene.environment = texture
-      console.log('exr loaded')
-    }
-
-    if (envDict.webP || envDict.avif) {
-      const texture = await textureLoader.loadAsync(envDict.webP || envDict.avif)
-      texture.mapping = EquirectangularReflectionMapping
-      texture.encoding = sRGBEncoding
-      scene.background = texture
-      console.log('bg loaded')
-
-      if (params.groundProjection) loadGroundProj(params.environment)
-    }
-
-    if (envDict.sunPos) {
-      sunLight.visible = true
-      sunLight.position.fromArray(envDict.sunPos)
-    } else {
-      sunLight.visible = false
-    }
-
-    if (envDict.sunCol) {
-      sunLight.color.set(envDict.sunCol)
-    } else {
-      sunLight.color.set(0xffffff)
-    }
-
-    // if (envDict.shadowOpacity) {
-    //   shadowFloor.material.opacity = envDict.shadowOpacity
+    //   default:
+    //     composer.addPass(effectPass)
     // }
+    console.log('composer', composer.passes)
   }
 
-  function loadGroundProj(envDict) {
-    if (params.groundProjection && scene.background && envDict.groundProj) {
-      if (!groundProjectedEnv) {
-        groundProjectedEnv = new GroundProjectedEnv(scene.background)
-        groundProjectedEnv.scale.setScalar(100)
-      }
-      groundProjectedEnv.material.uniforms.map.value = scene.background
-      groundProjectedEnv.radius = envDict.groundProj.radius
-      groundProjectedEnv.height = envDict.groundProj.height
-      if (!groundProjectedEnv.parent) {
-        scene.add(groundProjectedEnv)
-      }
-    } else {
-      if (groundProjectedEnv && groundProjectedEnv.parent) {
-        groundProjectedEnv.removeFromParent()
-      }
+  // since using "rendererCanvas" doesn't work when using an offscreen canvas
+  const controls = new OrbitControls(camera, document.querySelector('#orbitControlsDomElem'))
+  controls.enableDamping = true
+
+  const cameraY = 8.75
+  camera.position.set(50, 30, 50)
+  controls.target.set(0, cameraY, 0)
+  controls.maxPolarAngle = Math.PI / 2
+  controls.minDistance = 7.5
+  window.controls = controls
+
+  const composer = new POSTPROCESSING.EffectComposer(renderer)
+
+  const lightParams = {
+    yaw: 55,
+    pitch: 27,
+    intensity: 0,
+  }
+
+  const light = new DirectionalLight(0xffffff, lightParams.intensity)
+  light.position.set(217, 43, 76)
+  light.updateMatrixWorld()
+  light.castShadow = true
+  scene.add(light)
+
+  renderer.shadowMap.enabled = true
+  renderer.shadowMap.autoUpdate = false
+  renderer.shadowMap.needsUpdate = true
+
+  light.shadow.mapSize.width = 8192
+  light.shadow.mapSize.height = 8192
+  light.shadow.camera.near = 50
+  light.shadow.camera.far = 500
+  light.shadow.bias = -0.0001
+
+  const s = 100
+
+  light.shadow.camera.left = -s
+  light.shadow.camera.bottom = -s
+  light.shadow.camera.right = s
+  light.shadow.camera.top = s
+
+  const stats = new Stats()
+
+  document.body.appendChild(stats.dom)
+
+  //   const pmremGenerator = new PMREMGenerator(renderer)
+  //   pmremGenerator.compileEquirectangularShader()
+
+  const rgbeLoader = new RGBELoader().setDataType(FloatType)
+
+  const initEnvMap = async (envMap) => {
+    envMap.mapping = EquirectangularReflectionMapping
+
+    scene.environment?.dispose()
+
+    scene.environment = envMap
+    scene.background = null
+
+    envMesh?.removeFromParent()
+    envMesh?.material.dispose()
+    envMesh?.geometry.dispose()
+
+    const hqImg = await new TextureLoader().loadAsync(HDRI_LIST.dry_cracked_lake.avif)
+    hqImg.encoding = sRGBEncoding
+    hqImg.minFilter = LinearFilter
+    envMesh = new GroundProjectedEnv(hqImg)
+    envMesh.radius = 100
+    envMesh.height = 20
+    envMesh.scale.setScalar(100)
+    envMesh.updateMatrixWorld()
+    scene.add(envMesh)
+  }
+
+  rgbeLoader.load(HDRI_LIST.dry_cracked_lake.hdr, initEnvMap)
+
+  const gltflLoader = new GLTFLoader()
+
+  const draco = new DRACOLoader()
+  draco.setDecoderConfig({ type: 'js' })
+  draco.setDecoderPath('https://www.gstatic.com/draco/v1/decoders/')
+  gltflLoader.setDRACOLoader(draco)
+
+  let url
+  url = modelUrl
+
+  const toRad = Math.PI / 180
+
+  const refreshLighting = () => {
+    console.log('refresh lighting')
+    light.position.x = Math.sin(lightParams.yaw * toRad) * Math.cos(lightParams.pitch * toRad)
+    light.position.y = Math.sin(lightParams.pitch * toRad)
+    light.position.z = Math.cos(lightParams.yaw * toRad) * Math.cos(lightParams.pitch * toRad)
+    light.position.normalize().multiplyScalar(75)
+    light.updateMatrixWorld()
+    renderer.shadowMap.needsUpdate = true
+  }
+
+  const initScene = async () => {
+    const options = {
+      distance: 2.7200000000000104,
+      thickness: 1.2999999999999972,
+      autoThickness: false,
+      maxRoughness: 1,
+      blend: 0.95,
+      denoiseIterations: 3,
+      denoiseKernel: 3,
+      denoiseDiffuse: 25,
+      denoiseSpecular: 25.54,
+      depthPhi: 5,
+      normalPhi: 28,
+      roughnessPhi: 18.75,
+      envBlur: 0.55,
+      importanceSampling: true,
+      directLightMultiplier: 1,
+      maxEnvLuminance: 50,
+      steps: 20,
+      refineSteps: 4,
+      spp: 1,
+      resolutionScale: 1,
+      missedRays: false,
     }
-  }
 
-  await loadEnv(params.environment)
+    const velocityDepthNormalPass = new VelocityDepthNormalPass(scene, camera)
+    composer.addPass(velocityDepthNormalPass)
 
-  sceneGui.add(params, 'environment', HDRI_LIST).onChange((v) => {
-    loadEnv(v)
-  })
-  sceneGui.add(params, 'groundProjection').onChange((v) => {
-    loadGroundProj(params.environment)
-  })
-}
+    traaEffect = new TRAAEffect(scene, camera, velocityDepthNormalPass)
 
-function onWindowResize() {
-  const w = window.innerWidth
-  const h = window.innerHeight
-  camera.aspect = w / h
-  camera.updateProjectionMatrix()
-  composer.setSize(w, h)
-}
+    pane = gui
 
-function render() {
-  stats.update()
-  // Update the inertia on the orbit controls
-  controls.update()
-  //   renderer.render(scene, camera)
-  camera.updateMatrixWorld()
-  composer.render()
-}
-
-function animate() {
-  raf = requestAnimationFrame(animate)
-  render()
-}
-
-function raycast() {
-  // update the picking ray with the camera and pointer position
-  raycaster.setFromCamera(pointer, camera)
-
-  // calculate objects intersecting the picking ray
-  raycaster.intersectObject(mainObjects, true, intersects)
-
-  if (!intersects.length) {
-    return
-  }
-
-  intersects.length = 0
-}
-
-function onPointerMove(event) {
-  pointer.x = (event.clientX / window.innerWidth) * 2 - 1
-  pointer.y = -(event.clientY / window.innerHeight) * 2 + 1
-}
-
-async function loadModels() {
-  // sphere
-  const sphere = new Mesh(
-    new SphereGeometry(0.5).translate(0, 0.5, 0),
-    new MeshStandardMaterial({
-      color: getRandomHexColor(),
-      roughness: 0,
-      //   metalness: 1,
+    const bloomEffect = new POSTPROCESSING.BloomEffect({
+      intensity: 1,
+      mipmapBlur: true,
+      luminanceSmoothing: 0.75,
+      luminanceThreshold: 0.75,
+      kernelSize: POSTPROCESSING.KernelSize.MEDIUM,
     })
-  )
-  sphere.name = 'sphere'
-  sphere.castShadow = true
-  sphere.receiveShadow = true
-  sphere.position.set(2, 0, -1.5)
-  mainObjects.add(sphere)
 
-  // cube
-  const cube = new Mesh(
-    new BoxGeometry(1, 1, 1).translate(0, 0.5, 0),
-    new MeshStandardMaterial({
-      color: getRandomHexColor(),
-      roughness: 0,
-      //   metalness: 1,
+    const vignetteEffect = new POSTPROCESSING.VignetteEffect({
+      darkness: 0.8,
+      offset: 0.3,
     })
-  )
-  cube.name = 'cube'
-  cube.castShadow = true
-  cube.receiveShadow = true
-  cube.position.set(-2, 0, -1.5)
-  mainObjects.add(cube)
 
-  const shadowFloor = new Mesh(
-    new CircleGeometry(5, 32).rotateX(-Math.PI / 2),
-    new MeshStandardMaterial({ color: 0x111111, roughness: 0 })
-  )
-  shadowFloor.name = 'floor'
-  shadowFloor.receiveShadow = true
-  shadowFloor.position.set(0, 0.001, 0)
-  scene.add(shadowFloor)
+    ssgiEffect = new SSGIEffect(scene, camera, velocityDepthNormalPass, options)
 
-  const gltf = await gltfLoader.loadAsync(porscheUrl)
-  const model = gltf.scene
-  model.name = 'car'
-  model.traverse((child) => {
-    if (child.isMesh) {
-      child.castShadow = true
-      child.receiveShadow = true
-      child.selectOnRaycast = model
+    new SSGIDebugGUI(pane, ssgiEffect, options)
+
+    new POSTPROCESSING.LUT3dlLoader().load(TEXTURES_LIST.lut).then((lutTexture) => {
+      const lutEffect = new POSTPROCESSING.LUT3DEffect(lutTexture)
+
+      composer.addPass(new POSTPROCESSING.EffectPass(camera, ssgiEffect, bloomEffect, vignetteEffect, lutEffect))
+
+      const motionBlurEffect = new MotionBlurEffect(velocityDepthNormalPass)
+
+      composer.addPass(new POSTPROCESSING.EffectPass(camera, motionBlurEffect))
+
+      traaPass = new POSTPROCESSING.EffectPass(camera, traaEffect)
+
+      const smaaEffect = new POSTPROCESSING.SMAAEffect()
+
+      smaaPass = new POSTPROCESSING.EffectPass(camera, smaaEffect)
+
+      const fxaaEffect = new POSTPROCESSING.FXAAEffect()
+
+      fxaaPass = new POSTPROCESSING.EffectPass(camera, fxaaEffect)
+
+      //     setAA('TRAA')
+      setAA('FXAA')
+      resize()
+
+      loop()
+    })
+
+    const floor = new Mesh(
+      new CircleGeometry(25, 32),
+      new MeshStandardMaterial({ color: 0x111111, roughness: 0, metalness: 1 })
+    )
+    floor.rotateX(-Math.PI / 2)
+    floor.name = 'floor'
+    floor.receiveShadow = true
+    floor.position.set(0, 0.001, 0)
+    scene.add(floor)
+  }
+
+  const loop = () => {
+    stats.begin()
+
+    controls.update()
+    camera.updateMatrixWorld()
+
+    if (postprocessingEnabled) {
+      composer.render()
+    } else {
+      renderer.clear()
+      renderer.render(scene, camera)
+    }
+
+    stats.end()
+    window.requestAnimationFrame(loop)
+  }
+
+  const resize = () => {
+    camera.aspect = window.innerWidth / window.innerHeight
+    camera.updateProjectionMatrix()
+
+    const dpr = window.devicePixelRatio
+    renderer.setPixelRatio(fps < 256 ? Math.max(1, dpr * 0.5) : dpr)
+    console.log('DPR', renderer.getPixelRatio())
+
+    renderer.setSize(window.innerWidth, window.innerHeight)
+    composer.setSize(window.innerWidth, window.innerHeight)
+  }
+
+  // event handlers
+  window.addEventListener('resize', resize)
+
+  // source: https://stackoverflow.com/a/2117523/7626841
+  function uuidv4() {
+    return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, (c) =>
+      (c ^ (crypto.getRandomValues(new Uint8Array(1))[0] & (15 >> (c / 4)))).toString(16)
+    )
+  }
+
+  const aaOptions = {
+    1: 'TRAA',
+    2: 'MSAA',
+    3: 'FXAA',
+    4: 'SMAA',
+    5: 'Disabled',
+  }
+
+  const aaValues = Object.values(aaOptions)
+
+  document.addEventListener('keydown', (ev) => {
+    if (document.activeElement.tagName !== 'INPUT') {
+      const value = aaOptions[ev.key]
+
+      if (value) setAA(value)
+    }
+
+    if (ev.code === 'KeyQ') {
+      postprocessingEnabled = !postprocessingEnabled
+
+      refreshLighting()
+    }
+
+    if (ev.code === 'KeyP') {
+      const data = renderer.domElement.toDataURL()
+
+      const a = document.createElement('a') // Create <a>
+      a.href = data
+      a.download = 'screenshot-' + uuidv4() + '.png' // File name Here
+      a.click() // Downloaded file
     }
   })
-  mainObjects.add(model)
-}
 
-function setupComposer() {
-  composer = new EffectComposer(renderer)
-  const renderPass = new RenderPass(scene, camera) // used only when GI is off
+  const setupAsset = (asset) => {
+    scene.add(asset.scene)
+    asset.scene.scale.setScalar(1)
 
-  const velocityDepthNormalPass = new VelocityDepthNormalPass(scene, camera)
+    asset.scene.traverse((c) => {
+      if (c.isMesh) {
+        c.castShadow = c.receiveShadow = true
+        c.material.depthWrite = true
+      }
 
-  const options = {
-    distance: 10,
-    thickness: 10,
-    autoThickness: false,
-    maxRoughness: 1,
-    blend: 0.9,
-    denoiseIterations: 1,
-    denoiseKernel: 2,
-    denoiseDiffuse: 10,
-    denoiseSpecular: 10,
-    depthPhi: 2,
-    normalPhi: 50,
-    roughnessPhi: 1,
-    envBlur: 0.5,
-    importanceSampling: true,
-    directLightMultiplier: 1,
-    maxEnvLuminance: 50,
-    steps: 20,
-    refineSteps: 5,
-    spp: 1,
-    resolutionScale: 1,
-    missedRays: false,
+      c.frustumCulled = false
+    })
+
+    const bb = new Box3()
+    bb.setFromObject(asset.scene)
+
+    const height = bb.max.y - bb.min.y
+    const width = Math.max(bb.max.x - bb.min.x, bb.max.z - bb.min.z)
+    const targetHeight = 15
+    const targetWidth = 45
+
+    const scaleWidth = targetWidth / width
+    const scaleHeight = targetHeight / height
+
+    asset.scene.scale.multiplyScalar(Math.min(scaleWidth, scaleHeight))
+
+    asset.scene.updateMatrixWorld()
+
+    bb.setFromObject(asset.scene)
+
+    const center = new Vector3()
+    bb.getCenter(center)
+
+    center.y = bb.min.y
+    asset.scene.position.sub(center)
+
+    scene.updateMatrixWorld()
+
+    requestAnimationFrame(refreshLighting)
   }
 
-  // GI
-  const ssgiEffect = new SSGIEffect(scene, camera, velocityDepthNormalPass, options)
-  const ssdgiEffect = new SSDGIEffect(scene, camera, velocityDepthNormalPass, options)
-  const ssrEffect = new SSREffect(scene, camera, velocityDepthNormalPass, options)
-
-  // TRAA
-  const traaEffect = new TRAAEffect(scene, camera, velocityDepthNormalPass)
-
-  // Motion Blur
-  const motionBlurEffect = new MotionBlurEffect(velocityDepthNormalPass)
-
-  new SSGIDebugGUI(gui, ssgiEffect, options)
-
-  const GI_OPTIONS = {
-    SSGI: ssgiEffect,
-    SSDGI: ssdgiEffect,
-    SSR: ssrEffect,
-  }
-  const effectsOptions = {
-    useGI: true,
-    gi: GI_OPTIONS.SSGI,
-    traa: false,
-    motionBlur: false,
-  }
-  function updatePost() {
-    composer.removeAllPasses()
-
-    if (effectsOptions.useGI || effectsOptions.traa || effectsOptions.motionBlur) {
-      composer.addPass(velocityDepthNormalPass)
-    }
-
-    let effectsArray = []
-    if (effectsOptions.useGI) {
-      effectsArray.push(effectsOptions.gi)
-    } else {
-      composer.addPass(renderPass)
-    }
-
-    if (effectsOptions.traa) {
-      effectsArray.push(traaEffect)
-    }
-    if (effectsOptions.motionBlur) {
-      effectsArray.push(motionBlurEffect)
-    }
-
-    if (effectsArray.length) {
-      composer.addPass(new EffectPass(camera, ...effectsArray))
-    }
-
-    console.log(composer.passes)
-  }
-
-  const giFolder = gui.addFolder('EFFECTS')
-  giFolder.open()
-  giFolder.add(effectsOptions, 'useGI').onChange(updatePost)
-  giFolder.add(effectsOptions, 'gi', GI_OPTIONS).onChange(updatePost)
-  giFolder.add(effectsOptions, 'traa').onChange(updatePost)
-  giFolder.add(effectsOptions, 'motionBlur').onChange(updatePost)
-
-  updatePost()
-}
-
-const color = new Color()
-function getRandomHexColor() {
-  return '#' + color.setHSL(Math.random(), 0.5, 0.5).getHexString()
+  gltflLoader.load(url, (asset) => {
+    if (url === 'time_machine.optimized.glb') asset.scene.rotation.y += Math.PI / 2
+    setupAsset(asset)
+    initScene()
+  })
 }
