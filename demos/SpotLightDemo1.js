@@ -861,7 +861,7 @@ async function addPoles(AllVolumeMaterials) {
       pole.position.z -= tick
 
       if (pole.position.z < (-lampParams.gap / 2) * lamps.length) {
-        pole.position.z = (lampParams.gap / 2) * lamps.length
+        pole.position.z += lampParams.gap * lamps.length
       }
 
       volMeshes[index].material.spotPosition.copy(volMeshes[index].getWorldPosition(vec))
