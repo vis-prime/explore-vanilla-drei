@@ -45,9 +45,9 @@ import { Easing, Tween, update } from '@tweenjs/tween.js'
 import { MathUtils } from 'three'
 import { EffectComposer, EffectPass, RenderPass, SelectiveBloomEffect } from 'postprocessing'
 
-import porscheUrl from '../models/porsche_911_1975_comp.glb?url'
-import poleUrl from '../models/pole_comp.glb?url'
-import roadUrl from '../models/road_comp.glb?url'
+import porscheUrl from '../models/porsche_911_1975_comp.glb'
+import poleUrl from '../models/pole_comp.glb'
+import roadUrl from '../models/road_comp.glb'
 
 import { BG_ENV } from './BG_ENV'
 
