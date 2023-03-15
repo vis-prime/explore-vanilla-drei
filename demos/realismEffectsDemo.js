@@ -8,11 +8,8 @@ import { GroundProjectedEnv } from 'three/examples/jsm/objects/GroundProjectedEn
 import { HDRI_LIST } from '../hdri/HDRI_LIST'
 import modelUrl from '../models/porsche_911_1975_comp.glb'
 import { SSGIDebugGUI } from '../wip/SSGIDebugGUI'
-import { TEXTURES_LIST } from '../textures/TEXTURES_LIST'
 import {
-  Box3,
   CircleGeometry,
-  DirectionalLight,
   EquirectangularReflectionMapping,
   FloatType,
   LinearFilter,
@@ -22,19 +19,9 @@ import {
   Scene,
   sRGBEncoding,
   TextureLoader,
-  Vector3,
   WebGLRenderer,
 } from 'three'
-import {
-  BloomEffect,
-  EffectComposer,
-  EffectPass,
-  FXAAEffect,
-  KernelSize,
-  LUT3DEffect,
-  LUT3dlLoader,
-  VignetteEffect,
-} from 'postprocessing'
+import { BloomEffect, EffectComposer, EffectPass, FXAAEffect, KernelSize } from 'postprocessing'
 
 export async function realismEffectsDemo(gui) {
   const params = {
@@ -46,11 +33,10 @@ export async function realismEffectsDemo(gui) {
   let ssgiEffect
   let pane
   let envMesh
-  let fps
 
   const scene = new Scene()
 
-  const camera = new PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.1, 250)
+  const camera = new PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.1, 200)
   scene.add(camera)
 
   const canvas = document.createElement('canvas')
@@ -95,6 +81,7 @@ export async function realismEffectsDemo(gui) {
   renderer.outputEncoding = sRGBEncoding
 
   renderer.setSize(window.innerWidth, window.innerHeight)
+  renderer.setPixelRatio(1)
 
   const setAA = (value) => {
     composer.multisampling = 0
@@ -121,43 +108,12 @@ export async function realismEffectsDemo(gui) {
   const controls = new OrbitControls(camera, document.querySelector('#orbitControlsDomElem'))
   controls.enableDamping = true
 
-  const cameraY = 8.75
-  camera.position.set(50, 30, 50)
-  controls.target.set(0, cameraY, 0)
+  camera.position.set(5, 3, 5)
+  controls.target.set(0, 0.1, 0)
   controls.maxPolarAngle = Math.PI / 2
-  controls.minDistance = 7.5
-  window.controls = controls
+  controls.minDistance = 0.1
 
   const composer = new EffectComposer(renderer)
-
-  const lightParams = {
-    yaw: 55,
-    pitch: 27,
-    intensity: 0,
-  }
-
-  const light = new DirectionalLight(0xffffff, lightParams.intensity)
-  light.position.set(217, 43, 76)
-  light.updateMatrixWorld()
-  light.castShadow = true
-  scene.add(light)
-
-  renderer.shadowMap.enabled = true
-  renderer.shadowMap.autoUpdate = false
-  renderer.shadowMap.needsUpdate = true
-
-  light.shadow.mapSize.width = 8192
-  light.shadow.mapSize.height = 8192
-  light.shadow.camera.near = 50
-  light.shadow.camera.far = 500
-  light.shadow.bias = -0.0001
-
-  const s = 100
-
-  light.shadow.camera.left = -s
-  light.shadow.camera.bottom = -s
-  light.shadow.camera.right = s
-  light.shadow.camera.top = s
 
   const stats = new Stats()
 
@@ -181,75 +137,20 @@ export async function realismEffectsDemo(gui) {
     hqImg.encoding = sRGBEncoding
     hqImg.minFilter = LinearFilter
     envMesh = new GroundProjectedEnv(hqImg)
-    envMesh.radius = 100
-    envMesh.height = 20
+    envMesh.radius = 20
+    envMesh.height = 2
     envMesh.scale.setScalar(100)
-    envMesh.updateMatrixWorld()
     scene.add(envMesh)
-  }
-  const setupAsset = (asset) => {
-    scene.add(asset.scene)
-    asset.scene.scale.setScalar(1)
-
-    asset.scene.traverse((c) => {
-      if (c.isMesh) {
-        c.castShadow = c.receiveShadow = true
-        c.material.depthWrite = true
-      }
-
-      c.frustumCulled = false
-    })
-
-    const bb = new Box3()
-    bb.setFromObject(asset.scene)
-
-    const height = bb.max.y - bb.min.y
-    const width = Math.max(bb.max.x - bb.min.x, bb.max.z - bb.min.z)
-    const targetHeight = 15
-    const targetWidth = 45
-
-    const scaleWidth = targetWidth / width
-    const scaleHeight = targetHeight / height
-
-    asset.scene.scale.multiplyScalar(Math.min(scaleWidth, scaleHeight))
-
-    asset.scene.updateMatrixWorld()
-
-    bb.setFromObject(asset.scene)
-
-    const center = new Vector3()
-    bb.getCenter(center)
-
-    center.y = bb.min.y
-    asset.scene.position.sub(center)
-
-    scene.updateMatrixWorld()
-
-    requestAnimationFrame(refreshLighting)
   }
 
   const envMap = await rgbeLoader.loadAsync(HDRI_LIST.dry_cracked_lake.hdr)
   initEnvMap(envMap)
-  const toRad = Math.PI / 180
+
   const resize = () => {
     camera.aspect = window.innerWidth / window.innerHeight
     camera.updateProjectionMatrix()
-
-    const dpr = window.devicePixelRatio
-    renderer.setPixelRatio(fps < 256 ? Math.max(1, dpr * 0.5) : dpr)
-    console.log('DPR', renderer.getPixelRatio())
-
-    renderer.setSize(window.innerWidth, window.innerHeight)
+    // renderer.setSize(window.innerWidth, window.innerHeight)
     composer.setSize(window.innerWidth, window.innerHeight)
-  }
-  const refreshLighting = () => {
-    light.position.x = Math.sin(lightParams.yaw * toRad) * Math.cos(lightParams.pitch * toRad)
-    light.position.y = Math.sin(lightParams.pitch * toRad)
-    light.position.z = Math.cos(lightParams.yaw * toRad) * Math.cos(lightParams.pitch * toRad)
-    light.position.normalize().multiplyScalar(75)
-    light.updateMatrixWorld()
-    renderer.shadowMap.needsUpdate = true
-    console.log('refresh lighting')
   }
 
   const gltfLoader = new GLTFLoader()
@@ -259,12 +160,17 @@ export async function realismEffectsDemo(gui) {
   gltfLoader.setDRACOLoader(draco)
   let url = modelUrl
   const asset = await gltfLoader.loadAsync(url)
-  setupAsset(asset)
+  scene.add(asset.scene)
+  asset.scene.traverse((c) => {
+    if (c.isMesh) {
+      c.castShadow = c.receiveShadow = true
+      c.material.depthWrite = true
+    }
+    c.frustumCulled = false
+  })
 
   pane = gui
-  gui.add(params, 'postprocessingEnabled').onChange(() => {
-    refreshLighting()
-  })
+  gui.add(params, 'postprocessingEnabled')
   gui.add(params, 'AA', ['NONE', 'TRAA', 'FXAA']).onChange((v) => {
     setAA(v)
   })
@@ -305,20 +211,11 @@ export async function realismEffectsDemo(gui) {
     kernelSize: KernelSize.MEDIUM,
   })
 
-  const vignetteEffect = new VignetteEffect({
-    darkness: 0.8,
-    offset: 0.3,
-  })
-
   ssgiEffect = new SSGIEffect(scene, camera, velocityDepthNormalPass, options)
 
   new SSGIDebugGUI(pane, ssgiEffect, options)
 
-  const lutTexture = await new LUT3dlLoader().load(TEXTURES_LIST.lut)
-
-  const lutEffect = new LUT3DEffect(lutTexture)
-
-  composer.addPass(new EffectPass(camera, ssgiEffect, bloomEffect, vignetteEffect, lutEffect))
+  composer.addPass(new EffectPass(camera, ssgiEffect, bloomEffect))
 
   const motionBlurEffect = new MotionBlurEffect(velocityDepthNormalPass)
   composer.addPass(new EffectPass(camera, motionBlurEffect))
@@ -332,7 +229,7 @@ export async function realismEffectsDemo(gui) {
   resize()
 
   const floor = new Mesh(
-    new CircleGeometry(25, 32),
+    new CircleGeometry(5, 32),
     new MeshStandardMaterial({ color: 0x111111, roughness: 0.1, metalness: 0 })
   )
   floor.rotateX(-Math.PI / 2)
@@ -369,8 +266,6 @@ export async function realismEffectsDemo(gui) {
   document.addEventListener('keydown', (ev) => {
     if (ev.code === 'KeyQ') {
       params.postprocessingEnabled = !params.postprocessingEnabled
-
-      refreshLighting()
     }
 
     if (ev.code === 'KeyP') {
