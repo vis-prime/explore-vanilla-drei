@@ -35,22 +35,20 @@ import {
   LUT3dlLoader,
   VignetteEffect,
 } from 'postprocessing'
-export function realismEffectsDemo(gui) {
+
+export async function realismEffectsDemo(gui) {
   const params = {
+    AA: 'fxaa',
     postprocessingEnabled: true,
   }
-  let traaEffect
   let traaPass
   let fxaaPass
   let ssgiEffect
-  // let postprocessingEnabled = true
   let pane
   let envMesh
   let fps
 
   const scene = new Scene()
-  //   scene.matrixWorldAutoUpdate = false
-  //   window.scene = scene
 
   const camera = new PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.1, 250)
   scene.add(camera)
@@ -165,9 +163,6 @@ export function realismEffectsDemo(gui) {
 
   document.body.appendChild(stats.dom)
 
-  //   const pmremGenerator = new PMREMGenerator(renderer)
-  //   pmremGenerator.compileEquirectangularShader()
-
   const rgbeLoader = new RGBELoader().setDataType(FloatType)
 
   const initEnvMap = async (envMap) => {
@@ -192,184 +187,6 @@ export function realismEffectsDemo(gui) {
     envMesh.updateMatrixWorld()
     scene.add(envMesh)
   }
-
-  rgbeLoader.load(HDRI_LIST.dry_cracked_lake.hdr, initEnvMap)
-
-  const gltflLoader = new GLTFLoader()
-
-  const draco = new DRACOLoader()
-  draco.setDecoderPath('https://www.gstatic.com/draco/v1/decoders/')
-  gltflLoader.setDRACOLoader(draco)
-
-  let url
-  url = modelUrl
-
-  const toRad = Math.PI / 180
-
-  const refreshLighting = () => {
-    console.log('refresh lighting')
-    light.position.x = Math.sin(lightParams.yaw * toRad) * Math.cos(lightParams.pitch * toRad)
-    light.position.y = Math.sin(lightParams.pitch * toRad)
-    light.position.z = Math.cos(lightParams.yaw * toRad) * Math.cos(lightParams.pitch * toRad)
-    light.position.normalize().multiplyScalar(75)
-    light.updateMatrixWorld()
-    renderer.shadowMap.needsUpdate = true
-  }
-
-  const initScene = async () => {
-    const options = {
-      distance: 2.7200000000000104,
-      thickness: 1.2999999999999972,
-      autoThickness: false,
-      maxRoughness: 1,
-      blend: 0.95,
-      denoiseIterations: 3,
-      denoiseKernel: 3,
-      denoiseDiffuse: 25,
-      denoiseSpecular: 25.54,
-      depthPhi: 5,
-      normalPhi: 28,
-      roughnessPhi: 18.75,
-      envBlur: 0.55,
-      importanceSampling: true,
-      directLightMultiplier: 1,
-      maxEnvLuminance: 50,
-      steps: 20,
-      refineSteps: 4,
-      spp: 1,
-      resolutionScale: 1,
-      missedRays: false,
-    }
-
-    const velocityDepthNormalPass = new VelocityDepthNormalPass(scene, camera)
-    composer.addPass(velocityDepthNormalPass)
-
-    traaEffect = new TRAAEffect(scene, camera, velocityDepthNormalPass)
-
-    pane = gui
-    gui.add(params, 'postprocessingEnabled').onChange(() => {
-      refreshLighting()
-    })
-
-    const bloomEffect = new BloomEffect({
-      intensity: 1,
-      mipmapBlur: true,
-      luminanceSmoothing: 0.75,
-      luminanceThreshold: 0.75,
-      kernelSize: KernelSize.MEDIUM,
-    })
-
-    const vignetteEffect = new VignetteEffect({
-      darkness: 0.8,
-      offset: 0.3,
-    })
-
-    ssgiEffect = new SSGIEffect(scene, camera, velocityDepthNormalPass, options)
-
-    new SSGIDebugGUI(pane, ssgiEffect, options)
-
-    new LUT3dlLoader().load(TEXTURES_LIST.lut).then((lutTexture) => {
-      const lutEffect = new LUT3DEffect(lutTexture)
-
-      composer.addPass(new EffectPass(camera, ssgiEffect, bloomEffect, vignetteEffect, lutEffect))
-
-      const motionBlurEffect = new MotionBlurEffect(velocityDepthNormalPass)
-      composer.addPass(new EffectPass(camera, motionBlurEffect))
-
-      traaPass = new EffectPass(camera, traaEffect)
-
-      const fxaaEffect = new FXAAEffect()
-
-      fxaaPass = new EffectPass(camera, fxaaEffect)
-
-      // setAA('TRAA')
-      setAA('FXAA') // FXAA gets rid of noise better ??
-      resize()
-
-      loop()
-    })
-
-    const floor = new Mesh(
-      new CircleGeometry(25, 32),
-      new MeshStandardMaterial({ color: 0x111111, roughness: 0.1, metalness: 0 })
-    )
-    floor.rotateX(-Math.PI / 2)
-    floor.name = 'floor'
-    floor.receiveShadow = true
-    floor.position.set(0, 0.001, 0)
-    scene.add(floor)
-  }
-
-  const loop = () => {
-    stats.begin()
-
-    controls.update()
-    camera.updateMatrixWorld()
-
-    if (params.postprocessingEnabled) {
-      composer.render()
-    } else {
-      renderer.clear()
-      renderer.render(scene, camera)
-    }
-
-    stats.end()
-    window.requestAnimationFrame(loop)
-  }
-
-  const resize = () => {
-    camera.aspect = window.innerWidth / window.innerHeight
-    camera.updateProjectionMatrix()
-
-    const dpr = window.devicePixelRatio
-    renderer.setPixelRatio(fps < 256 ? Math.max(1, dpr * 0.5) : dpr)
-    console.log('DPR', renderer.getPixelRatio())
-
-    renderer.setSize(window.innerWidth, window.innerHeight)
-    composer.setSize(window.innerWidth, window.innerHeight)
-  }
-
-  // event handlers
-  window.addEventListener('resize', resize)
-
-  // source: https://stackoverflow.com/a/2117523/7626841
-  function uuidv4() {
-    return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, (c) =>
-      (c ^ (crypto.getRandomValues(new Uint8Array(1))[0] & (15 >> (c / 4)))).toString(16)
-    )
-  }
-
-  const aaOptions = {
-    1: 'TRAA',
-    2: 'MSAA',
-    3: 'FXAA',
-    4: 'SMAA',
-    5: 'Disabled',
-  }
-
-  document.addEventListener('keydown', (ev) => {
-    if (document.activeElement.tagName !== 'INPUT') {
-      const value = aaOptions[ev.key]
-
-      if (value) setAA(value)
-    }
-
-    if (ev.code === 'KeyQ') {
-      params.postprocessingEnabled = !params.postprocessingEnabled
-
-      refreshLighting()
-    }
-
-    if (ev.code === 'KeyP') {
-      const data = renderer.domElement.toDataURL()
-
-      const a = document.createElement('a') // Create <a>
-      a.href = data
-      a.download = 'screenshot-' + uuidv4() + '.png' // File name Here
-      a.click() // Downloaded file
-    }
-  })
-
   const setupAsset = (asset) => {
     scene.add(asset.scene)
     asset.scene.scale.setScalar(1)
@@ -411,9 +228,168 @@ export function realismEffectsDemo(gui) {
     requestAnimationFrame(refreshLighting)
   }
 
-  gltflLoader.load(url, (asset) => {
-    if (url === 'time_machine.optimized.glb') asset.scene.rotation.y += Math.PI / 2
-    setupAsset(asset)
-    initScene()
+  const envMap = await rgbeLoader.loadAsync(HDRI_LIST.dry_cracked_lake.hdr)
+  initEnvMap(envMap)
+  const toRad = Math.PI / 180
+  const resize = () => {
+    camera.aspect = window.innerWidth / window.innerHeight
+    camera.updateProjectionMatrix()
+
+    const dpr = window.devicePixelRatio
+    renderer.setPixelRatio(fps < 256 ? Math.max(1, dpr * 0.5) : dpr)
+    console.log('DPR', renderer.getPixelRatio())
+
+    renderer.setSize(window.innerWidth, window.innerHeight)
+    composer.setSize(window.innerWidth, window.innerHeight)
+  }
+  const refreshLighting = () => {
+    light.position.x = Math.sin(lightParams.yaw * toRad) * Math.cos(lightParams.pitch * toRad)
+    light.position.y = Math.sin(lightParams.pitch * toRad)
+    light.position.z = Math.cos(lightParams.yaw * toRad) * Math.cos(lightParams.pitch * toRad)
+    light.position.normalize().multiplyScalar(75)
+    light.updateMatrixWorld()
+    renderer.shadowMap.needsUpdate = true
+    console.log('refresh lighting')
+  }
+
+  const gltfLoader = new GLTFLoader()
+
+  const draco = new DRACOLoader()
+  draco.setDecoderPath('https://www.gstatic.com/draco/v1/decoders/')
+  gltfLoader.setDRACOLoader(draco)
+  let url = modelUrl
+  const asset = await gltfLoader.loadAsync(url)
+  setupAsset(asset)
+
+  pane = gui
+  gui.add(params, 'postprocessingEnabled').onChange(() => {
+    refreshLighting()
   })
+  gui.add(params, 'AA', ['NONE', 'TRAA', 'FXAA']).onChange((v) => {
+    setAA(v)
+  })
+
+  // SSGI options
+  const options = {
+    distance: 2.7200000000000104,
+    thickness: 1.2999999999999972,
+    autoThickness: false,
+    maxRoughness: 1,
+    blend: 0.95,
+    denoiseIterations: 3,
+    denoiseKernel: 3,
+    denoiseDiffuse: 25,
+    denoiseSpecular: 25.54,
+    depthPhi: 5,
+    normalPhi: 28,
+    roughnessPhi: 18.75,
+    envBlur: 0.55,
+    importanceSampling: true,
+    directLightMultiplier: 1,
+    maxEnvLuminance: 50,
+    steps: 20,
+    refineSteps: 4,
+    spp: 1,
+    resolutionScale: 1,
+    missedRays: false,
+  }
+
+  const velocityDepthNormalPass = new VelocityDepthNormalPass(scene, camera)
+  composer.addPass(velocityDepthNormalPass)
+
+  const bloomEffect = new BloomEffect({
+    intensity: 1,
+    mipmapBlur: true,
+    luminanceSmoothing: 0.75,
+    luminanceThreshold: 0.75,
+    kernelSize: KernelSize.MEDIUM,
+  })
+
+  const vignetteEffect = new VignetteEffect({
+    darkness: 0.8,
+    offset: 0.3,
+  })
+
+  ssgiEffect = new SSGIEffect(scene, camera, velocityDepthNormalPass, options)
+
+  new SSGIDebugGUI(pane, ssgiEffect, options)
+
+  const lutTexture = await new LUT3dlLoader().load(TEXTURES_LIST.lut)
+
+  const lutEffect = new LUT3DEffect(lutTexture)
+
+  composer.addPass(new EffectPass(camera, ssgiEffect, bloomEffect, vignetteEffect, lutEffect))
+
+  const motionBlurEffect = new MotionBlurEffect(velocityDepthNormalPass)
+  composer.addPass(new EffectPass(camera, motionBlurEffect))
+
+  traaPass = new EffectPass(camera, new TRAAEffect(scene, camera, velocityDepthNormalPass))
+
+  fxaaPass = new EffectPass(camera, new FXAAEffect())
+
+  // setAA('TRAA')
+  setAA('FXAA') // FXAA gets rid of noise better ??
+  resize()
+
+  const floor = new Mesh(
+    new CircleGeometry(25, 32),
+    new MeshStandardMaterial({ color: 0x111111, roughness: 0.1, metalness: 0 })
+  )
+  floor.rotateX(-Math.PI / 2)
+  floor.name = 'floor'
+  floor.receiveShadow = true
+  floor.position.set(0, 0.001, 0)
+  scene.add(floor)
+
+  const loop = () => {
+    stats.begin()
+
+    controls.update()
+    camera.updateMatrixWorld()
+
+    if (params.postprocessingEnabled) {
+      composer.render()
+    } else {
+      renderer.clear()
+      renderer.render(scene, camera)
+    }
+
+    stats.end()
+    window.requestAnimationFrame(loop)
+  }
+
+  // event handlers
+  window.addEventListener('resize', resize)
+
+  // source: https://stackoverflow.com/a/2117523/7626841
+  function uuidv4() {
+    return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, (c) =>
+      (c ^ (crypto.getRandomValues(new Uint8Array(1))[0] & (15 >> (c / 4)))).toString(16)
+    )
+  }
+
+  document.addEventListener('keydown', (ev) => {
+    if (document.activeElement.tagName !== 'INPUT') {
+      const value = aaOptions[ev.key]
+
+      if (value) setAA(value)
+    }
+
+    if (ev.code === 'KeyQ') {
+      params.postprocessingEnabled = !params.postprocessingEnabled
+
+      refreshLighting()
+    }
+
+    if (ev.code === 'KeyP') {
+      const data = renderer.domElement.toDataURL()
+
+      const a = document.createElement('a') // Create <a>
+      a.href = data
+      a.download = 'screenshot-' + uuidv4() + '.png' // File name Here
+      a.click() // Downloaded file
+    }
+  })
+
+  loop()
 }
