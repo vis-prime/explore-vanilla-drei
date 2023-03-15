@@ -4,8 +4,6 @@ import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { TransformControls } from 'three/examples/jsm/controls/TransformControls'
 
-import porscheUrl from '../models/porsche_911_1975_comp.glb'
-
 import {
   ACESFilmicToneMapping,
   Mesh,
@@ -20,11 +18,7 @@ import {
   Group,
   BoxGeometry,
   Color,
-  PlaneGeometry,
   TextureLoader,
-  EquirectangularReflectionMapping,
-  ShadowMaterial,
-  DirectionalLight,
   VSMShadowMap,
   CircleGeometry,
   Plane,
@@ -41,11 +35,13 @@ import {
   MathUtils,
 } from 'three'
 import { HDRI_LIST } from '../hdri/HDRI_LIST'
+
 import { MeshReflectorMaterial } from '../wip/MeshReflectorMaterial'
 import { BlurPass } from '../wip/BlurPass'
 import { TEXTURES_LIST } from '../textures/TEXTURES_LIST'
 import { Easing, Tween, update } from '@tweenjs/tween.js'
 import { BG_ENV } from './BG_ENV'
+import { MODEL_LIST } from '../models/MODEL_LIST'
 
 let stats,
   renderer,
@@ -236,7 +232,7 @@ async function loadModels() {
   mainObjects.add(cube)
 
   // car
-  const gltf = await gltfLoader.loadAsync(porscheUrl)
+  const gltf = await gltfLoader.loadAsync(MODEL_LIST.porsche_1975.url)
   const model = gltf.scene
   model.name = 'car'
   let carBody
@@ -296,13 +292,20 @@ async function loadModels() {
 // distortion={1}
 
 async function setupMRM() {
+  const MRMParams = {
+    resolution: 1024,
+    blurX: 1024,
+    blurY: 1024,
+    depthScale: 1,
+  }
+
   let mixBlur = 1,
     mixStrength = 5,
-    resolution = 1024,
-    blur = [1024, 1024],
+    // resolution = 1024,
+    // blur = [1024, 1024],
     minDepthThreshold = 0,
     maxDepthThreshold = 1,
-    depthScale = 1,
+    // depthScale = 1,
     depthToBlurRatioBias = 0.25,
     mirror = 0,
     distortion = 0.25,
@@ -316,8 +319,8 @@ async function setupMRM() {
   const gl = renderer
   //   const camera = camera
   // const scene = scene
-  blur = Array.isArray(blur) ? blur : [blur, blur]
-  const hasBlur = blur[0] + blur[1] > 0
+  // blur = Array.isArray(blur) ? blur : [blur, blur]
+  let hasBlur = MRMParams.blurX + MRMParams.blurY > 0
   // const materialRef = React.useRef<MeshReflectorMaterialImpl>(null!)
   const reflectorPlane = new Plane()
   const normal = new Vector3()
@@ -411,22 +414,24 @@ async function setupMRM() {
       encoding: gl.outputEncoding,
       type: HalfFloatType,
     }
-    const fbo1 = new WebGLRenderTarget(resolution, resolution, parameters)
+    const fbo1 = new WebGLRenderTarget(MRMParams.resolution, MRMParams.resolution, parameters)
     fbo1.depthBuffer = true
-    fbo1.depthTexture = new DepthTexture(resolution, resolution)
+    fbo1.depthTexture = new DepthTexture(MRMParams.resolution, MRMParams.resolution)
     fbo1.depthTexture.format = DepthFormat
     fbo1.depthTexture.type = UnsignedShortType
-    const fbo2 = new WebGLRenderTarget(resolution, resolution, parameters)
+    const fbo2 = new WebGLRenderTarget(MRMParams.resolution, MRMParams.resolution, parameters)
     const blurpass = new BlurPass({
       gl,
-      resolution,
-      width: blur[0],
-      height: blur[1],
+      resolution: MRMParams.resolution,
+      width: MRMParams.blurX,
+      height: MRMParams.blurY,
       minDepthThreshold,
       maxDepthThreshold,
-      depthScale,
+      depthScale: MRMParams.depthScale,
       depthToBlurRatioBias,
     })
+
+    console.log(blurpass)
 
     const reflectorProps = {
       mirror,
@@ -439,10 +444,10 @@ async function setupMRM() {
       mixStrength,
       minDepthThreshold,
       maxDepthThreshold,
-      depthScale,
+      depthScale: MRMParams.depthScale,
       depthToBlurRatioBias,
       distortion,
-      distortionMap,
+      // distortionMap,
       mixContrast,
       metalness,
       roughness,
@@ -451,20 +456,77 @@ async function setupMRM() {
 
     const defines = {
       'defines-USE_BLUR': hasBlur ? '' : undefined,
-      'defines-USE_DEPTH': depthScale > 0 ? '' : undefined,
+      'defines-USE_DEPTH': MRMParams.depthScale > 0 ? '' : undefined,
       'defines-USE_DISTORTION': distortionMap ? '' : undefined,
     }
+    console.log({ fbo1, fbo2, blurpass, reflectorProps, defines })
     return [fbo1, fbo2, blurpass, reflectorProps, defines]
   }
 
-  const [fbo1, fbo2, blurpass, reflectorProps, defines] = getTargets()
+  let [fbo1, fbo2, blurpass, reflectorProps, defines] = getTargets()
+
+  function updateTargets() {
+    // warning !, heavy action ,  only for gui demo purpose
+    fbo1.dispose()
+    fbo2.dispose()
+    blurpass.renderTargetA.dispose()
+    blurpass.renderTargetB.dispose()
+    blurpass.convolutionMaterial.dispose()
+
+    hasBlur = MRMParams.blurX + MRMParams.blurY > 0
+    ;[fbo1, fbo2, blurpass, reflectorProps, defines] = getTargets()
+
+    // remake the material
+    MaterialOptions.reflector.dispose() //dispose old mat
+    MaterialOptions.reflector = new MeshReflectorMaterial(reflectorProps)
+    MaterialOptions.reflector.defines.USE_BLUR = defines['defines-USE_BLUR']
+    MaterialOptions.reflector.defines.USE_DEPTH = defines['defines-USE_DEPTH']
+    MaterialOptions.reflector.defines.USE_DISTORTION = defines['defines-USE_DISTORTION']
+
+    material = MaterialOptions.reflector
+    updateTextures()
+
+    // apply if active
+    if (params.materialType instanceof MeshReflectorMaterial) {
+      params.materialType = MaterialOptions.reflector
+      reflectionMesh.material = params.materialType
+    }
+  }
+
+  function updateTextures() {
+    if (params.useRoughnessMap) {
+      material.roughnessMap = roughMap
+      standardMat.roughnessMap = roughMap
+    } else {
+      material.roughnessMap = null
+      standardMat.roughnessMap = null
+    }
+
+    if (params.useDistortionMap) {
+      material.distortionMap = roughMap
+    } else {
+      material.distortionMap = null
+    }
+
+    if (params.useNormalMap) {
+      material.normalMap = nrmMap
+      standardMat.normalMap = nrmMap
+    } else {
+      material.normalMap = null
+      standardMat.normalMap = null
+    }
+
+    material.needsUpdate = true
+    standardMat.needsUpdate = true
+  }
 
   const MaterialOptions = {
     standard: new MeshStandardMaterial({ roughness }),
     reflector: new MeshReflectorMaterial(reflectorProps),
   }
-  const material = MaterialOptions.reflector
   const standardMat = MaterialOptions.standard
+
+  let material = MaterialOptions.reflector
   material.defines.USE_BLUR = defines['defines-USE_BLUR']
   material.defines.USE_DEPTH = defines['defines-USE_DEPTH']
   material.defines.USE_DISTORTION = defines['defines-USE_DISTORTION']
@@ -506,37 +568,14 @@ async function setupMRM() {
 
   const mrmFol = gui.addFolder('MeshReflectorMaterial')
   mrmFol.open()
-  mrmFol.add(params, 'useRoughnessMap').onChange((v) => {
-    if (v) {
-      material.roughnessMap = roughMap
-      standardMat.roughnessMap = roughMap
-    } else {
-      material.roughnessMap = null
-      standardMat.roughnessMap = null
-    }
-    material.needsUpdate = true
-    standardMat.needsUpdate = true
-  })
-  mrmFol.add(params, 'useDistortionMap').onChange((v) => {
-    if (v) {
-      //   material.defines.USE_DISTORTION = ""
-      material.distortionMap = roughMap
-    } else {
-      material.distortionMap = null
-    }
-    material.needsUpdate = true
-  })
-  mrmFol.add(params, 'useNormalMap').onChange((v) => {
-    if (v) {
-      material.normalMap = nrmMap
-      standardMat.normalMap = nrmMap
-    } else {
-      material.normalMap = null
-      standardMat.normalMap = null
-    }
-    material.needsUpdate = true
-    standardMat.needsUpdate = true
-  })
+  mrmFol.add(MRMParams, 'resolution', 128, 2048, 128).name('⚠ Resolution').onChange(updateTargets)
+  mrmFol.add(MRMParams, 'blurX', 16, 2048, 128).name('⚠ Blur X').onChange(updateTargets)
+  mrmFol.add(MRMParams, 'blurY', 16, 2048, 128).name('⚠ Blur Y').onChange(updateTargets)
+  mrmFol.add(MRMParams, 'depthScale', 0, 10).name('⚠ DEPTH SCALE').onChange(updateTargets)
+
+  mrmFol.add(params, 'useRoughnessMap').onChange(updateTextures)
+  mrmFol.add(params, 'useDistortionMap').onChange(updateTextures)
+  mrmFol.add(params, 'useNormalMap').onChange((v) => {})
   mrmFol.addColor(material, 'color').onChange(() => {
     standardMat.color.copy(material.color)
   })
@@ -558,7 +597,6 @@ async function setupMRM() {
 
   const parent = reflectionMesh
   useFrame = () => {
-    if (!parent) return
     parent.visible = false
     const currentXrEnabled = gl.xr.enabled
     const currentShadowAutoUpdate = gl.shadowMap.autoUpdate
@@ -570,6 +608,7 @@ async function setupMRM() {
     if (!gl.autoClear) gl.clear()
     gl.render(scene, virtualCamera)
     if (hasBlur) blurpass.render(gl, fbo1, fbo2)
+
     gl.xr.enabled = currentXrEnabled
     gl.shadowMap.autoUpdate = currentShadowAutoUpdate
     parent.visible = true

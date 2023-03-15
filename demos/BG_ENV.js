@@ -11,11 +11,12 @@ import {
   HalfFloatType,
   TextureLoader,
   sRGBEncoding,
-} from "three"
-import { EXRLoader } from "three/examples/jsm/loaders/EXRLoader"
-import { RGBELoader } from "three/examples/jsm/loaders/RGBELoader"
-import { GroundProjectedEnv } from "three/examples/jsm/objects/GroundProjectedEnv"
-import { HDRI_LIST } from "../hdri/HDRI_LIST"
+  LinearFilter,
+} from 'three'
+import { EXRLoader } from 'three/examples/jsm/loaders/EXRLoader'
+import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader'
+import { GroundProjectedEnv } from 'three/examples/jsm/objects/GroundProjectedEnv'
+import { HDRI_LIST } from '../hdri/HDRI_LIST'
 
 const textureLoader = new TextureLoader()
 const exrLoader = new EXRLoader()
@@ -32,9 +33,9 @@ const rgbeLoader = new RGBELoader()
 /** @type {BgOptions} */
 export const BG_OPTIONS = {
   None: null,
-  Color: "color",
-  Default: "default",
-  GroundProjection: "gp",
+  Color: 'color',
+  Default: 'default',
+  GroundProjection: 'gp',
 }
 
 /**
@@ -46,7 +47,7 @@ export const BG_OPTIONS = {
 /** @type {EnvOptions} */
 const ENV_OPTIONS = {
   None: null,
-  HDRI: "hdri",
+  HDRI: 'hdri',
 }
 
 export class BG_ENV {
@@ -65,13 +66,13 @@ export class BG_ENV {
     this.gpRadius = 10
     this.gpHeight = 1
 
-    this.bgColor = new Color("#ffffff")
+    this.bgColor = new Color('#ffffff')
 
     this.sunEnabled
     this.sunPivot
     this.sunLight
     this.sunPos = new Vector3(1, 1, 1)
-    this.sunColor = new Color("#ffffff")
+    this.sunColor = new Color('#ffffff')
 
     this.shadowFloorEnabled
     this.shadowFloor
@@ -91,9 +92,9 @@ export class BG_ENV {
     // sun light
     if (this.sunEnabled && !this.sunPivot) {
       this.sunPivot = new Group()
-      this.sunPivot.name = "sun_pivot"
+      this.sunPivot.name = 'sun_pivot'
       this.sunLight = new DirectionalLight(0xffffeb, 1)
-      this.sunLight.name = "sun"
+      this.sunLight.name = 'sun'
       this.sunLight.color = this.sunColor
       this.sunLight.castShadow = true
       this.sunLight.shadow.camera.near = 0.1
@@ -116,7 +117,7 @@ export class BG_ENV {
         new PlaneGeometry(10, 10).rotateX(-Math.PI / 2),
         new ShadowMaterial({ opacity: this.shadowOpacity })
       )
-      this.shadowFloor.name = "shadow_floor"
+      this.shadowFloor.name = 'shadow_floor'
       this.shadowFloor.receiveShadow = true
       this.shadowFloor.position.set(0, 0.001, 0)
     }
@@ -144,18 +145,18 @@ export class BG_ENV {
   }
 
   addGui(gui) {
-    gui.add(this, "preset", HDRI_LIST).onChange((v) => {
+    gui.add(this, 'preset', HDRI_LIST).onChange((v) => {
       this.preset = v
       this.updateAll()
     })
 
-    gui.add(this, "environment", ENV_OPTIONS).onChange(() => {
+    gui.add(this, 'environment', ENV_OPTIONS).onChange(() => {
       this.updateAll()
     })
-    gui.add(this, "background", BG_OPTIONS).onChange(() => {
+    gui.add(this, 'background', BG_OPTIONS).onChange(() => {
       this.updateAll()
     })
-    gui.addColor(this, "bgColor").onChange(() => {})
+    gui.addColor(this, 'bgColor').onChange(() => {})
   }
 
   /**
@@ -189,7 +190,7 @@ export class BG_ENV {
       if (data.groundProj.radius) this.gpRadius = data.groundProj.radius
 
       if (data.groundProj.height) this.gpHeight = data.groundProj.height
-
+      this.bgTexture.minFilter = LinearFilter
       this.groundProjectedEnv.material.uniforms.map.value = this.bgTexture
       this.groundProjectedEnv.radius = this.gpRadius
       this.groundProjectedEnv.height = this.gpHeight
@@ -224,7 +225,7 @@ export class BG_ENV {
    * @param {Object} param0
    */
   async downloadEnvironment({ exr, hdr } = {}) {
-    console.log("download env")
+    console.log('download env')
     const key = exr || hdr
 
     if (this.environmentType === ENV_OPTIONS.None) {
@@ -243,7 +244,7 @@ export class BG_ENV {
   }
 
   async downloadBackground({ webP, avif } = {}) {
-    console.log("download bg")
+    console.log('download bg')
     const key = webP || avif
     if (!(this.backgroundType === BG_OPTIONS.Default || this.backgroundType === BG_OPTIONS.GroundProjection)) {
       this.bgTexture = null
@@ -289,7 +290,7 @@ export class BG_ENV {
       texture.mapping = EquirectangularReflectionMapping
       scene.environment = texture
       env = texture
-      console.log("exr loaded")
+      console.log('exr loaded')
     }
 
     if (envDict.hdr) {
@@ -297,7 +298,7 @@ export class BG_ENV {
       texture.mapping = EquirectangularReflectionMapping
       scene.environment = texture
       bg = texture
-      console.log("exr loaded")
+      console.log('exr loaded')
     }
 
     if (envDict.webP || envDict.avif) {
@@ -305,7 +306,7 @@ export class BG_ENV {
       texture.mapping = EquirectangularReflectionMapping
       texture.encoding = sRGBEncoding
       scene.background = texture
-      console.log("bg loaded")
+      console.log('bg loaded')
 
       if (params.groundProjection) loadGroundProj(params.environment)
     }

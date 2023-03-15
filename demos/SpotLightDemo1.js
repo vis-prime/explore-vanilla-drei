@@ -273,6 +273,13 @@ async function loadModels() {
   renderer.compile(scene, camera)
 }
 
+/**
+ * Spotlight cone geometry
+ * @param {Number} distance
+ * @param {Number} radiusTop
+ * @param {Number} radiusBottom
+ * @returns
+ */
 const getSpotGeo = (distance, radiusTop, radiusBottom) => {
   const geometry = new CylinderGeometry(radiusTop, radiusBottom, distance, 128, 64, true)
   geometry.translate(0, -distance / 2, 0)
@@ -289,11 +296,6 @@ const updateVolumeGeometry = (light, mesh, radiusTop) => {
   mesh.material.attenuation = light.distance
   let radiusBottom = Math.tan(light.angle) * light.distance
   mesh.geometry = getSpotGeo(light.distance, radiusTop, radiusBottom)
-}
-
-const color = new Color()
-function getRandomHexColor() {
-  return '#' + color.setHSL(Math.random(), 0.5, 0.5).getHexString()
 }
 
 function useDepthBuffer({ size, frames = Infinity } = {}) {
@@ -326,44 +328,6 @@ function useDepthBuffer({ size, frames = Infinity } = {}) {
   // console.log({ depthFBO })
 
   return [depthFBO.depthTexture, useFrame]
-}
-
-/**
- * Random loc tween
- * @param {Vector3} obj
- * @returns
- */
-function getRandomPosTween(vec, range, duration, delay) {
-  const tween = new Tween(vec)
-    .to(
-      {
-        x: MathUtils.randFloatSpread(range),
-        z: MathUtils.randFloatSpread(range),
-      },
-      duration
-    )
-
-    .easing(Easing.Bounce.Out)
-    .repeat(10000)
-    .repeatDelay(delay)
-    .onStart(() => {
-      updateTweenStartValues()
-    })
-    .onRepeat(() => {
-      updateTweenStartValues()
-
-      tween.to({
-        x: MathUtils.randFloatSpread(6),
-        z: MathUtils.randFloatSpread(6),
-      })
-    })
-
-  const updateTweenStartValues = () => {
-    tween._valuesStart.x = vec.x
-    tween._valuesStart.z = vec.z
-  }
-
-  return tween
 }
 
 // 👇 uncomment when TS version supports function overloads
@@ -593,8 +557,8 @@ async function addCar(AllVolumeMaterials) {
   model.add(bLightL, bLightL.target, bLightR, bLightR.target)
 
   function addGui(gui) {
-    const folder = gui.addFolder('Headlights Volume')
-    // folder.open()
+    const sp = gui.addFolder('HeadLight')
+    const folder = sp.addFolder('Headlights Volume')
 
     folder.add(volumeMaterialL, 'opacity', 0, 2).onChange((v) => {
       volumeMaterialR.opacity = v
@@ -604,15 +568,6 @@ async function addCar(AllVolumeMaterials) {
       volumeMaterialR.anglePower = v
     })
 
-    const sp = gui.addFolder('HeadLight')
-    // sp.open()
-    // sp.add(testParams, 'helper').onChange((v) => {
-    //   if (v) {
-    //     scene.add(helper)
-    //   } else {
-    //     helper.removeFromParent()
-    //   }
-    // })
     sp.addColor(headLightL, 'color').onChange(() => {
       headLightR.color.copy(headLightL.color)
     })
@@ -633,25 +588,6 @@ async function addCar(AllVolumeMaterials) {
       updateVolumeGeometry(headLightL, volumeMeshL, radiusTop)
       updateVolumeGeometry(headLightR, volumeMeshR, radiusTop)
     })
-
-    // sp.add(testParams, 'animateTarget')
-    //   .name('🚲Animate target')
-    //   .onChange((v) => {
-    //     if (v) {
-    //       randomMovementTarget.start()
-    //     } else {
-    //       randomMovementTarget.stop()
-    //     }
-    //   })
-    // sp.add(testParams, 'animateLight')
-    //   .name('🚲Animate light')
-    //   .onChange((v) => {
-    //     if (v) {
-    //       randomMovementLight.start()
-    //     } else {
-    //       randomMovementLight.stop()
-    //     }
-    //   })
   }
 
   addGui(gui)
@@ -801,9 +737,14 @@ async function addPoles(AllVolumeMaterials) {
   const volMeshes = []
 
   const lampParams = {
+    jitter: false,
+    jitterFactor: 1,
     gap: 15,
   }
   const folder = gui.addFolder('Street Lamps')
+  folder.add(lampParams, 'jitter').name('⚠ Jitter')
+  folder.add(lampParams, 'jitterFactor', 0, 10).name('⚠ Jitter Factor')
+
   folder.add(lampParams, 'gap', 10, 30, 1).onChange(() => {
     for (let index = 0; index < lamps.length; index++) {
       const pole = lamps[index]
@@ -876,7 +817,13 @@ async function addPoles(AllVolumeMaterials) {
         pole.position.z += lampParams.gap * lamps.length
       }
 
-      volMeshes[index].material.spotPosition.copy(volMeshes[index].getWorldPosition(vec))
+      volMeshes[index].getWorldPosition(vec)
+      if (lampParams.jitter) {
+        vec.x += MathUtils.randFloatSpread(lampParams.jitterFactor)
+        vec.y += MathUtils.randFloatSpread(lampParams.jitterFactor)
+        vec.z += MathUtils.randFloatSpread(lampParams.jitterFactor)
+      }
+      volMeshes[index].material.spotPosition.copy(vec)
     }
   }
 }

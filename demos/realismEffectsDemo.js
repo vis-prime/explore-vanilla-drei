@@ -36,12 +36,14 @@ import {
   VignetteEffect,
 } from 'postprocessing'
 export function realismEffectsDemo(gui) {
+  const params = {
+    postprocessingEnabled: true,
+  }
   let traaEffect
   let traaPass
-  let smaaPass
   let fxaaPass
   let ssgiEffect
-  let postprocessingEnabled = true
+  // let postprocessingEnabled = true
   let pane
   let envMesh
   let fps
@@ -96,14 +98,10 @@ export function realismEffectsDemo(gui) {
 
   renderer.setSize(window.innerWidth, window.innerHeight)
 
-  const effectPass = new EffectPass(camera)
-
   const setAA = (value) => {
     composer.multisampling = 0
-    composer.removePass(smaaPass)
     composer.removePass(traaPass)
     composer.removePass(fxaaPass)
-    composer.removePass(effectPass)
 
     switch (value) {
       case 'TRAA':
@@ -114,8 +112,9 @@ export function realismEffectsDemo(gui) {
         composer.addPass(fxaaPass)
         break
 
-      default:
-        composer.addPass(effectPass)
+      default: {
+        break
+      }
     }
     console.log('composer', composer.passes)
   }
@@ -199,7 +198,6 @@ export function realismEffectsDemo(gui) {
   const gltflLoader = new GLTFLoader()
 
   const draco = new DRACOLoader()
-  draco.setDecoderConfig({ type: 'js' })
   draco.setDecoderPath('https://www.gstatic.com/draco/v1/decoders/')
   gltflLoader.setDRACOLoader(draco)
 
@@ -249,6 +247,9 @@ export function realismEffectsDemo(gui) {
     traaEffect = new TRAAEffect(scene, camera, velocityDepthNormalPass)
 
     pane = gui
+    gui.add(params, 'postprocessingEnabled').onChange(() => {
+      refreshLighting()
+    })
 
     const bloomEffect = new BloomEffect({
       intensity: 1,
@@ -273,7 +274,6 @@ export function realismEffectsDemo(gui) {
       composer.addPass(new EffectPass(camera, ssgiEffect, bloomEffect, vignetteEffect, lutEffect))
 
       const motionBlurEffect = new MotionBlurEffect(velocityDepthNormalPass)
-
       composer.addPass(new EffectPass(camera, motionBlurEffect))
 
       traaPass = new EffectPass(camera, traaEffect)
@@ -282,8 +282,8 @@ export function realismEffectsDemo(gui) {
 
       fxaaPass = new EffectPass(camera, fxaaEffect)
 
-      //     setAA('TRAA')
-      setAA('FXAA')
+      // setAA('TRAA')
+      setAA('FXAA') // FXAA gets rid of noise better ??
       resize()
 
       loop()
@@ -291,7 +291,7 @@ export function realismEffectsDemo(gui) {
 
     const floor = new Mesh(
       new CircleGeometry(25, 32),
-      new MeshStandardMaterial({ color: 0x111111, roughness: 0, metalness: 1 })
+      new MeshStandardMaterial({ color: 0x111111, roughness: 0.1, metalness: 0 })
     )
     floor.rotateX(-Math.PI / 2)
     floor.name = 'floor'
@@ -306,7 +306,7 @@ export function realismEffectsDemo(gui) {
     controls.update()
     camera.updateMatrixWorld()
 
-    if (postprocessingEnabled) {
+    if (params.postprocessingEnabled) {
       composer.render()
     } else {
       renderer.clear()
@@ -347,8 +347,6 @@ export function realismEffectsDemo(gui) {
     5: 'Disabled',
   }
 
-  const aaValues = Object.values(aaOptions)
-
   document.addEventListener('keydown', (ev) => {
     if (document.activeElement.tagName !== 'INPUT') {
       const value = aaOptions[ev.key]
@@ -357,7 +355,7 @@ export function realismEffectsDemo(gui) {
     }
 
     if (ev.code === 'KeyQ') {
-      postprocessingEnabled = !postprocessingEnabled
+      params.postprocessingEnabled = !params.postprocessingEnabled
 
       refreshLighting()
     }
