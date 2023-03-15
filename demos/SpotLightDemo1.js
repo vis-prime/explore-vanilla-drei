@@ -737,13 +737,9 @@ async function addPoles(AllVolumeMaterials) {
   const volMeshes = []
 
   const lampParams = {
-    jitter: false,
-    jitterFactor: 1,
     gap: 15,
   }
   const folder = gui.addFolder('Street Lamps')
-  folder.add(lampParams, 'jitter').name('⚠ Jitter')
-  folder.add(lampParams, 'jitterFactor', 0, 10).name('⚠ Jitter Factor')
 
   folder.add(lampParams, 'gap', 10, 30, 1).onChange(() => {
     for (let index = 0; index < lamps.length; index++) {
@@ -817,13 +813,7 @@ async function addPoles(AllVolumeMaterials) {
         pole.position.z += lampParams.gap * lamps.length
       }
 
-      volMeshes[index].getWorldPosition(vec)
-      if (lampParams.jitter) {
-        vec.x += MathUtils.randFloatSpread(lampParams.jitterFactor)
-        vec.y += MathUtils.randFloatSpread(lampParams.jitterFactor)
-        vec.z += MathUtils.randFloatSpread(lampParams.jitterFactor)
-      }
-      volMeshes[index].material.spotPosition.copy(vec)
+      volMeshes[index].material.spotPosition.copy(volMeshes[index].getWorldPosition(vec))
     }
   }
 }
