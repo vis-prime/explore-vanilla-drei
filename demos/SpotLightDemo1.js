@@ -64,10 +64,11 @@ let stats,
   pointer = new Vector2()
 
 const params = {
-  environment: HDRI_LIST.kloppenheim,
-  groundProjection: false,
-  bgColor: new Color(),
+  // environment: HDRI_LIST.kloppenheim,
+  // groundProjection: false,
+  // bgColor: new Color(),
   printCam: () => {},
+  pixelRatio: Math.min(1.5, window.devicePixelRatio),
 }
 const mainObjects = new Group()
 const textureLoader = new TextureLoader()
@@ -90,7 +91,8 @@ export async function spotLightDemo1(mainGui) {
   app.appendChild(stats.dom)
   // renderer
   renderer = new WebGLRenderer({ powerPreference: 'high-performance', antialias: false, stencil: false, depth: false })
-  renderer.setPixelRatio(Math.min(1.5, window.devicePixelRatio))
+  renderer.setPixelRatio(params.pixelRatio)
+
   renderer.setSize(window.innerWidth, window.innerHeight)
   renderer.shadowMap.enabled = true
   renderer.shadowMap.type = VSMShadowMap
@@ -209,6 +211,11 @@ export async function spotLightDemo1(mainGui) {
   updateEnvInt()
 
   sceneGui.add(envVals, 'int', 0, 1).onChange(updateEnvInt)
+
+  // gui.add(params, 'pixelRatio', 0.5, window.devicePixelRatio * 3).onChange((v) => {
+  //   renderer.setPixelRatio(v)
+  //   composer.setSize(window.innerWidth, window.innerHeight)
+  // })
   animate()
 }
 
@@ -413,9 +420,14 @@ async function setupScene() {
   ])
 
   const rendererSize = new Vector3()
-  window.onresize = () => {
-    if (params.useDepth) renderer.getSize(rendererSize)
+
+  const resizeDepthMap = () => {
+    if (params.useDepth) {
+      renderer.getSize(rendererSize)
+      rendererSize.multiplyScalar(renderer.getPixelRatio())
+    }
   }
+  window.addEventListener('resize', resizeDepthMap)
   let calculateDepth = () => {}
 
   function updateDepthTexture() {
@@ -425,9 +437,9 @@ async function setupScene() {
       for (const mat of AllVolumeMaterials) {
         oldTex = mat.depth
         mat.depth = dat[0]
-        mat.resolution = renderer.getSize(rendererSize)
+        mat.resolution = rendererSize
       }
-
+      resizeDepthMap()
       calculateDepth = dat[1]
 
       if (oldTex) {
