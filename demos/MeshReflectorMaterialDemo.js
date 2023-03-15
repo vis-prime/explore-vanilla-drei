@@ -538,7 +538,6 @@ async function setupMRM() {
   nrmMap.wrapS = RepeatWrapping
   nrmMap.wrapT = RepeatWrapping
   nrmMap.repeat.set(5, 5)
-
   roughMap.repeat.set(5, 5)
   standardMat.roughnessMap = roughMap
   standardMat.color.set(color)
@@ -575,7 +574,7 @@ async function setupMRM() {
 
   mrmFol.add(params, 'useRoughnessMap').onChange(updateTextures)
   mrmFol.add(params, 'useDistortionMap').onChange(updateTextures)
-  mrmFol.add(params, 'useNormalMap').onChange((v) => {})
+  mrmFol.add(params, 'useNormalMap').onChange(updateTextures)
   mrmFol.addColor(material, 'color').onChange(() => {
     standardMat.color.copy(material.color)
   })
