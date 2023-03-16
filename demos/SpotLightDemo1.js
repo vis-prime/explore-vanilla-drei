@@ -186,12 +186,13 @@ export async function spotLightDemo1(mainGui) {
   // light.position.set(5, 5, 5)
   // scene.add(light)
 
-  const bg_env = new BG_ENV(scene, sceneGui)
+  const bg_env = new BG_ENV(scene)
   bg_env.preset = HDRI_LIST.kloppenheim
   bg_env.setEnvType('HDRI')
   bg_env.setBGType('Color')
   bg_env.bgColor.set(0x000000)
   bg_env.updateAll()
+  bg_env.addGui(sceneGui)
   await loadModels()
 
   const envVals = {

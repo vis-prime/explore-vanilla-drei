@@ -385,6 +385,7 @@ function setupSpotLight() {
       volumeMaterial.depth = dat[0]
       depthUseFrame = dat[1]
       volumeMaterial.resolution.copy(renderer.getSize(rendererSize))
+      volumeMaterial.resolution.multiplyScalar(renderer.getPixelRatio())
       if (oldTex) {
         oldTex.dispose()
       }
@@ -452,11 +453,9 @@ function setupSpotLight() {
     }
   }
 
-  const randomMovementTarget = getRandomPosTween(spotLight.target.position, 20, 2000, 1000)
-  const randomMovementLight = getRandomPosTween(spotLight.position, 20, 2000, 1000)
-
   window.onresize = () => {
-    volumeMaterial.resolution = renderer.getSize(rendererSize)
+    volumeMaterial.resolution.copy(renderer.getSize(rendererSize))
+    volumeMaterial.resolution.multiplyScalar(renderer.getPixelRatio())
   }
 
   function addGui(gui) {
@@ -513,6 +512,9 @@ function setupSpotLight() {
 
   transformControls.attach(spotLight)
   addGui(gui)
+
+  const randomMovementTarget = getRandomPosTween(spotLight.target.position, 20, 2000, 1000)
+  const randomMovementLight = getRandomPosTween(spotLight.position, 20, 2000, 1000)
 }
 
 const color = new Color()

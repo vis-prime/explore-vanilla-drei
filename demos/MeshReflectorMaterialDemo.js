@@ -145,11 +145,12 @@ export async function meshReflectorMaterialDemo(mainGui) {
   // light.position.set(5, 5, 5)
   // scene.add(light)
 
-  const bgEnv = new BG_ENV(scene, sceneGui)
+  const bgEnv = BG_ENV(scene)
   bgEnv.preset = HDRI_LIST.dancing_hall
   bgEnv.setEnvType('HDRI')
   bgEnv.setBGType('GroundProjection')
   bgEnv.updateAll()
+  bgEnv.addGui(sceneGui)
   await loadModels()
   animate()
 }

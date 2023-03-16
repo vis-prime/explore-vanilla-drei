@@ -52,7 +52,7 @@ const ENV_OPTIONS = {
 }
 
 export class BG_ENV {
-  constructor(scene, gui) {
+  constructor(scene) {
     this.scene = scene
 
     this.preset = Object.values(HDRI_LIST)[0]
@@ -92,7 +92,6 @@ export class BG_ENV {
      * @type {GUI} gui
      */
     this.guiFolder = null
-    this.addGui(gui)
   }
   init() {
     // sun light
@@ -135,14 +134,6 @@ export class BG_ENV {
    */
   setEnvType(key) {
     this.environmentType = ENV_OPTIONS[key]
-    this.forceUpdateGui()
-  }
-
-  forceUpdateGui() {
-    const farray = this.guiFolder.controllersRecursive()
-    for (const item of farray) {
-      item.updateDisplay()
-    }
   }
 
   /**
@@ -151,7 +142,6 @@ export class BG_ENV {
    */
   setBGType(key) {
     this.backgroundType = BG_OPTIONS[key]
-    this.forceUpdateGui()
   }
 
   useFullFloat() {
@@ -184,6 +174,8 @@ export class BG_ENV {
         this.bgColorPicker = null
       }
     })
+
+    return folder
   }
 
   /**

@@ -10,22 +10,15 @@ import Stats from 'three/examples/jsm/libs/stats.module'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
-import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader'
-import { GroundProjectedEnv } from 'three/examples/jsm/objects/GroundProjectedEnv'
-import { HDRI_LIST } from '../hdri/HDRI_LIST'
 import modelUrl from '../models/porsche_911_1975_comp.glb'
 import { SSGIDebugGUI } from '../wip/SSGIDebugGUI'
 import {
   CircleGeometry,
-  EquirectangularReflectionMapping,
-  FloatType,
-  LinearFilter,
   Mesh,
   MeshStandardMaterial,
   PerspectiveCamera,
   Scene,
   sRGBEncoding,
-  TextureLoader,
   WebGLRenderer,
 } from 'three'
 import { BloomEffect, EffectComposer, EffectPass, FXAAEffect, KernelSize, RenderPass } from 'postprocessing'
@@ -41,19 +34,17 @@ export async function realismEffectsDemo(gui) {
     groundProjection: true,
   }
 
-  let pane
-  let envMesh
-
   const scene = new Scene()
 
-  const camera = new PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.1, 200)
+  const camera = new PerspectiveCamera(35, window.innerWidth / window.innerHeight, 0.5, 200)
   scene.add(camera)
 
-  const bgEnv = new BG_ENV(scene, gui)
+  const bgEnv = new BG_ENV(scene)
   bgEnv.useFullFloat()
   bgEnv.setEnvType('HDRI')
   bgEnv.setBGType('GroundProjection')
   bgEnv.updateAll()
+  bgEnv.addGui(gui).open()
 
   const canvas = document.createElement('canvas')
   document.body.appendChild(canvas)
@@ -97,7 +88,7 @@ export async function realismEffectsDemo(gui) {
   renderer.outputEncoding = sRGBEncoding
 
   renderer.setSize(window.innerWidth, window.innerHeight)
-  renderer.setPixelRatio(1)
+  // renderer.setPixelRatio(1)
 
   // since using "rendererCanvas" doesn't work when using an offscreen canvas
   const controls = new OrbitControls(camera, document.querySelector('#orbitControlsDomElem'))
@@ -117,7 +108,6 @@ export async function realismEffectsDemo(gui) {
   const resize = () => {
     camera.aspect = window.innerWidth / window.innerHeight
     camera.updateProjectionMatrix()
-    // renderer.setSize(window.innerWidth, window.innerHeight)
     composer.setSize(window.innerWidth, window.innerHeight)
   }
 
@@ -134,13 +124,12 @@ export async function realismEffectsDemo(gui) {
       c.castShadow = c.receiveShadow = true
       c.material.depthWrite = true
     }
-    c.frustumCulled = false
   })
 
   // SSGI options
   const options = {
-    distance: 2.7200000000000104,
-    thickness: 1.2999999999999972,
+    distance: 3,
+    thickness: 3,
     autoThickness: false,
     maxRoughness: 1,
     blend: 0.95,
@@ -163,7 +152,6 @@ export async function realismEffectsDemo(gui) {
   }
 
   const velocityDepthNormalPass = new VelocityDepthNormalPass(scene, camera)
-  // composer.addPass(velocityDepthNormalPass)
 
   const bloomEffect = new BloomEffect({
     intensity: 1,
@@ -176,7 +164,6 @@ export async function realismEffectsDemo(gui) {
   const renderPass = new RenderPass(scene, camera)
 
   const ssgiEffect = new SSGIEffect(scene, camera, velocityDepthNormalPass, options)
-
   const ssgiPass = new EffectPass(camera, ssgiEffect)
   const ssgdiPass = new EffectPass(camera, new SSDGIEffect(scene, camera, velocityDepthNormalPass, options))
   const ssrPass = new EffectPass(camera, new SSREffect(scene, camera, velocityDepthNormalPass, options))
@@ -191,6 +178,8 @@ export async function realismEffectsDemo(gui) {
     composer.removeAllPasses()
     composer.addPass(velocityDepthNormalPass)
     const effectArray = []
+
+    // Add ssgi pass alone in a single effectPass
     switch (params.gi) {
       case 'SSGI': {
         composer.addPass(ssgiPass)
@@ -257,8 +246,7 @@ export async function realismEffectsDemo(gui) {
 
   const GI_OPTIONS = ['SSGI', 'SSGDI', 'SSR', 'DEFAULT']
   const AA_OPTIONS = ['NONE', 'TRAA', 'FXAA']
-  pane = gui
-  const folder = gui.addFolder('PP')
+  const folder = gui.addFolder('Post')
   folder.open()
   folder.add(params, 'postprocessingEnabled')
   folder.add(params, 'gi', GI_OPTIONS).onChange(updateEffectsStack)
@@ -308,10 +296,10 @@ export async function realismEffectsDemo(gui) {
     if (ev.code === 'KeyP') {
       const data = renderer.domElement.toDataURL()
 
-      const a = document.createElement('a') // Create <a>
+      const a = document.createElement('a')
       a.href = data
-      a.download = 'screenshot-' + uuidv4() + '.png' // File name Here
-      a.click() // Downloaded file
+      a.download = 'screenshot-' + uuidv4() + '.png'
+      a.click()
     }
   })
 
