@@ -1,3 +1,4 @@
+import GUI from 'lil-gui'
 import {
   DirectionalLight,
   EquirectangularReflectionMapping,
@@ -86,6 +87,11 @@ export class BG_ENV {
     this.envCache = {}
     this.bgCache = {}
 
+    /**
+     * gui
+     * @type {GUI} gui
+     */
+    this.guiFolder = null
     this.addGui(gui)
   }
   init() {
@@ -129,6 +135,14 @@ export class BG_ENV {
    */
   setEnvType(key) {
     this.environmentType = ENV_OPTIONS[key]
+    this.forceUpdateGui()
+  }
+
+  forceUpdateGui() {
+    const farray = this.guiFolder.controllersRecursive()
+    for (const item of farray) {
+      item.updateDisplay()
+    }
   }
 
   /**
@@ -137,6 +151,7 @@ export class BG_ENV {
    */
   setBGType(key) {
     this.backgroundType = BG_OPTIONS[key]
+    this.forceUpdateGui()
   }
 
   useFullFloat() {
@@ -144,19 +159,31 @@ export class BG_ENV {
     rgbeLoader.setDataType(FloatType)
   }
 
+  /**
+   * Add gui
+   * @param {GUI} gui
+   */
   addGui(gui) {
-    gui.add(this, 'preset', HDRI_LIST).onChange((v) => {
+    const folder = gui.addFolder('BG & ENV')
+    this.guiFolder = folder
+    folder.add(this, 'preset', HDRI_LIST).onChange((v) => {
       this.preset = v
       this.updateAll()
     })
 
-    gui.add(this, 'environment', ENV_OPTIONS).onChange(() => {
+    folder.add(this, 'environmentType', ENV_OPTIONS).onChange(() => {
       this.updateAll()
     })
-    gui.add(this, 'background', BG_OPTIONS).onChange(() => {
+    folder.add(this, 'backgroundType', BG_OPTIONS).onChange((v) => {
       this.updateAll()
+
+      if (v === BG_OPTIONS.Color) {
+        this.bgColorPicker = folder.addColor(this, 'bgColor')
+      } else {
+        this.bgColorPicker?.destroy()
+        this.bgColorPicker = null
+      }
     })
-    gui.addColor(this, 'bgColor').onChange(() => {})
   }
 
   /**

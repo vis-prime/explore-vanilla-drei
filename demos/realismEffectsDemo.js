@@ -1,4 +1,11 @@
-import { MotionBlurEffect, SSGIEffect, TRAAEffect, VelocityDepthNormalPass } from 'realism-effects'
+import {
+  MotionBlurEffect,
+  SSDGIEffect,
+  SSGIEffect,
+  SSREffect,
+  TRAAEffect,
+  VelocityDepthNormalPass,
+} from 'realism-effects'
 import Stats from 'three/examples/jsm/libs/stats.module'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader'
@@ -21,16 +28,19 @@ import {
   TextureLoader,
   WebGLRenderer,
 } from 'three'
-import { BloomEffect, EffectComposer, EffectPass, FXAAEffect, KernelSize } from 'postprocessing'
+import { BloomEffect, EffectComposer, EffectPass, FXAAEffect, KernelSize, RenderPass } from 'postprocessing'
+import { BG_ENV } from './BG_ENV'
 
 export async function realismEffectsDemo(gui) {
   const params = {
-    AA: 'fxaa',
+    gi: 'SSGI',
+    AA: 'FXAA',
+    motionBlur: true,
+    bloom: true,
     postprocessingEnabled: true,
+    groundProjection: true,
   }
-  let traaPass
-  let fxaaPass
-  let ssgiEffect
+
   let pane
   let envMesh
 
@@ -38,6 +48,12 @@ export async function realismEffectsDemo(gui) {
 
   const camera = new PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.1, 200)
   scene.add(camera)
+
+  const bgEnv = new BG_ENV(scene, gui)
+  bgEnv.useFullFloat()
+  bgEnv.setEnvType('HDRI')
+  bgEnv.setBGType('GroundProjection')
+  bgEnv.updateAll()
 
   const canvas = document.createElement('canvas')
   document.body.appendChild(canvas)
@@ -83,27 +99,6 @@ export async function realismEffectsDemo(gui) {
   renderer.setSize(window.innerWidth, window.innerHeight)
   renderer.setPixelRatio(1)
 
-  const setAA = (value) => {
-    composer.multisampling = 0
-    composer.removePass(traaPass)
-    composer.removePass(fxaaPass)
-
-    switch (value) {
-      case 'TRAA':
-        composer.addPass(traaPass)
-        break
-
-      case 'FXAA':
-        composer.addPass(fxaaPass)
-        break
-
-      default: {
-        break
-      }
-    }
-    console.log('composer', composer.passes)
-  }
-
   // since using "rendererCanvas" doesn't work when using an offscreen canvas
   const controls = new OrbitControls(camera, document.querySelector('#orbitControlsDomElem'))
   controls.enableDamping = true
@@ -118,33 +113,6 @@ export async function realismEffectsDemo(gui) {
   const stats = new Stats()
 
   document.body.appendChild(stats.dom)
-
-  const rgbeLoader = new RGBELoader().setDataType(FloatType)
-
-  const initEnvMap = async (envMap) => {
-    envMap.mapping = EquirectangularReflectionMapping
-
-    scene.environment?.dispose()
-
-    scene.environment = envMap
-    scene.background = null
-
-    envMesh?.removeFromParent()
-    envMesh?.material.dispose()
-    envMesh?.geometry.dispose()
-
-    const hqImg = await new TextureLoader().loadAsync(HDRI_LIST.dry_cracked_lake.avif)
-    hqImg.encoding = sRGBEncoding
-    hqImg.minFilter = LinearFilter
-    envMesh = new GroundProjectedEnv(hqImg)
-    envMesh.radius = 20
-    envMesh.height = 2
-    envMesh.scale.setScalar(100)
-    scene.add(envMesh)
-  }
-
-  const envMap = await rgbeLoader.loadAsync(HDRI_LIST.dry_cracked_lake.hdr)
-  initEnvMap(envMap)
 
   const resize = () => {
     camera.aspect = window.innerWidth / window.innerHeight
@@ -167,12 +135,6 @@ export async function realismEffectsDemo(gui) {
       c.material.depthWrite = true
     }
     c.frustumCulled = false
-  })
-
-  pane = gui
-  gui.add(params, 'postprocessingEnabled')
-  gui.add(params, 'AA', ['NONE', 'TRAA', 'FXAA']).onChange((v) => {
-    setAA(v)
   })
 
   // SSGI options
@@ -201,7 +163,7 @@ export async function realismEffectsDemo(gui) {
   }
 
   const velocityDepthNormalPass = new VelocityDepthNormalPass(scene, camera)
-  composer.addPass(velocityDepthNormalPass)
+  // composer.addPass(velocityDepthNormalPass)
 
   const bloomEffect = new BloomEffect({
     intensity: 1,
@@ -211,21 +173,102 @@ export async function realismEffectsDemo(gui) {
     kernelSize: KernelSize.MEDIUM,
   })
 
-  ssgiEffect = new SSGIEffect(scene, camera, velocityDepthNormalPass, options)
+  const renderPass = new RenderPass(scene, camera)
 
-  new SSGIDebugGUI(pane, ssgiEffect, options)
+  const ssgiEffect = new SSGIEffect(scene, camera, velocityDepthNormalPass, options)
 
-  composer.addPass(new EffectPass(camera, ssgiEffect, bloomEffect))
+  const ssgiPass = new EffectPass(camera, ssgiEffect)
+  const ssgdiPass = new EffectPass(camera, new SSDGIEffect(scene, camera, velocityDepthNormalPass, options))
+  const ssrPass = new EffectPass(camera, new SSREffect(scene, camera, velocityDepthNormalPass, options))
 
   const motionBlurEffect = new MotionBlurEffect(velocityDepthNormalPass)
-  composer.addPass(new EffectPass(camera, motionBlurEffect))
 
-  traaPass = new EffectPass(camera, new TRAAEffect(scene, camera, velocityDepthNormalPass))
+  const traaEffect = new TRAAEffect(scene, camera, velocityDepthNormalPass)
 
-  fxaaPass = new EffectPass(camera, new FXAAEffect())
+  const fxaaEffect = new FXAAEffect()
 
-  // setAA('TRAA')
-  setAA('FXAA') // FXAA gets rid of noise better ??
+  const updateEffectsStack = () => {
+    composer.removeAllPasses()
+    composer.addPass(velocityDepthNormalPass)
+    const effectArray = []
+    switch (params.gi) {
+      case 'SSGI': {
+        composer.addPass(ssgiPass)
+        break
+      }
+      case 'SSGDI': {
+        composer.addPass(ssgdiPass)
+        break
+      }
+      case 'SSR': {
+        composer.addPass(ssrPass)
+        break
+      }
+      default: {
+        composer.addPass(renderPass)
+        break
+      }
+    }
+
+    if (params.motionBlur) {
+      effectArray.push(motionBlurEffect)
+    }
+
+    if (params.bloom) {
+      effectArray.push(bloomEffect)
+    }
+
+    switch (params.AA) {
+      case 'TRAA':
+        effectArray.push(traaEffect)
+        break
+
+      case 'FXAA':
+        effectArray.push(fxaaEffect)
+        break
+
+      default: {
+        break
+      }
+    }
+
+    if (effectArray.length) {
+      composer.addPass(new EffectPass(camera, ...effectArray))
+    }
+
+    printAllPasses()
+  }
+
+  const printAllPasses = () => {
+    let str = 'ALL Passes:\n'
+    for (const [index, pass] of composer.passes.entries()) {
+      str += `${index}: ${pass.name}\n`
+      if (pass.name === 'EffectPass') {
+        for (const effect of pass.effects) {
+          str += ' -' + effect.name + '\n'
+        }
+      }
+
+      str += '\n'
+    }
+
+    console.log(str)
+  }
+
+  const GI_OPTIONS = ['SSGI', 'SSGDI', 'SSR', 'DEFAULT']
+  const AA_OPTIONS = ['NONE', 'TRAA', 'FXAA']
+  pane = gui
+  const folder = gui.addFolder('PP')
+  folder.open()
+  folder.add(params, 'postprocessingEnabled')
+  folder.add(params, 'gi', GI_OPTIONS).onChange(updateEffectsStack)
+  folder.add(params, 'motionBlur').onChange(updateEffectsStack)
+  folder.add(params, 'bloom').onChange(updateEffectsStack)
+  folder.add(params, 'AA', AA_OPTIONS).onChange(updateEffectsStack)
+  new SSGIDebugGUI(folder, ssgiEffect, options)
+
+  updateEffectsStack()
+
   resize()
 
   const floor = new Mesh(
