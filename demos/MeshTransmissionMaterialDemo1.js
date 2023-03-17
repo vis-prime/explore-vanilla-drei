@@ -64,9 +64,8 @@ export async function meshTransmissionMaterialDemo1(mainGui) {
 
   // camera
   camera = new PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 200)
-  camera.position.set(6, 3, 6)
+  camera.position.set(2, 2, 2)
   camera.name = 'Camera'
-  camera.position.set(2.0404140991899564, 2.644387886134694, 3.8683136783076355)
   // scene
   scene = new Scene()
   scene.add(mainObjects)
@@ -78,7 +77,7 @@ export async function meshTransmissionMaterialDemo1(mainGui) {
   controls.minDistance = 0.1
   controls.maxDistance = 100
   controls.maxPolarAngle = Math.PI / 1.5
-  controls.target.set(0, 1.5, 0)
+  controls.target.set(0, 0.5, 0)
 
   transformControls = new TransformControls(camera, renderer.domElement)
   transformControls.addEventListener('dragging-changed', (event) => {
