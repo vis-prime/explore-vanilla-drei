@@ -9,6 +9,7 @@ import { spotLightDemo1 } from './demos/SpotLightDemo1'
 
 import { realismEffectsDemo } from './demos/realismEffectsDemo'
 import { meshReflectorMaterialDemo } from './demos/MeshReflectorMaterialDemo'
+import { meshTransmissionMaterialDemo1 } from './demos/MeshTransmissionMaterialDemo1'
 
 let url_string = window.location.href
 let url = new URL(url_string)
@@ -19,6 +20,8 @@ let url = new URL(url_string)
  */
 const All_Scenes = {
   MeshTransmissionMaterial: meshTransmissionMaterialDemo,
+  MeshTransmissionMaterial1: meshTransmissionMaterialDemo1,
+
   PCSS: pcssDemo,
   WIP_SpotLight: spotLightDemo,
   WIP_SpotLight1: spotLightDemo1,
