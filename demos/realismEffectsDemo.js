@@ -171,8 +171,9 @@ export async function realismEffectsDemo(gui) {
   const motionBlurEffect = new MotionBlurEffect(velocityDepthNormalPass)
 
   const traaEffect = new TRAAEffect(scene, camera, velocityDepthNormalPass)
-
+  const traaPass = new EffectPass(camera, traaEffect)
   const fxaaEffect = new FXAAEffect()
+  const fxaaPass = new EffectPass(camera, fxaaEffect)
 
   const updateEffectsStack = () => {
     composer.removeAllPasses()
@@ -199,30 +200,30 @@ export async function realismEffectsDemo(gui) {
       }
     }
 
-    if (params.motionBlur) {
-      effectArray.push(motionBlurEffect)
-    }
-
     if (params.bloom) {
       effectArray.push(bloomEffect)
     }
 
+    if (params.motionBlur) {
+      effectArray.push(motionBlurEffect)
+    }
+
+    if (effectArray.length) {
+      composer.addPass(new EffectPass(camera, ...effectArray))
+    }
+
     switch (params.AA) {
       case 'TRAA':
-        effectArray.push(traaEffect)
+        composer.addPass(traaPass)
         break
 
       case 'FXAA':
-        effectArray.push(fxaaEffect)
+        composer.addPass(fxaaPass)
         break
 
       default: {
         break
       }
-    }
-
-    if (effectArray.length) {
-      composer.addPass(new EffectPass(camera, ...effectArray))
     }
 
     printAllPasses()
