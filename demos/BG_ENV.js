@@ -237,6 +237,12 @@ export class BG_ENV {
         }
       }
     }
+
+    console.log({
+      background: this.scene.background,
+      environment: this.scene.environment,
+      ground_projection: this.groundProjectedEnv.parent ? true : false,
+    })
   }
 
   /**
@@ -244,7 +250,6 @@ export class BG_ENV {
    * @param {Object} param0
    */
   async downloadEnvironment({ exr, hdr } = {}) {
-    console.log('download env')
     const key = exr || hdr
 
     if (this.environmentType === ENV_OPTIONS.None) {
@@ -263,7 +268,6 @@ export class BG_ENV {
   }
 
   async downloadBackground({ webP, avif } = {}) {
-    console.log('download bg')
     const key = webP || avif
     if (!(this.backgroundType === BG_OPTIONS.Default || this.backgroundType === BG_OPTIONS.GroundProjection)) {
       this.bgTexture = null

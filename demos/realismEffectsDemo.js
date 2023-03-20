@@ -274,9 +274,7 @@ export async function realismEffectsDemo(gui) {
 
   const loop = () => {
     stats.begin()
-
     controls.update()
-    camera.updateMatrixWorld()
 
     if (params.postprocessingEnabled) {
       composer.render()

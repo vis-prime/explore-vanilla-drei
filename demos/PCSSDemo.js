@@ -1,7 +1,6 @@
 import Stats from 'three/examples/jsm/libs/stats.module'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
 import { EXRLoader } from 'three/examples/jsm/loaders/EXRLoader'
-import { GroundProjectedEnv } from 'three/examples/jsm/objects/GroundProjectedEnv'
 
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
@@ -31,8 +30,9 @@ import {
   ShadowMaterial,
   DirectionalLight,
   AmbientLight,
+  CameraHelper,
 } from 'three'
-import { HDRI_LIST } from '../hdri/HDRI_LIST'
+import { DirectionalLightHelper } from 'three'
 
 let stats,
   renderer,
@@ -45,24 +45,23 @@ let stats,
   pointer = new Vector2()
 
 const params = {
-  environment: null,
-  groundProjection: false,
-  bgColor: new Color(),
-  printCam: () => {},
+  enabled: true,
+  size: 25,
+  focus: 0,
+  samples: 10,
 }
+
 const mainObjects = new Group()
 const textureLoader = new TextureLoader()
 const exrLoader = new EXRLoader()
 const gltfLoader = new GLTFLoader()
 const draco = new DRACOLoader()
 let transformControls
-// draco.setDecoderPath("https://www.gstatic.com/draco/versioned/decoders/1.5.5/")
-draco.setDecoderPath('https://www.gstatic.com/draco/v1/decoders/')
+draco.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.5/')
 gltfLoader.setDRACOLoader(draco)
 const raycaster = new Raycaster()
-const intersects = [] //raycast
+const intersects = []
 let sceneGui
-let pmremGenerator
 
 export async function pcssDemo(mainGui) {
   gui = mainGui
@@ -74,12 +73,9 @@ export async function pcssDemo(mainGui) {
   renderer.setPixelRatio(Math.min(1.5, window.devicePixelRatio))
   renderer.setSize(window.innerWidth, window.innerHeight)
   renderer.shadowMap.enabled = true
-  //   renderer.shadowMap.type = VSMShadowMap
   renderer.outputEncoding = sRGBEncoding
   renderer.toneMapping = ACESFilmicToneMapping
 
-  pmremGenerator = new PMREMGenerator(renderer)
-  pmremGenerator.compileCubemapShader()
   app.appendChild(renderer.domElement)
 
   // camera
@@ -89,7 +85,6 @@ export async function pcssDemo(mainGui) {
   camera.position.set(2.0404140991899564, 2.644387886134694, 3.8683136783076355)
   // scene
   scene = new Scene()
-  //   scene.backgroundBlurriness = 0.8
 
   scene.add(mainObjects)
 
@@ -134,144 +129,83 @@ export async function pcssDemo(mainGui) {
   })
 
   sceneGui.add(transformControls, 'mode', ['translate', 'rotate', 'scale'])
-  // sceneGui.add(scene, "backgroundBlurriness", 0, 1, 0.01)
-  // sceneGui.addColor(params, "bgColor").onChange(() => {
-  //   scene.background = params.bgColor
-  // })
-
-  const reset = pcss({
-    size: 35,
-    focus: 0.5,
-    samples: 16,
-  })
-
-  console.log(pcss)
 
   let sunLight = new DirectionalLight(0xffffeb, 5)
   sunLight.name = 'Dir. Light'
   sunLight.castShadow = true
   sunLight.shadow.camera.near = 0.1
   sunLight.shadow.camera.far = 50
-  sunLight.shadow.camera.right = 8.5
-  sunLight.shadow.camera.left = -8.5
-  sunLight.shadow.camera.top = 8.5
-  sunLight.shadow.camera.bottom = -8.5
+  const size = 2
+  sunLight.shadow.camera.right = size
+  sunLight.shadow.camera.left = -size
+  sunLight.shadow.camera.top = size
+  sunLight.shadow.camera.bottom = -size
   sunLight.shadow.mapSize.width = 2048
   sunLight.shadow.mapSize.height = 2048
   sunLight.shadow.bias = -0.001
-  //   sunLight.shadow.radius = 1.95
-  //   sunLight.shadow.blurSamples = 6
-  sunLight.position.set(5, 5, -8)
+  sunLight.position.set(2, 2, -3)
   scene.add(sunLight)
+
+  transformControls.attach(sunLight)
+
+  // scene.add(new DirectionalLightHelper(sunLight))
+  // scene.add(new CameraHelper(sunLight.shadow.camera))
 
   const ambientLight = new AmbientLight()
   scene.add(ambientLight)
 
-  //   setupEnvironment()
+  updatePCSS()
+  addPCSSGui(gui)
   await loadModels()
   animate()
 }
 
-async function setupEnvironment() {
-  // light
-  let sunGroup = new Group()
-  let sunLight = new DirectionalLight(0xffffeb, 1)
-  sunLight.name = 'Dir. Light'
-  sunLight.castShadow = true
-  sunLight.shadow.camera.near = 0.1
-  sunLight.shadow.camera.far = 50
-  sunLight.shadow.camera.right = 15
-  sunLight.shadow.camera.left = -15
-  sunLight.shadow.camera.top = 15
-  sunLight.shadow.camera.bottom = -15
-  sunLight.shadow.mapSize.width = 2048
-  sunLight.shadow.mapSize.height = 2048
-  sunLight.shadow.radius = 1.95
-  sunLight.shadow.blurSamples = 6
+function addPCSSGui(gui) {
+  const folder = gui.addFolder('PCSS')
+  folder.open()
+  folder.onChange(() => {
+    updatePCSS()
+  })
 
-  sunLight.shadow.bias = -0.0005
-  sunGroup.add(sunLight)
-  scene.add(sunGroup)
+  folder.add(params, 'enabled')
+  folder.add(params, 'size', 1, 100, 1)
+  folder.add(params, 'focus', 0, 2)
+  folder.add(params, 'samples', 1, 20, 1)
+}
 
-  //   floor
-  const shadowFloor = new Mesh(new PlaneGeometry(10, 10).rotateX(-Math.PI / 2), new ShadowMaterial({}))
-  shadowFloor.name = 'shadowFloor'
-  shadowFloor.receiveShadow = true
-  shadowFloor.position.set(0, 0, 0)
-  scene.add(shadowFloor)
+let reset = null
+async function updatePCSS() {
+  cancelAnimationFrame(raf)
 
-  /**
-   * Update env
-   * @param {HDRI_LIST} envDict
-   * @returns
-   */
-  function loadEnv(envDict) {
-    if (!envDict) {
-      scene.background = null
-      scene.environment = null
-      return
-    }
-
-    if (envDict.exr)
-      exrLoader.load(envDict.exr, (texture) => {
-        texture.mapping = EquirectangularReflectionMapping
-        scene.environment = texture
-      })
-
-    if (envDict.webP)
-      textureLoader.load(envDict.webP, (texture) => {
-        texture.mapping = EquirectangularReflectionMapping
-        texture.encoding = sRGBEncoding
-        scene.background = texture
-
-        if (params.groundProjection) loadGroundProj(params.environment)
-      })
-
-    if (envDict.sunPos) {
-      sunLight.visible = true
-      sunLight.position.fromArray(envDict.sunPos)
-    } else {
-      sunLight.visible = false
-    }
-
-    if (envDict.sunCol) {
-      sunLight.color.set(envDict.sunCol)
-    } else {
-      sunLight.color.set(0xffffff)
-    }
-
-    if (envDict.shadowOpacity) {
-      shadowFloor.material.opacity = envDict.shadowOpacity
-    }
+  // remove pcss
+  if (reset) {
+    reset(renderer, scene, camera)
+    reset = null
   }
 
-  function loadGroundProj(envDict) {
-    if (params.groundProjection && scene.background && envDict.groundProj) {
-      if (!groundProjectedEnv) {
-        groundProjectedEnv = new GroundProjectedEnv(scene.background)
-        groundProjectedEnv.scale.setScalar(100)
+  // add pcss again with updated values
+  if (params.enabled) {
+    reset = pcss({
+      size: params.size,
+      focus: params.focus,
+      samples: params.samples,
+    })
+
+    // dispose all materials to trigger re compile
+    scene.traverse((object) => {
+      if (object.material) {
+        // renderer.properties.remove(object.material)
+        object.material.dispose()
       }
-      groundProjectedEnv.material.uniforms.map.value = scene.background
-      groundProjectedEnv.radius = envDict.groundProj.radius
-      groundProjectedEnv.height = envDict.groundProj.height
-      if (!groundProjectedEnv.parent) {
-        scene.add(groundProjectedEnv)
-      }
-    } else {
-      if (groundProjectedEnv && groundProjectedEnv.parent) {
-        groundProjectedEnv.removeFromParent()
-      }
-    }
+    })
+    // renderer.info.programs.length = 0
+    // renderer.compile(scene, camera)
   }
 
-  loadEnv(params.environment)
+  // sleep(1000)
+  animate()
 
-  sceneGui.add(params, 'environment', HDRI_LIST).onChange((v) => {
-    loadEnv(v)
-  })
-  sceneGui.add(params, 'groundProjection').onChange((v) => {
-    loadGroundProj(params.environment)
-  })
+  console.log(params)
 }
 
 function onWindowResize() {
@@ -319,41 +253,9 @@ function onPointerMove(event) {
 }
 
 async function loadModels() {
-  // sphere
-  const sphere = new Mesh(
-    new SphereGeometry(0.5).translate(0, 0.5, 0),
-    new MeshStandardMaterial({
-      color: getRandomHexColor(),
-      roughness: 0,
-      metalness: 1,
-    })
-  )
-  sphere.name = 'sphere'
-  sphere.castShadow = true
-  sphere.receiveShadow = true
-  sphere.position.set(2, 0, -1.5)
-  mainObjects.add(sphere)
-
-  // cube
-  const cube = new Mesh(
-    new BoxGeometry(1, 1, 1).translate(0, 0.5, 0),
-    new MeshStandardMaterial({
-      color: getRandomHexColor(),
-      roughness: 0,
-      metalness: 1,
-    })
-  )
-  cube.name = 'cube'
-  cube.castShadow = true
-  cube.receiveShadow = true
-  cube.position.set(-2, 0, -1.5)
-  mainObjects.add(cube)
-
   const gltf = await gltfLoader.loadAsync(roomUrl)
   const model = gltf.scene
   model.name = 'room'
-  model.scale.setScalar(0.5)
-  model.position.set(0, -1, 0)
 
   model.traverse((child) => {
     if (child.isMesh) {
@@ -361,11 +263,7 @@ async function loadModels() {
       child.receiveShadow = true
       child.selectOnRaycast = model
 
-      if (child.name === 'Object_13') {
-        console.log('FOUND', child)
-        child.material.opacity = 0.5
-        child.material.transparent = true
-
+      if (child?.material.name === 'lampshade') {
         child.castShadow = false
         child.receiveShadow = false
       }
