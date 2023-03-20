@@ -204,26 +204,28 @@ export async function realismEffectsDemo(gui) {
       effectArray.push(bloomEffect)
     }
 
+    switch (params.AA) {
+      case 'TRAA':
+        // composer.addPass(traaPass)
+        effectArray.push(traaEffect)
+        break
+
+      case 'FXAA':
+        composer.addPass(fxaaPass)
+        // effectArray.push(fxaaEffect)
+        break
+
+      default: {
+        break
+      }
+    }
+
     if (params.motionBlur) {
       effectArray.push(motionBlurEffect)
     }
 
     if (effectArray.length) {
       composer.addPass(new EffectPass(camera, ...effectArray))
-    }
-
-    switch (params.AA) {
-      case 'TRAA':
-        composer.addPass(traaPass)
-        break
-
-      case 'FXAA':
-        composer.addPass(fxaaPass)
-        break
-
-      default: {
-        break
-      }
     }
 
     printAllPasses()
