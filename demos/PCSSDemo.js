@@ -227,6 +227,7 @@ function animate() {
 }
 
 function raycast() {
+  return
   // update the picking ray with the camera and pointer position
   raycaster.setFromCamera(pointer, camera)
 
