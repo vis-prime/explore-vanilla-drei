@@ -175,8 +175,6 @@ function addPCSSGui(gui) {
 
 let reset = null
 async function updatePCSS() {
-  cancelAnimationFrame(raf)
-
   // remove pcss
   if (reset) {
     reset(renderer, scene, camera)
@@ -201,11 +199,6 @@ async function updatePCSS() {
     // renderer.info.programs.length = 0
     // renderer.compile(scene, camera)
   }
-
-  // sleep(1000)
-  animate()
-
-  console.log(params)
 }
 
 function onWindowResize() {
