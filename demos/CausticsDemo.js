@@ -47,6 +47,7 @@ import {
   NORMAL_PROPS,
 } from '../wip/Caustics'
 import { FullScreenQuad } from '../wip/Pass'
+import { Tween, update } from '@tweenjs/tween.js'
 
 let stats,
   renderer,
@@ -150,7 +151,7 @@ function onWindowResize() {
 
 function render() {
   stats.update()
-  // Update the inertia on the orbit controls
+  update()
   controls.update()
   useFrame()
   renderer.render(scene, camera)
@@ -198,10 +199,16 @@ async function setupCaustics() {
       child.selectOnRaycast = model
     }
   })
+  new Tween(model.rotation)
+    .to({ y: 2 * Math.PI })
+    .duration(5000)
+    .repeat(Infinity)
+    .start()
+
   mainObjects.add(model)
 
   const params = {
-    debug: false,
+    debug: true,
     frames: Infinity,
     ior: 1.1,
     color: new Color('grey'),
@@ -213,6 +220,9 @@ async function setupCaustics() {
     resolution: 1024,
     lightSource: [-2, 2, 2],
   }
+  const lightSourceObj = new Group()
+  lightSourceObj.position.fromArray(params.lightSource)
+  transformControls.attach(lightSourceObj)
 
   // Buffers for front and back faces
   const normalTarget = useFBO(params.resolution, params.resolution, NORMAL_PROPS)
@@ -236,6 +246,7 @@ async function setupCaustics() {
   const lightDirInv = new Vector3()
   const bounds = new Box3()
   const focusPos = new Vector3()
+  const projPoint = new Vector3()
 
   const ref = new Group()
   const cCamera = new OrthographicCamera()
@@ -243,7 +254,7 @@ async function setupCaustics() {
 
   const cScene = new Scene()
   const plane = new Mesh(
-    new PlaneGeometry(1, 1),
+    new PlaneGeometry(),
     new CausticsProjectionMaterial({
       transparent: true,
       color: params.color,
@@ -262,38 +273,51 @@ async function setupCaustics() {
   const helper = new CameraHelper(cCamera)
 
   console.log('group', ref, cCamera, plane, lightDir, lightDirInv, bounds)
-  ref.add(cScene, plane)
+  ref.add(cScene, plane, lightSourceObj)
   cScene.add(cCamera)
   cScene.add(model)
+
+  mainObjects.add(ref, helper)
+
   ref.updateWorldMatrix(false, true)
 
-  mainObjects.add(ref)
+  const vecArr = []
+  const projPointArray = []
+
+  for (let index = 0; index < 8; index++) {
+    vecArr.push(new Vector3())
+    projPointArray.push(new Vector3())
+  }
+
+  let boundsVertices = []
 
   useFrame = (state, delta) => {
     if (params.frames === Infinity || count++ < params.frames) {
-      if (Array.isArray(params.lightSource)) lightDir.fromArray(params.lightSource).normalize()
-      else lightDir.copy(ref.worldToLocal(params.lightSource.getWorldPosition(v)).normalize())
+      // if (Array.isArray(params.lightSource)) lightDir.fromArray(params.lightSource).normalize()
+      // else lightDir.copy(ref.worldToLocal(params.lightSource.getWorldPosition(v)).normalize())
+
+      lightDir.copy(ref.worldToLocal(lightSourceObj.getWorldPosition(v)).normalize())
 
       lightDirInv.copy(lightDir).multiplyScalar(-1)
 
-      let boundsVertices = []
+      boundsVertices.length = 0
       cScene.parent?.matrixWorld.identity()
       bounds.setFromObject(cScene, true)
-      boundsVertices.push(new Vector3(bounds.min.x, bounds.min.y, bounds.min.z))
-      boundsVertices.push(new Vector3(bounds.min.x, bounds.min.y, bounds.max.z))
-      boundsVertices.push(new Vector3(bounds.min.x, bounds.max.y, bounds.min.z))
-      boundsVertices.push(new Vector3(bounds.min.x, bounds.max.y, bounds.max.z))
-      boundsVertices.push(new Vector3(bounds.max.x, bounds.min.y, bounds.min.z))
-      boundsVertices.push(new Vector3(bounds.max.x, bounds.min.y, bounds.max.z))
-      boundsVertices.push(new Vector3(bounds.max.x, bounds.max.y, bounds.min.z))
-      boundsVertices.push(new Vector3(bounds.max.x, bounds.max.y, bounds.max.z))
+      boundsVertices.push(vecArr[0].set(bounds.min.x, bounds.min.y, bounds.min.z))
+      boundsVertices.push(vecArr[1].set(bounds.min.x, bounds.min.y, bounds.max.z))
+      boundsVertices.push(vecArr[2].set(bounds.min.x, bounds.max.y, bounds.min.z))
+      boundsVertices.push(vecArr[3].set(bounds.min.x, bounds.max.y, bounds.max.z))
+      boundsVertices.push(vecArr[4].set(bounds.max.x, bounds.min.y, bounds.min.z))
+      boundsVertices.push(vecArr[5].set(bounds.max.x, bounds.min.y, bounds.max.z))
+      boundsVertices.push(vecArr[6].set(bounds.max.x, bounds.max.y, bounds.min.z))
+      boundsVertices.push(vecArr[7].set(bounds.max.x, bounds.max.y, bounds.max.z))
 
       const worldVerts = boundsVertices.map((v) => v.clone())
 
       bounds.getCenter(focusPos)
       boundsVertices = boundsVertices.map((v) => v.clone().sub(focusPos))
       const lightPlane = lpP.set(lightDirInv, 0)
-      const projectedVerts = boundsVertices.map((v) => lightPlane.projectPoint(v, new Vector3()))
+      const projectedVerts = boundsVertices.map((v, i) => lightPlane.projectPoint(v, projPointArray[i]))
 
       const centralVert = projectedVerts.reduce((a, b) => a.add(b), v.set(0, 0, 0)).divideScalar(projectedVerts.length)
       const radius = projectedVerts.map((v) => v.distanceTo(centralVert)).reduce((a, b) => Math.max(a, b))
@@ -394,6 +418,25 @@ async function setupCaustics() {
       if (params.causticsOnly) cScene.visible = false
     }
   }
+
+  addCausticsGui(params)
+}
+
+function addCausticsGui(params) {
+  const folder = gui.addFolder('Caustics')
+  folder.open()
+  folder.add(params, 'debug')
+  // folder.add(params, 'frames')
+  folder.addColor(params, 'color')
+  folder.add(params, 'ior', 0, Math.PI)
+  folder.add(params, 'backside')
+  folder.add(params, 'backsideIOR', 0, Math.PI)
+  folder.add(params, 'worldRadius', 0, 1)
+  folder.add(params, 'intensity', 0, 1)
+  folder.add(params, 'causticsOnly')
+
+  // folder.add(params, 'resolution')
+  // folder.add(params, 'lightSource')
 }
 
 // 👇 uncomment when TS version supports function overloads
