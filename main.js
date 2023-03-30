@@ -10,10 +10,12 @@ import { spotLightDemo1 } from './demos/SpotLightDemo1'
 import { realismEffectsDemo } from './demos/realismEffectsDemo'
 import { meshReflectorMaterialDemo } from './demos/MeshReflectorMaterialDemo'
 import { meshTransmissionMaterialDemo1 } from './demos/MeshTransmissionMaterialDemo1'
+import { CausticsDemo } from './demos/CausticsDemo'
 
 let url_string = window.location.href
 let url = new URL(url_string)
 
+console.log(url)
 /**
  * All Scenes
  * @enum
@@ -23,17 +25,20 @@ const All_Scenes = {
   MeshTransmissionMaterial1: meshTransmissionMaterialDemo1,
 
   PCSS: pcssDemo,
-  WIP_SpotLight: spotLightDemo,
-  WIP_SpotLight1: spotLightDemo1,
+  SpotLight: spotLightDemo,
+  SpotLight1: spotLightDemo1,
   RealismEffects: realismEffectsDemo,
+  Caustics: CausticsDemo,
 
-  WIP_MeshReflectionMaterial: meshReflectorMaterialDemo,
+  MeshReflectionMaterial: meshReflectorMaterialDemo,
 }
 
 const params = {
   sceneName: url.searchParams.get('scene') || Object.keys(All_Scenes)[0],
   sceneInitFunction: () => {},
 }
+
+params.sceneName = params.sceneName.replace('WIP_', '') //to make sure old shared urls still work
 
 function updatePageDesc(path) {
   console.log({ path })
@@ -64,3 +69,12 @@ if (!Object.keys(All_Scenes).includes(params.sceneName)) {
 params.sceneInitFunction = All_Scenes[params.sceneName]
 params.sceneInitFunction(gui)
 updatePageDesc(params.sceneName)
+
+// don't run script on local host
+if (window.location.href.includes('vis-prime')) {
+  var script = document.createElement('script')
+  script.type = 'text/javascript'
+
+  script.src = 'https://web3dsurvey.com/collector.js'
+  document.body.appendChild(script)
+}
