@@ -46,7 +46,7 @@ const intersects = [] //raycast
 let useFrame = () => {} // runs on every frame frame
 let sceneGui
 
-export async function meshTransmissionMaterialDemo1(mainGui) {
+export async function CausticsDemo(mainGui) {
   gui = mainGui
   sceneGui = gui.addFolder('Scene')
   stats = new Stats()

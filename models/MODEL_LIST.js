@@ -1,8 +1,8 @@
-import monkey_url from './monkey_comp.glb'
-import pole_url from './pole_comp.glb'
-import porsche_url from './porsche_911_1975_comp.glb'
-import road_url from './road_comp.glb'
-import room_url from './room_comp.glb'
+import monkey_url from './monkey_comp.glb?url'
+import pole_url from './pole_comp.glb?url'
+import porsche_url from './porsche_911_1975_comp.glb?url'
+import road_url from './road_comp.glb?url'
+import room_url from './room_comp.glb?url'
 
 /**
  * Vite friendly Model urls

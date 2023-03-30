@@ -1,9 +1,3 @@
-import Stats from 'three/examples/jsm/libs/stats.module'
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
-import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader'
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
-import { TransformControls } from 'three/examples/jsm/controls/TransformControls'
-
 import {
   ACESFilmicToneMapping,
   Mesh,
@@ -35,7 +29,11 @@ import {
   MathUtils,
 } from 'three'
 import { HDRI_LIST } from '../hdri/HDRI_LIST'
-
+import Stats from 'three/examples/jsm/libs/stats.module'
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
+import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader'
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
+import { TransformControls } from 'three/examples/jsm/controls/TransformControls'
 import { MeshReflectorMaterial } from '../wip/MeshReflectorMaterial'
 import { BlurPass } from '../wip/BlurPass'
 import { TEXTURES_LIST } from '../textures/TEXTURES_LIST'
@@ -364,7 +362,7 @@ async function setupMRM() {
     virtualCamera.up.applyMatrix4(rotationMatrix)
     virtualCamera.up.reflect(normal)
     virtualCamera.lookAt(target)
-    virtualCamera.far = camera.far // Used in WebGLBackground
+    virtualCamera.far = camera.far // Used in WebGL Background
     virtualCamera.updateMatrixWorld()
     virtualCamera.projectionMatrix.copy(camera.projectionMatrix)
     // Update the texture matrix

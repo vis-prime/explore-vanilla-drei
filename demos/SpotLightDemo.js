@@ -12,9 +12,7 @@ import {
   Group,
   BoxGeometry,
   Color,
-  PMREMGenerator,
   PlaneGeometry,
-  TextureLoader,
   EquirectangularReflectionMapping,
   VSMShadowMap,
   SpotLight,
@@ -36,8 +34,6 @@ import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { TransformControls } from 'three/examples/jsm/controls/TransformControls'
 
-import porscheUrl from '../models/porsche_911_1975_comp.glb'
-
 import { HDRI_LIST } from '../hdri/HDRI_LIST'
 import { SpotLightMaterial } from '../wip/SpotLightMaterial'
 import { DepthTexture } from 'three'
@@ -47,6 +43,7 @@ import { UnsignedShortType } from 'three'
 import { Easing, Tween, update } from '@tweenjs/tween.js'
 import { MathUtils } from 'three'
 import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader'
+import { MODEL_LIST } from '../models/MODEL_LIST'
 
 let stats,
   renderer,
@@ -55,7 +52,7 @@ let stats,
   scene,
   controls,
   gui,
-  groundProjectedEnv,
+  groundProjectedSkybox,
   pointer = new Vector2()
 
 const params = {
@@ -65,21 +62,17 @@ const params = {
   printCam: () => {},
 }
 const mainObjects = new Group()
-const textureLoader = new TextureLoader()
 const exrLoader = new EXRLoader()
 const rgbeLoader = new RGBELoader()
 const gltfLoader = new GLTFLoader()
 const draco = new DRACOLoader()
 let transformControls
-// draco.setDecoderPath("https://www.gstatic.com/draco/versioned/decoders/1.5.5/")
 draco.setDecoderPath('https://www.gstatic.com/draco/v1/decoders/')
 gltfLoader.setDRACOLoader(draco)
 const raycaster = new Raycaster()
 const intersects = [] //raycast
 let useFrame = () => {}
 let sceneGui
-let envObject
-let pmremGenerator
 
 export async function spotLightDemo(mainGui) {
   gui = mainGui
@@ -95,8 +88,6 @@ export async function spotLightDemo(mainGui) {
   renderer.outputEncoding = sRGBEncoding
   renderer.toneMapping = ACESFilmicToneMapping
 
-  pmremGenerator = new PMREMGenerator(renderer)
-  pmremGenerator.compileCubemapShader()
   app.appendChild(renderer.domElement)
 
   // camera
@@ -193,19 +184,19 @@ async function setupEnvironment() {
 
   function loadGroundProj(envDict) {
     if (params.groundProjection && scene.background && envDict.groundProj) {
-      if (!groundProjectedEnv) {
-        groundProjectedEnv = new GroundProjectedEnv(scene.background)
-        groundProjectedEnv.scale.setScalar(100)
+      if (!groundProjectedSkybox) {
+        groundProjectedSkybox = new GroundProjectedEnv(scene.background)
+        groundProjectedSkybox.scale.setScalar(100)
       }
-      groundProjectedEnv.material.uniforms.map.value = scene.background
-      groundProjectedEnv.radius = envDict.groundProj.radius
-      groundProjectedEnv.height = envDict.groundProj.height
-      if (!groundProjectedEnv.parent) {
-        scene.add(groundProjectedEnv)
+      groundProjectedSkybox.material.uniforms.map.value = scene.background
+      groundProjectedSkybox.radius = envDict.groundProj.radius
+      groundProjectedSkybox.height = envDict.groundProj.height
+      if (!groundProjectedSkybox.parent) {
+        scene.add(groundProjectedSkybox)
       }
     } else {
-      if (groundProjectedEnv && groundProjectedEnv.parent) {
-        groundProjectedEnv.removeFromParent()
+      if (groundProjectedSkybox && groundProjectedSkybox.parent) {
+        groundProjectedSkybox.removeFromParent()
       }
     }
   }
@@ -309,7 +300,7 @@ async function loadModels() {
   floor.receiveShadow = true
   mainObjects.add(floor)
 
-  const gltf = await gltfLoader.loadAsync(porscheUrl)
+  const gltf = await gltfLoader.loadAsync(MODEL_LIST.porsche_1975.url)
   const model = gltf.scene
   model.name = 'car'
 

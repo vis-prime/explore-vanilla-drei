@@ -4,29 +4,20 @@ import {
   MeshStandardMaterial,
   PerspectiveCamera,
   Scene,
-  SphereGeometry,
   sRGBEncoding,
   WebGLRenderer,
   Vector2,
   Raycaster,
   Group,
-  BoxGeometry,
-  Color,
-  PMREMGenerator,
-  PlaneGeometry,
-  TextureLoader,
   VSMShadowMap,
   SpotLight,
-  SpotLightHelper,
   CylinderGeometry,
   Vector3,
   WebGLRenderTarget,
   HalfFloatType,
   LinearFilter,
-  AxesHelper,
   Clock,
   FogExp2,
-  PointLight,
 } from 'three'
 import Stats from 'three/examples/jsm/libs/stats.module'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
@@ -45,11 +36,8 @@ import { Easing, Tween, update } from '@tweenjs/tween.js'
 import { MathUtils } from 'three'
 import { EffectComposer, EffectPass, RenderPass, SelectiveBloomEffect } from 'postprocessing'
 
-import porscheUrl from '../models/porsche_911_1975_comp.glb'
-import poleUrl from '../models/pole_comp.glb'
-import roadUrl from '../models/road_comp.glb'
-
 import { BG_ENV } from './BG_ENV'
+import { MODEL_LIST } from '../models/MODEL_LIST'
 
 let stats,
   renderer,
@@ -60,7 +48,6 @@ let stats,
   scene,
   controls,
   gui,
-  groundProjectedEnv,
   pointer = new Vector2()
 
 const params = {
@@ -71,18 +58,15 @@ const params = {
   pixelRatio: Math.min(1.5, window.devicePixelRatio),
 }
 const mainObjects = new Group()
-const textureLoader = new TextureLoader()
 const gltfLoader = new GLTFLoader()
 const draco = new DRACOLoader()
 let transformControls
-// draco.setDecoderPath("https://www.gstatic.com/draco/versioned/decoders/1.5.5/")
 draco.setDecoderPath('https://www.gstatic.com/draco/v1/decoders/')
 gltfLoader.setDRACOLoader(draco)
 const raycaster = new Raycaster()
 const intersects = [] //raycast
 let useFrame = () => {}
 let sceneGui
-let pmremGenerator
 
 export async function spotLightDemo1(mainGui) {
   gui = mainGui
@@ -451,7 +435,7 @@ async function setupScene() {
 
 async function addCar(AllVolumeMaterials) {
   // CAR
-  const gltf = await gltfLoader.loadAsync(porscheUrl)
+  const gltf = await gltfLoader.loadAsync(MODEL_LIST.porsche_1975.url)
   const model = gltf.scene
   model.name = 'car'
 
@@ -667,7 +651,7 @@ async function addCar(AllVolumeMaterials) {
 
 async function addRoad() {
   //road
-  const gltfRoad = await gltfLoader.loadAsync(roadUrl)
+  const gltfRoad = await gltfLoader.loadAsync(MODEL_LIST.road.url)
   const modelRoad = gltfRoad.scene
   modelRoad.name = 'road'
 
@@ -711,7 +695,7 @@ async function addPoles(AllVolumeMaterials) {
   // poles
   const vec = new Vector3()
   const radiusTop = 0.1
-  const gltfPole = await gltfLoader.loadAsync(poleUrl)
+  const gltfPole = await gltfLoader.loadAsync(MODEL_LIST.pole.url)
   const modelPole = gltfPole.scene
   modelPole.name = 'pole'
 

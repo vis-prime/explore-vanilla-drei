@@ -1,7 +1,7 @@
 {
   "name": "explore-vanilla-drei",
   "private": false,
-  "version": "0.0.18",
+  "version": "0.0.20",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
@@ -9,18 +9,17 @@
     "deploy": "gh-pages -d dist"
   },
   "devDependencies": {
-    "vite": "^4.1.4"
+    "vite": "^4.2.1"
   },
   "dependencies": {
-    "@pmndrs/vanilla": "^1.2.1",
+    "@pmndrs/vanilla": "^1.3.1",
     "@tweenjs/tween.js": "^18.6.4",
     "gh-pages": "^5.0.0",
     "lil-gui": "^0.18.1",
     "postprocessing": "^6.30.1",
-    "realism-effects": "^1.0.17",
-    "three": "^0.150.1",
-    "vite-plugin-compression": "^0.5.1",
-    "vite-plugin-gltf": "^3.1.0"
+    "realism-effects": "^1.0.19",
+    "three": "^0.150.0",
+    "vite-plugin-compression": "^0.5.1"
   },
   "prettier": {
     "printWidth": 120,

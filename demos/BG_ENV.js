@@ -82,7 +82,7 @@ export class BG_ENV {
     this.envTexture
     this.bgTexture
 
-    this.groundProjectedEnv
+    this.groundProjectedSkybox
 
     this.envCache = {}
     this.bgCache = {}
@@ -201,23 +201,23 @@ export class BG_ENV {
     if (this.backgroundType === BG_OPTIONS.GroundProjection && this.bgTexture) {
       this.scene.background = null
 
-      if (!this.groundProjectedEnv) {
-        this.groundProjectedEnv = new GroundProjectedEnv(this.bgTexture)
-        this.groundProjectedEnv.scale.setScalar(100)
+      if (!this.groundProjectedSkybox) {
+        this.groundProjectedSkybox = new GroundProjectedEnv(this.bgTexture)
+        this.groundProjectedSkybox.scale.setScalar(100)
       }
 
       if (data.groundProj.radius) this.gpRadius = data.groundProj.radius
 
       if (data.groundProj.height) this.gpHeight = data.groundProj.height
       this.bgTexture.minFilter = LinearFilter
-      this.groundProjectedEnv.material.uniforms.map.value = this.bgTexture
-      this.groundProjectedEnv.radius = this.gpRadius
-      this.groundProjectedEnv.height = this.gpHeight
+      this.groundProjectedSkybox.material.uniforms.map.value = this.bgTexture
+      this.groundProjectedSkybox.radius = this.gpRadius
+      this.groundProjectedSkybox.height = this.gpHeight
 
-      this.scene.add(this.groundProjectedEnv)
+      this.scene.add(this.groundProjectedSkybox)
     } else {
-      if (this.groundProjectedEnv?.parent) {
-        this.groundProjectedEnv.removeFromParent()
+      if (this.groundProjectedSkybox?.parent) {
+        this.groundProjectedSkybox.removeFromParent()
       }
 
       switch (this.backgroundType) {
@@ -237,12 +237,6 @@ export class BG_ENV {
         }
       }
     }
-
-    console.log({
-      background: this.scene.background,
-      environment: this.scene.environment,
-      ground_projection: this.groundProjectedEnv.parent ? true : false,
-    })
   }
 
   /**

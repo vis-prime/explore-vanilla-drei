@@ -1,15 +1,3 @@
-import Stats from 'three/examples/jsm/libs/stats.module'
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
-import { EXRLoader } from 'three/examples/jsm/loaders/EXRLoader'
-import { GroundProjectedEnv } from 'three/examples/jsm/objects/GroundProjectedEnv'
-
-import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader'
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
-import { TransformControls } from 'three/examples/jsm/controls/TransformControls'
-
-import { MeshTransmissionMaterial, MeshDiscardMaterial } from '@pmndrs/vanilla'
-import porscheUrl from '../models/porsche_911_1975_comp.glb'
-
 import {
   ACESFilmicToneMapping,
   Mesh,
@@ -39,8 +27,17 @@ import {
   NoToneMapping,
   BackSide,
 } from 'three'
+import Stats from 'three/examples/jsm/libs/stats.module'
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
+import { EXRLoader } from 'three/examples/jsm/loaders/EXRLoader'
+import { GroundProjectedEnv } from 'three/examples/jsm/objects/GroundProjectedEnv'
+import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader'
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
+import { TransformControls } from 'three/examples/jsm/controls/TransformControls'
+import { MeshTransmissionMaterial, MeshDiscardMaterial } from '@pmndrs/vanilla'
 import { HDRI_LIST } from '../hdri/HDRI_LIST'
 import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader'
+import { MODEL_LIST } from '../models/MODEL_LIST'
 
 let stats,
   renderer,
@@ -49,7 +46,7 @@ let stats,
   scene,
   controls,
   gui,
-  groundProjectedEnv,
+  groundProjectedSkybox,
   pointer = new Vector2()
 
 const params = {
@@ -243,19 +240,19 @@ async function setupEnvironment() {
 
   function loadGroundProj(envDict) {
     if (params.groundProjection && scene.background && envDict.groundProj) {
-      if (!groundProjectedEnv) {
-        groundProjectedEnv = new GroundProjectedEnv(scene.background)
-        groundProjectedEnv.scale.setScalar(100)
+      if (!groundProjectedSkybox) {
+        groundProjectedSkybox = new GroundProjectedEnv(scene.background)
+        groundProjectedSkybox.scale.setScalar(100)
       }
-      groundProjectedEnv.material.uniforms.map.value = scene.background
-      groundProjectedEnv.radius = envDict.groundProj.radius
-      groundProjectedEnv.height = envDict.groundProj.height
-      if (!groundProjectedEnv.parent) {
-        scene.add(groundProjectedEnv)
+      groundProjectedSkybox.material.uniforms.map.value = scene.background
+      groundProjectedSkybox.radius = envDict.groundProj.radius
+      groundProjectedSkybox.height = envDict.groundProj.height
+      if (!groundProjectedSkybox.parent) {
+        scene.add(groundProjectedSkybox)
       }
     } else {
-      if (groundProjectedEnv && groundProjectedEnv.parent) {
-        groundProjectedEnv.removeFromParent()
+      if (groundProjectedSkybox && groundProjectedSkybox.parent) {
+        groundProjectedSkybox.removeFromParent()
       }
     }
   }
@@ -371,7 +368,7 @@ async function setupMTM() {
 
   const all_mats = []
 
-  const gltf = await gltfLoader.loadAsync(porscheUrl)
+  const gltf = await gltfLoader.loadAsync(MODEL_LIST.porsche_1975.url)
   const model = gltf.scene
   model.name = 'car'
   let carBody

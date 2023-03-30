@@ -7,10 +7,9 @@ import {
   VelocityDepthNormalPass,
 } from 'realism-effects'
 import Stats from 'three/examples/jsm/libs/stats.module'
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader'
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
-import modelUrl from '../models/porsche_911_1975_comp.glb'
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
 import { SSGIDebugGUI } from '../wip/SSGIDebugGUI'
 import {
   CircleGeometry,
@@ -23,6 +22,7 @@ import {
 } from 'three'
 import { BloomEffect, EffectComposer, EffectPass, FXAAEffect, KernelSize, RenderPass } from 'postprocessing'
 import { BG_ENV } from './BG_ENV'
+import { MODEL_LIST } from '../models/MODEL_LIST'
 
 export async function realismEffectsDemo(gui) {
   const params = {
@@ -116,7 +116,7 @@ export async function realismEffectsDemo(gui) {
   const draco = new DRACOLoader()
   draco.setDecoderPath('https://www.gstatic.com/draco/v1/decoders/')
   gltfLoader.setDRACOLoader(draco)
-  let url = modelUrl
+  let url = MODEL_LIST.porsche_1975.url
   const asset = await gltfLoader.loadAsync(url)
   scene.add(asset.scene)
   asset.scene.traverse((c) => {

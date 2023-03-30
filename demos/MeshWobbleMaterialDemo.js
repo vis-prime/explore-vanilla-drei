@@ -1,3 +1,13 @@
+import Stats from 'three/examples/jsm/libs/stats.module'
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
+import { EXRLoader } from 'three/examples/jsm/loaders/EXRLoader'
+
+import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader'
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
+import { TransformControls } from 'three/examples/jsm/controls/TransformControls'
+
+import { pcss } from '@pmndrs/vanilla'
+
 import {
   ACESFilmicToneMapping,
   PerspectiveCamera,
@@ -11,19 +21,7 @@ import {
   TextureLoader,
   DirectionalLight,
   AmbientLight,
-  MathUtils,
 } from 'three'
-import Stats from 'three/examples/jsm/libs/stats.module'
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
-import { EXRLoader } from 'three/examples/jsm/loaders/EXRLoader'
-
-import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader'
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
-import { TransformControls } from 'three/examples/jsm/controls/TransformControls'
-
-import { pcss } from '@pmndrs/vanilla'
-
-import { Easing, Tween, update } from '@tweenjs/tween.js'
 import { MODEL_LIST } from '../models/MODEL_LIST'
 
 let stats,
@@ -33,6 +31,7 @@ let stats,
   scene,
   controls,
   gui,
+  groundProjectedSkybox,
   pointer = new Vector2()
 
 const params = {
@@ -40,7 +39,6 @@ const params = {
   size: 25,
   focus: 0,
   samples: 10,
-  animate: false,
 }
 
 const mainObjects = new Group()
@@ -53,9 +51,9 @@ draco.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.5/')
 gltfLoader.setDRACOLoader(draco)
 const raycaster = new Raycaster()
 const intersects = []
-let sceneGui, sunLight
+let sceneGui
 
-export async function pcssDemo(mainGui) {
+export async function MeshWobbleMaterialDemo(mainGui) {
   gui = mainGui
   sceneGui = gui.addFolder('Scene')
   stats = new Stats()
@@ -122,12 +120,12 @@ export async function pcssDemo(mainGui) {
 
   sceneGui.add(transformControls, 'mode', ['translate', 'rotate', 'scale'])
 
-  sunLight = new DirectionalLight(0xffffeb, 5)
+  let sunLight = new DirectionalLight(0xffffeb, 5)
   sunLight.name = 'Dir. Light'
   sunLight.castShadow = true
-  sunLight.shadow.camera.near = 0.01
-  sunLight.shadow.camera.far = 100
-  const size = 4
+  sunLight.shadow.camera.near = 0.1
+  sunLight.shadow.camera.far = 50
+  const size = 2
   sunLight.shadow.camera.right = size
   sunLight.shadow.camera.left = -size
   sunLight.shadow.camera.top = size
@@ -163,39 +161,6 @@ function addPCSSGui(gui) {
   folder.add(params, 'size', 1, 100, 1)
   folder.add(params, 'focus', 0, 2)
   folder.add(params, 'samples', 1, 20, 1)
-
-  const def = gui.addFolder('Defaults')
-  def.open()
-  def.addColor(sunLight, 'color')
-  def.add(sunLight, 'intensity', 0, 10)
-  let tw
-  def
-    .add(params, 'animate')
-    .name('Animate 💡')
-    .onChange((v) => {
-      if (!tw) {
-        tw = new Tween(sunLight.position)
-          .to({ x: MathUtils.randFloatSpread(5), y: MathUtils.randFloat(0.1, 5) })
-          .duration(3000)
-          .repeat(Infinity)
-          .repeatDelay(1000)
-          .easing(Easing.Quadratic.InOut)
-          .onStart(() => {
-            tw._valuesStart = { x: sunLight.position.x, y: sunLight.position.y }
-            tw.to({ x: MathUtils.randFloatSpread(5), y: MathUtils.randFloat(0.1, 5) })
-          })
-          .onRepeat(() => {
-            tw._onStartCallback() // run onStart again
-          })
-      }
-      if (v) {
-        transformControls.detach()
-        tw.start()
-      } else {
-        transformControls.attach(sunLight)
-        tw.stop()
-      }
-    })
 }
 
 let reset = null
@@ -234,7 +199,7 @@ function onWindowResize() {
 
 function render() {
   stats.update()
-  update() //tween
+  // Update the inertia on the orbit controls
   controls.update()
   renderer.render(scene, camera)
 }
