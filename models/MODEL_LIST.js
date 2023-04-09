@@ -3,6 +3,8 @@ import pole_url from './pole_comp.glb?url'
 import porsche_url from './porsche_911_1975_comp.glb?url'
 import road_url from './road_comp.glb?url'
 import room_url from './room_comp.glb?url'
+import vase_url from './vase_2k_comp.glb?url'
+import bunny_url from './stanford _bunny_comp.glb?url'
 
 /**
  * Vite friendly Model urls
@@ -23,5 +25,11 @@ export const MODEL_LIST = {
   },
   room: {
     url: room_url,
+  },
+  vase: {
+    url: vase_url,
+  },
+  bunny: {
+    url: bunny_url,
   },
 }

@@ -15,7 +15,6 @@ import { CausticsDemo } from './demos/CausticsDemo'
 let url_string = window.location.href
 let url = new URL(url_string)
 
-console.log(url)
 /**
  * All Scenes
  * @enum
@@ -69,12 +68,3 @@ if (!Object.keys(All_Scenes).includes(params.sceneName)) {
 params.sceneInitFunction = All_Scenes[params.sceneName]
 params.sceneInitFunction(gui)
 updatePageDesc(params.sceneName)
-
-// don't run script on local host
-if (window.location.href.includes('vis-prime')) {
-  var script = document.createElement('script')
-  script.type = 'text/javascript'
-
-  script.src = 'https://web3dsurvey.com/collector.js'
-  document.body.appendChild(script)
-}
