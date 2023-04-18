@@ -16,7 +16,7 @@ import {
 } from 'three'
 import { EXRLoader } from 'three/examples/jsm/loaders/EXRLoader'
 import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader'
-import { GroundProjectedEnv } from 'three/examples/jsm/objects/GroundProjectedEnv'
+import { GroundProjectedSkybox } from 'three/examples/jsm/objects/GroundProjectedSkybox'
 import { HDRI_LIST } from '../hdri/HDRI_LIST'
 
 const textureLoader = new TextureLoader()
@@ -202,7 +202,7 @@ export class BG_ENV {
       this.scene.background = null
 
       if (!this.groundProjectedSkybox) {
-        this.groundProjectedSkybox = new GroundProjectedEnv(this.bgTexture)
+        this.groundProjectedSkybox = new GroundProjectedSkybox(this.bgTexture)
         this.groundProjectedSkybox.scale.setScalar(100)
       }
 

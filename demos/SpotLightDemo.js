@@ -28,7 +28,7 @@ import {
 import Stats from 'three/examples/jsm/libs/stats.module'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
 import { EXRLoader } from 'three/examples/jsm/loaders/EXRLoader'
-import { GroundProjectedEnv } from 'three/examples/jsm/objects/GroundProjectedEnv'
+import { GroundProjectedSkybox } from 'three/examples/jsm/objects/GroundProjectedSkybox'
 
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
@@ -185,7 +185,7 @@ async function setupEnvironment() {
   function loadGroundProj(envDict) {
     if (params.groundProjection && scene.background && envDict.groundProj) {
       if (!groundProjectedSkybox) {
-        groundProjectedSkybox = new GroundProjectedEnv(scene.background)
+        groundProjectedSkybox = new GroundProjectedSkybox(scene.background)
         groundProjectedSkybox.scale.setScalar(100)
       }
       groundProjectedSkybox.material.uniforms.map.value = scene.background
