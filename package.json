@@ -12,7 +12,7 @@
     "vite": "^4.2.2"
   },
   "dependencies": {
-    "@pmndrs/vanilla": "^1.4.0",
+    "@pmndrs/vanilla": "^1.5.1",
     "@tweenjs/tween.js": "^19.0.0",
     "gh-pages": "^5.0.0",
     "lil-gui": "^0.18.1",

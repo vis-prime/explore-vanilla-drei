@@ -27,7 +27,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { TransformControls } from 'three/examples/jsm/controls/TransformControls'
 
 import { HDRI_LIST } from '../hdri/HDRI_LIST'
-import { SpotLightMaterial } from '../wip/SpotLightMaterial'
+import { SpotLightMaterial } from '@pmndrs/vanilla'
 import { DepthTexture } from 'three'
 import { DepthFormat } from 'three'
 import { UnsignedShortType } from 'three'

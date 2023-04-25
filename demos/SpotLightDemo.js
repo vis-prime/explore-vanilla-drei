@@ -24,6 +24,10 @@ import {
   WebGLRenderTarget,
   HalfFloatType,
   LinearFilter,
+  DepthTexture,
+  DepthFormat,
+  UnsignedShortType,
+  MathUtils,
 } from 'three'
 import Stats from 'three/examples/jsm/libs/stats.module'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
@@ -35,13 +39,9 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { TransformControls } from 'three/examples/jsm/controls/TransformControls'
 
 import { HDRI_LIST } from '../hdri/HDRI_LIST'
-import { SpotLightMaterial } from '../wip/SpotLightMaterial'
-import { DepthTexture } from 'three'
-import { DepthFormat } from 'three'
-import { UnsignedShortType } from 'three'
+import { SpotLightMaterial } from '@pmndrs/vanilla'
 
 import { Easing, Tween, update } from '@tweenjs/tween.js'
-import { MathUtils } from 'three'
 import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader'
 import { MODEL_LIST } from '../models/MODEL_LIST'
 

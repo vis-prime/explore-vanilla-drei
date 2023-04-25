@@ -34,12 +34,11 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { TransformControls } from 'three/examples/jsm/controls/TransformControls'
-import { MeshReflectorMaterial } from '../wip/MeshReflectorMaterial'
-import { BlurPass } from '../wip/BlurPass'
 import { TEXTURES_LIST } from '../textures/TEXTURES_LIST'
 import { Easing, Tween, update } from '@tweenjs/tween.js'
 import { BG_ENV } from './BG_ENV'
 import { MODEL_LIST } from '../models/MODEL_LIST'
+import { MeshReflectorMaterial, BlurPass } from '@pmndrs/vanilla'
 
 let stats,
   renderer,
