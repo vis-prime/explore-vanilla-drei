@@ -13,6 +13,9 @@ import {
   Group,
   BoxGeometry,
   Color,
+  PlaneGeometry,
+  DirectionalLight,
+  MathUtils,
   Vector3,
 } from 'three'
 import Stats from 'three/examples/jsm/libs/stats.module'
@@ -21,11 +24,9 @@ import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader'
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { TransformControls } from 'three/examples/jsm/controls/TransformControls'
-
-// import { ProgressiveShadows } from '../src/ProgressiveShadows'
-// import { guiProgressiveShadows } from '../src/GuiProgressiveShadows'
 import { MODEL_LIST } from '../models/MODEL_LIST'
 import { HDRI_LIST } from '../hdri/HDRI_LIST'
+import { ProgressiveLightMap, SoftShadowMaterial } from '../wip/AccumulativeShadows'
 
 let stats,
   renderer,
@@ -34,10 +35,6 @@ let stats,
   scene,
   controls,
   gui,
-  /**
-   * @type {ProgressiveShadows}
-   */
-  progressiveShadows,
   pointer = new Vector2()
 
 const params = {
@@ -56,6 +53,57 @@ const raycaster = new Raycaster()
 const intersects = [] //raycast
 
 let sceneGui
+
+/**
+ * @type {ProgressiveLightMap}
+ */
+let plm,
+  /**
+   * @type {Group}
+   */
+  gLights,
+  /**
+   * @type {Mesh}
+   */
+  gPlane
+
+const shadowParams = {
+  temporal: true,
+  frames: 40,
+  limit: Infinity,
+  blend: 20,
+  scale: 10,
+  opacity: 1,
+  alphaTest: 0.75,
+  color: new Color('black'),
+  colorBlend: 2,
+  resolution: 1024,
+  toneMapped: true,
+}
+
+const lightParams = {
+  bias: 0.001,
+  mapSize: 512,
+  size: 10,
+  near: 0.5,
+  far: 500,
+  position: new Vector3(5, 5, 5),
+  radius: 1,
+  amount: 8,
+  intensity: 1,
+  ambient: 0.5,
+}
+
+const api = {
+  lights: new Map(),
+  temporal: !!shadowParams.temporal,
+  frames: Math.max(2, shadowParams.frames),
+  blend: Math.max(2, shadowParams.frames === Infinity ? shadowParams.blend : shadowParams.frames),
+  count: 0,
+  resetPlm: () => {
+    reset()
+  },
+}
 
 export async function AccumulativeShadowsDemo(mainGui) {
   gui = mainGui
@@ -76,13 +124,13 @@ export async function AccumulativeShadowsDemo(mainGui) {
   camera = new PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 200)
   camera.position.set(6, 3, 6)
   camera.name = 'Camera'
-  camera.position.set(2.0404140991899564, 2.644387886134694, 3.8683136783076355)
+
   // scene
   scene = new Scene()
-  scene.backgroundBlurriness = 0.8
 
   rgbeLoader.load(HDRI_LIST.skidpan.hdr, (texture) => {
     texture.mapping = EquirectangularReflectionMapping
+    scene.backgroundBlurriness = 0.3
     scene.background = texture
     scene.environment = texture
   })
@@ -102,7 +150,7 @@ export async function AccumulativeShadowsDemo(mainGui) {
   transformControls.addEventListener('dragging-changed', (event) => {
     controls.enabled = !event.value
     if (!event.value) {
-      progressiveShadows.recalculate()
+      plm.recalculate()
     }
   })
 
@@ -113,7 +161,7 @@ export async function AccumulativeShadowsDemo(mainGui) {
       }
     }
   })
-  scene.add(transformControls)
+  // scene.add(transformControls)
 
   window.addEventListener('resize', onWindowResize)
   document.addEventListener('pointermove', onPointerMove)
@@ -135,9 +183,8 @@ export async function AccumulativeShadowsDemo(mainGui) {
     scene.background = params.bgColor
   })
 
-  //   initProgressiveShadows()
+  initProgressiveShadows()
   await loadModels()
-  animate()
 }
 
 function onWindowResize() {
@@ -151,8 +198,7 @@ function render() {
   // Update the inertia on the orbit controls
   controls.update()
 
-  // Render Shadows
-  //   progressiveShadows.update(camera)
+  accumulateShadows()
 
   renderer.render(scene, camera)
 }
@@ -220,42 +266,133 @@ async function loadModels() {
   mainObjects.add(model)
 
   // call this once all models are in scene
-  progressiveShadows?.clear()
+  plm.clear()
+
+  animate()
 }
 
 function initProgressiveShadows() {
-  const shadowCatcherSize = 8
-  progressiveShadows = new ProgressiveShadows(renderer, scene, { size: shadowCatcherSize })
-  progressiveShadows.lightOrigin.position.set(-3, 3, 3)
+  plm = new ProgressiveLightMap(renderer, scene, shadowParams.resolution)
 
-  guiProgressiveShadows(progressiveShadows, gui)
+  // Material applied to shadow catching plane
+  const shadowCatcherMaterial = new SoftShadowMaterial({
+    map: plm.progressiveLightMap2.texture,
+    transparent: true,
+    depthWrite: false,
+    toneMapped: shadowParams.toneMapped,
+    color: shadowParams.color,
+    blend: shadowParams.colorBlend,
+  })
 
-  // light position transform controls
-  const lightControl = new TransformControls(camera, renderer.domElement)
-  lightControl.name = 'lightOrigin control'
-  lightControl.addEventListener('dragging-changed', (event) => {
-    controls.enabled = !event.value
-    if (!event.value) {
-      progressiveShadows.recalculate()
+  // const shadowCatcherMaterial = new MeshStandardMaterial({
+  //   map: plm.progressiveLightMap2.texture,
+  // })
+
+  gPlane = new Mesh(new PlaneGeometry(1, 1).rotateX(-Math.PI / 2), shadowCatcherMaterial)
+  gPlane.scale.setScalar(shadowParams.scale)
+  gPlane.receiveShadow = true
+  scene.add(gPlane)
+  plm.configure(gPlane)
+
+  gLights = new Group()
+
+  // create 8 directional lights to speed up the convergence
+  for (let l = 0; l < lightParams.amount; l++) {
+    const dirLight = new DirectionalLight(0xffffff, lightParams.intensity / lightParams.amount)
+    dirLight.name = 'dir_light_' + l
+    dirLight.castShadow = true
+    dirLight.shadow.bias = lightParams.bias
+    dirLight.shadow.camera.near = lightParams.near
+    dirLight.shadow.camera.far = lightParams.far
+    dirLight.shadow.camera.right = lightParams.size / 2
+    dirLight.shadow.camera.left = -lightParams.size / 2
+    dirLight.shadow.camera.top = lightParams.size / 2
+    dirLight.shadow.camera.bottom = -lightParams.size / 2
+    dirLight.shadow.mapSize.width = lightParams.mapSize
+    dirLight.shadow.mapSize.height = lightParams.mapSize
+    gLights.add(dirLight)
+  }
+
+  addPlmGui(gui)
+}
+
+function randomiseLightPositions() {
+  for (let i = 0; i < gLights.children.length; i++) {
+    const light = gLights.children[i]
+    if (Math.random() > lightParams.ambient) {
+      light.position.set(
+        lightParams.position.x + MathUtils.randFloatSpread(lightParams.radius),
+        lightParams.position.y + MathUtils.randFloatSpread(lightParams.radius),
+        lightParams.position.z + MathUtils.randFloatSpread(lightParams.radius)
+      )
+    } else {
+      let lambda = Math.acos(2 * Math.random() - 1) - Math.PI / 2.0
+      let phi = 2 * Math.PI * Math.random()
+      light.position.set(
+        Math.cos(lambda) * Math.cos(phi) * length,
+        Math.abs(Math.cos(lambda) * Math.sin(phi) * length),
+        Math.sin(lambda) * length
+      )
     }
-  })
-  lightControl.size = 0.5
+  }
+}
 
-  // clamp light position inside
-  const clampSize = shadowCatcherSize / 2
-  const clampMin = new Vector3(-clampSize, 0, -clampSize),
-    clampMax = new Vector3(clampSize, clampSize, clampSize)
+function reset() {
+  console.log('reset')
+  plm.clear()
+  lightParams.position.x = MathUtils.randFloatSpread(10)
+  lightParams.position.y = MathUtils.randFloat(3, 10)
+  lightParams.position.z = MathUtils.randFloatSpread(10)
 
-  lightControl.addEventListener('change', () => {
-    progressiveShadows.lightOrigin.position.clamp(clampMin, clampMax)
-  })
-  lightControl.showY = false
+  const material = gPlane.material
+  material.opacity = 0
+  material.alphaTest = 0
+  api.count = 0
+}
 
-  scene.add(lightControl)
-  lightControl.attach(progressiveShadows.lightOrigin)
+function accumulateShadows() {
+  if ((api.temporal || api.frames === Infinity) && api.count < api.frames && api.count < shadowParams.limit) {
+    update()
+    api.count++
+  }
+}
+
+function update(frames = 1) {
+  // Adapt the opacity-blend ratio to the number of frames
+  const material = gPlane.material
+  if (!api.temporal) {
+    material.opacity = shadowParams.opacity
+    material.alphaTest = shadowParams.alphaTest
+  } else {
+    material.opacity = Math.min(shadowParams.opacity, material.opacity + shadowParams.opacity / api.blend)
+    material.alphaTest = Math.min(shadowParams.alphaTest, material.alphaTest + shadowParams.alphaTest / api.blend)
+  }
+
+  // Switch accumulative lights on
+  scene.add(gLights)
+  // Collect scene lights and meshes
+  plm.prepare()
+
+  // Update the lightmap and the accumulative lights
+
+  for (let i = 0; i < frames; i++) {
+    // api.lights.forEach((light) => light.update())
+    randomiseLightPositions()
+    plm.update(camera, api.blend)
+  }
+  // Switch lights off
+  scene.remove(gLights)
+  // Restore lights and meshes
+  plm.finish()
 }
 
 const color = new Color()
 function getRandomHexColor() {
   return '#' + color.setHSL(Math.random(), 0.5, 0.5).getHexString()
+}
+
+function addPlmGui(gui) {
+  const folder = gui.addFolder('plm')
+  folder.open()
+  folder.add(api, 'resetPlm')
 }
