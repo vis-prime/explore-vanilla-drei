@@ -77,13 +77,13 @@ const shadowParams = {
   alphaTest: 0.75,
   color: new Color('black'),
   colorBlend: 2,
-  resolution: 1024,
+  resolution: 2048,
   toneMapped: true,
 }
 
 const lightParams = {
   bias: 0.001,
-  mapSize: 512,
+  mapSize: 1024,
   size: 10,
   near: 0.5,
   far: 500,
@@ -130,7 +130,7 @@ export async function AccumulativeShadowsDemo(mainGui) {
 
   rgbeLoader.load(HDRI_LIST.skidpan.hdr, (texture) => {
     texture.mapping = EquirectangularReflectionMapping
-    scene.backgroundBlurriness = 0.3
+    scene.backgroundBlurriness = 0.7
     scene.background = texture
     scene.environment = texture
   })
@@ -341,7 +341,7 @@ function reset() {
   console.log('reset')
   plm.clear()
   lightParams.position.x = MathUtils.randFloatSpread(10)
-  lightParams.position.y = MathUtils.randFloat(3, 10)
+  lightParams.position.y = MathUtils.randFloat(4, 5)
   lightParams.position.z = MathUtils.randFloatSpread(10)
 
   const material = gPlane.material
