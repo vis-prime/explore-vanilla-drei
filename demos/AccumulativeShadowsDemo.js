@@ -73,7 +73,7 @@ const shadowParams = {
   limit: Infinity,
   blend: 20,
   scale: 10,
-  opacity: 1,
+  opacity: 0.8,
   alphaTest: 0.75,
   color: new Color('black'),
   colorBlend: 2,
