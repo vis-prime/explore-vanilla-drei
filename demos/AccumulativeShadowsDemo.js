@@ -1,30 +1,31 @@
 import {
   ACESFilmicToneMapping,
+  EquirectangularReflectionMapping,
+  Mesh,
+  MeshStandardMaterial,
   PerspectiveCamera,
   Scene,
+  SphereGeometry,
   SRGBColorSpace,
   WebGLRenderer,
   Vector2,
   Raycaster,
   Group,
+  BoxGeometry,
   Color,
-  TextureLoader,
-  DirectionalLight,
-  AmbientLight,
-  MathUtils,
+  Vector3,
 } from 'three'
 import Stats from 'three/examples/jsm/libs/stats.module'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
-import { EXRLoader } from 'three/examples/jsm/loaders/EXRLoader'
-
+import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader'
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { TransformControls } from 'three/examples/jsm/controls/TransformControls'
 
-import { pcss } from '@pmndrs/vanilla'
-
-import { Easing, Tween, update } from '@tweenjs/tween.js'
+// import { ProgressiveShadows } from '../src/ProgressiveShadows'
+// import { guiProgressiveShadows } from '../src/GuiProgressiveShadows'
 import { MODEL_LIST } from '../models/MODEL_LIST'
+import { HDRI_LIST } from '../hdri/HDRI_LIST'
 
 let stats,
   renderer,
@@ -33,29 +34,30 @@ let stats,
   scene,
   controls,
   gui,
+  /**
+   * @type {ProgressiveShadows}
+   */
+  progressiveShadows,
   pointer = new Vector2()
 
 const params = {
-  enabled: true,
-  size: 25,
-  focus: 0,
-  samples: 10,
-  animate: false,
+  bgColor: new Color(),
+  printCam: () => {},
 }
-
 const mainObjects = new Group()
-const textureLoader = new TextureLoader()
-const exrLoader = new EXRLoader()
+const rgbeLoader = new RGBELoader()
 const gltfLoader = new GLTFLoader()
 const draco = new DRACOLoader()
 let transformControls
-draco.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.5/')
+// draco.setDecoderPath("https://www.gstatic.com/draco/versioned/decoders/1.5.5/")
+draco.setDecoderPath('https://www.gstatic.com/draco/v1/decoders/')
 gltfLoader.setDRACOLoader(draco)
 const raycaster = new Raycaster()
-const intersects = []
-let sceneGui, sunLight
+const intersects = [] //raycast
 
-export async function pcssDemo(mainGui) {
+let sceneGui
+
+export async function AccumulativeShadowsDemo(mainGui) {
   gui = mainGui
   sceneGui = gui.addFolder('Scene')
   stats = new Stats()
@@ -77,7 +79,13 @@ export async function pcssDemo(mainGui) {
   camera.position.set(2.0404140991899564, 2.644387886134694, 3.8683136783076355)
   // scene
   scene = new Scene()
+  scene.backgroundBlurriness = 0.8
 
+  rgbeLoader.load(HDRI_LIST.skidpan.hdr, (texture) => {
+    texture.mapping = EquirectangularReflectionMapping
+    scene.background = texture
+    scene.environment = texture
+  })
   scene.add(mainObjects)
 
   // controls
@@ -94,6 +102,7 @@ export async function pcssDemo(mainGui) {
   transformControls.addEventListener('dragging-changed', (event) => {
     controls.enabled = !event.value
     if (!event.value) {
+      progressiveShadows.recalculate()
     }
   })
 
@@ -110,10 +119,10 @@ export async function pcssDemo(mainGui) {
   document.addEventListener('pointermove', onPointerMove)
 
   let downTime = Date.now()
-  app.addEventListener('pointerdown', () => {
+  document.addEventListener('pointerdown', () => {
     downTime = Date.now()
   })
-  app.addEventListener('pointerup', (e) => {
+  document.addEventListener('pointerup', (e) => {
     if (Date.now() - downTime < 200) {
       onPointerMove(e)
       raycast()
@@ -121,109 +130,14 @@ export async function pcssDemo(mainGui) {
   })
 
   sceneGui.add(transformControls, 'mode', ['translate', 'rotate', 'scale'])
-
-  sunLight = new DirectionalLight(0xffffeb, 5)
-  sunLight.name = 'Dir. Light'
-  sunLight.castShadow = true
-  sunLight.shadow.camera.near = 0.01
-  sunLight.shadow.camera.far = 100
-  const size = 4
-  sunLight.shadow.camera.right = size
-  sunLight.shadow.camera.left = -size
-  sunLight.shadow.camera.top = size
-  sunLight.shadow.camera.bottom = -size
-  sunLight.shadow.mapSize.width = 2048
-  sunLight.shadow.mapSize.height = 2048
-  sunLight.shadow.bias = -0.001
-  sunLight.position.set(2, 2, -3)
-  scene.add(sunLight)
-
-  transformControls.attach(sunLight)
-
-  // scene.add(new DirectionalLightHelper(sunLight))
-  // scene.add(new CameraHelper(sunLight.shadow.camera))
-
-  const ambientLight = new AmbientLight()
-  scene.add(ambientLight)
-
-  updatePCSS()
-  addPCSSGui(gui)
-  await loadModels()
-  animate()
-}
-
-function addPCSSGui(gui) {
-  const folder = gui.addFolder('PCSS')
-  folder.open()
-  folder.onChange(() => {
-    updatePCSS()
+  sceneGui.add(scene, 'backgroundBlurriness', 0, 1, 0.01)
+  sceneGui.addColor(params, 'bgColor').onChange(() => {
+    scene.background = params.bgColor
   })
 
-  folder.add(params, 'enabled')
-  folder.add(params, 'size', 1, 100, 1)
-  folder.add(params, 'focus', 0, 2)
-  folder.add(params, 'samples', 1, 20, 1)
-
-  const def = gui.addFolder('Defaults')
-  def.open()
-  def.addColor(sunLight, 'color')
-  def.add(sunLight, 'intensity', 0, 10)
-  let tw
-  def
-    .add(params, 'animate')
-    .name('Animate 💡')
-    .onChange((v) => {
-      if (!tw) {
-        tw = new Tween(sunLight.position)
-          .to({ x: MathUtils.randFloatSpread(5), y: MathUtils.randFloat(0.1, 5) })
-          .duration(3000)
-          .repeat(Infinity)
-          .repeatDelay(1000)
-          .easing(Easing.Quadratic.InOut)
-          .onStart(() => {
-            tw._valuesStart = { x: sunLight.position.x, y: sunLight.position.y }
-            tw.to({ x: MathUtils.randFloatSpread(5), y: MathUtils.randFloat(0.1, 5) })
-          })
-          .onRepeat(() => {
-            tw._onStartCallback() // run onStart again
-          })
-      }
-      if (v) {
-        transformControls.detach()
-        tw.start()
-      } else {
-        transformControls.attach(sunLight)
-        tw.stop()
-      }
-    })
-}
-
-let reset = null
-async function updatePCSS() {
-  // remove pcss
-  if (reset) {
-    reset(renderer, scene, camera)
-    reset = null
-  }
-
-  // add pcss again with updated values
-  if (params.enabled) {
-    reset = pcss({
-      size: params.size,
-      focus: params.focus,
-      samples: params.samples,
-    })
-
-    // dispose all materials to trigger re compile
-    scene.traverse((object) => {
-      if (object.material) {
-        // renderer.properties.remove(object.material)
-        object.material.dispose()
-      }
-    })
-    // renderer.info.programs.length = 0
-    // renderer.compile(scene, camera)
-  }
+  //   initProgressiveShadows()
+  await loadModels()
+  animate()
 }
 
 function onWindowResize() {
@@ -234,8 +148,12 @@ function onWindowResize() {
 
 function render() {
   stats.update()
-  update() //tween
+  // Update the inertia on the orbit controls
   controls.update()
+
+  // Render Shadows
+  //   progressiveShadows.update(camera)
+
   renderer.render(scene, camera)
 }
 
@@ -245,7 +163,6 @@ function animate() {
 }
 
 function raycast() {
-  return
   // update the picking ray with the camera and pointer position
   raycaster.setFromCamera(pointer, camera)
 
@@ -257,11 +174,7 @@ function raycast() {
     return
   }
 
-  if (intersects[0].object.selectOnRaycast) {
-    transformControls.attach(intersects[0].object.selectOnRaycast)
-  } else {
-    transformControls.attach(intersects[0].object)
-  }
+  transformControls.attach(intersects[0].object)
 
   intersects.length = 0
 }
@@ -272,23 +185,74 @@ function onPointerMove(event) {
 }
 
 async function loadModels() {
-  const gltf = await gltfLoader.loadAsync(MODEL_LIST.room.url)
-  const model = gltf.scene
-  model.name = 'room'
+  // sphere
+  const sphere = new Mesh(
+    new SphereGeometry(0.5).translate(0, 0.5, 0),
+    new MeshStandardMaterial({ color: getRandomHexColor(), roughness: 0, metalness: 1 })
+  )
+  sphere.name = 'sphere'
+  sphere.castShadow = true
+  sphere.receiveShadow = true
+  sphere.position.set(2, 0, -1.5)
+  mainObjects.add(sphere)
 
+  // cube
+  const cube = new Mesh(
+    new BoxGeometry(1, 1, 1).translate(0, 0.5, 0),
+    new MeshStandardMaterial({ color: getRandomHexColor(), roughness: 0.3, metalness: 0 })
+  )
+  cube.name = 'cube'
+  cube.castShadow = true
+  cube.receiveShadow = true
+  cube.position.set(-1.5, 0, 1.5)
+  mainObjects.add(cube)
+
+  // monkey
+  const gltf = await gltfLoader.loadAsync(MODEL_LIST.monkey.url)
+  const model = gltf.scene
+  model.name = 'suzanne'
   model.traverse((child) => {
     if (child.isMesh) {
       child.castShadow = true
       child.receiveShadow = true
-      child.selectOnRaycast = model
-
-      if (child?.material.name === 'lampshade') {
-        child.castShadow = false
-        child.receiveShadow = false
-      }
     }
   })
   mainObjects.add(model)
+
+  // call this once all models are in scene
+  progressiveShadows?.clear()
+}
+
+function initProgressiveShadows() {
+  const shadowCatcherSize = 8
+  progressiveShadows = new ProgressiveShadows(renderer, scene, { size: shadowCatcherSize })
+  progressiveShadows.lightOrigin.position.set(-3, 3, 3)
+
+  guiProgressiveShadows(progressiveShadows, gui)
+
+  // light position transform controls
+  const lightControl = new TransformControls(camera, renderer.domElement)
+  lightControl.name = 'lightOrigin control'
+  lightControl.addEventListener('dragging-changed', (event) => {
+    controls.enabled = !event.value
+    if (!event.value) {
+      progressiveShadows.recalculate()
+    }
+  })
+  lightControl.size = 0.5
+
+  // clamp light position inside
+  const clampSize = shadowCatcherSize / 2
+  const clampMin = new Vector3(-clampSize, 0, -clampSize),
+    clampMax = new Vector3(clampSize, clampSize, clampSize)
+
+  lightControl.addEventListener('change', () => {
+    progressiveShadows.lightOrigin.position.clamp(clampMin, clampMax)
+  })
+  lightControl.showY = false
+
+  scene.add(lightControl)
+  lightControl.attach(progressiveShadows.lightOrigin)
 }
 
 const color = new Color()

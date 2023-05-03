@@ -13,12 +13,12 @@
   },
   "dependencies": {
     "@pmndrs/vanilla": "^1.5.1",
-    "@tweenjs/tween.js": "^19.0.0",
+    "@tweenjs/tween.js": "^20.0.3",
     "gh-pages": "^5.0.0",
     "lil-gui": "^0.18.1",
     "postprocessing": "^6.30.2",
     "realism-effects": "^1.0.19",
-    "three": "^0.151.3",
+    "three": "^0.152.2",
     "vite-plugin-compression": "^0.5.1"
   },
   "prettier": {

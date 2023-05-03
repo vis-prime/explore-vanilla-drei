@@ -5,7 +5,7 @@ import {
   PerspectiveCamera,
   Scene,
   SphereGeometry,
-  sRGBEncoding,
+  SRGBColorSpace,
   WebGLRenderer,
   Vector2,
   Raycaster,
@@ -76,7 +76,7 @@ export async function meshReflectorMaterialDemo(mainGui) {
   renderer.setSize(window.innerWidth, window.innerHeight)
   renderer.shadowMap.enabled = true
   renderer.shadowMap.type = VSMShadowMap
-  renderer.outputEncoding = sRGBEncoding
+  renderer.outputColorSpace = SRGBColorSpace
   renderer.toneMapping = ACESFilmicToneMapping
 
   app.appendChild(renderer.domElement)

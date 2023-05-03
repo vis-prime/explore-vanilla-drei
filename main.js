@@ -11,6 +11,7 @@ import { realismEffectsDemo } from './demos/realismEffectsDemo'
 import { meshReflectorMaterialDemo } from './demos/MeshReflectorMaterialDemo'
 import { meshTransmissionMaterialDemo1 } from './demos/MeshTransmissionMaterialDemo1'
 import { CausticsDemo } from './demos/CausticsDemo'
+import { AccumulativeShadowsDemo } from './demos/AccumulativeShadowsDemo'
 
 let url_string = window.location.href
 let url = new URL(url_string)
@@ -30,6 +31,7 @@ const All_Scenes = {
   Caustics: CausticsDemo,
 
   MeshReflectionMaterial: meshReflectorMaterialDemo,
+  AccumulativeShadows: AccumulativeShadowsDemo,
 }
 
 const params = {

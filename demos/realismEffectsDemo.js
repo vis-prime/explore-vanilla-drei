@@ -17,7 +17,7 @@ import {
   MeshStandardMaterial,
   PerspectiveCamera,
   Scene,
-  sRGBEncoding,
+  SRGBColorSpace,
   WebGLRenderer,
 } from 'three'
 import { BloomEffect, EffectComposer, EffectPass, FXAAEffect, KernelSize, RenderPass } from 'postprocessing'
@@ -85,7 +85,7 @@ export async function realismEffectsDemo(gui) {
 
   renderer.autoClear = false
 
-  renderer.outputEncoding = sRGBEncoding
+  renderer.outputColorSpace = SRGBColorSpace
 
   renderer.setSize(window.innerWidth, window.innerHeight)
   // renderer.setPixelRatio(1)

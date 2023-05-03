@@ -4,7 +4,7 @@ import {
   MeshStandardMaterial,
   PerspectiveCamera,
   Scene,
-  sRGBEncoding,
+  SRGBColorSpace,
   WebGLRenderer,
   Vector2,
   Raycaster,
@@ -80,7 +80,7 @@ export async function spotLightDemo1(mainGui) {
   renderer.setSize(window.innerWidth, window.innerHeight)
   renderer.shadowMap.enabled = true
   renderer.shadowMap.type = VSMShadowMap
-  renderer.outputEncoding = sRGBEncoding
+  renderer.outputColorSpace = SRGBColorSpace
   renderer.toneMapping = ACESFilmicToneMapping
 
   // pmremGenerator = new PMREMGenerator(renderer)
@@ -598,36 +598,37 @@ async function addCar(AllVolumeMaterials) {
     .onUpdate(() => {
       steer()
     })
-
   let pingPong = true
   const randomSteer = new Tween(carParams)
     .to({ steerVal: 1 })
     .duration(1000)
     .easing(Easing.Back.Out)
     .delay(1000)
+
     .onStart(() => {
       randomSteer.delay(MathUtils.randInt(100, 4000))
       if (pingPong) {
-        randomSteer.to({ steerVal: 1 })
-        moveTween.to({ x: distanceMoved })
+        randomSteer._valuesEnd.steerVal = 1
+        moveTween._valuesEnd.x = distanceMoved
       } else {
-        randomSteer.to({ steerVal: -1 })
-        moveTween.to({ x: -distanceMoved })
+        randomSteer._valuesEnd.steerVal = -1
+        moveTween._valuesEnd.x = -distanceMoved
       }
+
       pingPong = !pingPong
-
-      randomSteer._valuesStart.steerVal = carParams.steerVal
-
       moveTween.start()
     })
     .onUpdate(() => {
       steer()
     })
 
+  // randomSteer._valuesStart.steerVal = carParams.steerVal
+
   randomSteer.chain(straightSteer)
   straightSteer.chain(randomSteer)
+
   setTimeout(() => {
-    randomSteer.start()
+    randomSteer.startFromCurrentValues()
   }, 2000)
 
   const moveTween = new Tween(model.position)

@@ -12,7 +12,7 @@ import {
   ACESFilmicToneMapping,
   PerspectiveCamera,
   Scene,
-  sRGBEncoding,
+  SRGBColorSpace,
   WebGLRenderer,
   Vector2,
   Raycaster,
@@ -63,7 +63,7 @@ export async function MeshWobbleMaterialDemo(mainGui) {
   renderer.setPixelRatio(Math.min(1.5, window.devicePixelRatio))
   renderer.setSize(window.innerWidth, window.innerHeight)
   renderer.shadowMap.enabled = true
-  renderer.outputEncoding = sRGBEncoding
+  renderer.outputColorSpace = SRGBColorSpace
   renderer.toneMapping = ACESFilmicToneMapping
 
   app.appendChild(renderer.domElement)

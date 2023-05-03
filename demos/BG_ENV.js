@@ -11,7 +11,7 @@ import {
   FloatType,
   HalfFloatType,
   TextureLoader,
-  sRGBEncoding,
+  SRGBColorSpace,
   LinearFilter,
 } from 'three'
 import { EXRLoader } from 'three/examples/jsm/loaders/EXRLoader'
@@ -274,7 +274,7 @@ export class BG_ENV {
         texture = await textureLoader.loadAsync(key)
         this.bgCache[key] = texture
         texture.mapping = EquirectangularReflectionMapping
-        texture.encoding = sRGBEncoding
+        texture.colorSpace = SRGBColorSpace
       }
 
       this.bgTexture = texture
@@ -321,7 +321,7 @@ export class BG_ENV {
     if (envDict.webP || envDict.avif) {
       const texture = await textureLoader.loadAsync(envDict.webP || envDict.avif)
       texture.mapping = EquirectangularReflectionMapping
-      texture.encoding = sRGBEncoding
+      texture.colorSpace = SRGBColorSpace
       scene.background = texture
       console.log('bg loaded')
 
