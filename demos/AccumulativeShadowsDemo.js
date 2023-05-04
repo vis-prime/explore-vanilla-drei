@@ -65,29 +65,29 @@ let plm,
   /**
    * @type {Mesh}
    */
-  gPlane
+  gPlane,
+  /**
+   * @type {SoftShadowMaterial}
+   */
+  shadowMaterial
 
 const shadowParams = {
   temporal: true,
   frames: 40,
   limit: Infinity,
-  blend: 20,
+  blend: 40,
   scale: 10,
   opacity: 0.8,
   alphaTest: 0.75,
-  color: new Color('black'),
-  colorBlend: 2,
-  resolution: 2048,
-  toneMapped: true,
 }
 
 const lightParams = {
   bias: 0.001,
   mapSize: 1024,
-  size: 10,
+  size: 8,
   near: 0.5,
-  far: 500,
-  position: new Vector3(5, 5, 5),
+  far: 200,
+  position: new Vector3(3, 5, 3),
   radius: 1,
   amount: 8,
   intensity: 1,
@@ -95,10 +95,6 @@ const lightParams = {
 }
 
 const api = {
-  lights: new Map(),
-  temporal: !!shadowParams.temporal,
-  frames: Math.max(2, shadowParams.frames),
-  blend: Math.max(2, shadowParams.frames === Infinity ? shadowParams.blend : shadowParams.frames),
   count: 0,
   resetPlm: () => {
     reset()
@@ -234,7 +230,7 @@ async function loadModels() {
   // sphere
   const sphere = new Mesh(
     new SphereGeometry(0.5).translate(0, 0.5, 0),
-    new MeshStandardMaterial({ color: getRandomHexColor(), roughness: 0, metalness: 1 })
+    new MeshStandardMaterial({ color: 0xffffff * Math.random(), roughness: 0, metalness: 1 })
   )
   sphere.name = 'sphere'
   sphere.castShadow = true
@@ -245,7 +241,7 @@ async function loadModels() {
   // cube
   const cube = new Mesh(
     new BoxGeometry(1, 1, 1).translate(0, 0.5, 0),
-    new MeshStandardMaterial({ color: getRandomHexColor(), roughness: 0.3, metalness: 0 })
+    new MeshStandardMaterial({ color: 0xffffff * Math.random(), roughness: 0.3, metalness: 0 })
   )
   cube.name = 'cube'
   cube.castShadow = true
@@ -272,23 +268,19 @@ async function loadModels() {
 }
 
 function initProgressiveShadows() {
-  plm = new ProgressiveLightMap(renderer, scene, shadowParams.resolution)
+  plm = new ProgressiveLightMap(renderer, scene, 1024)
 
   // Material applied to shadow catching plane
-  const shadowCatcherMaterial = new SoftShadowMaterial({
+  shadowMaterial = new SoftShadowMaterial({
     map: plm.progressiveLightMap2.texture,
     transparent: true,
     depthWrite: false,
-    toneMapped: shadowParams.toneMapped,
-    color: shadowParams.color,
-    blend: shadowParams.colorBlend,
+    toneMapped: true,
+    blend: 2,
   })
+  shadowMaterial.color.set(0x000000)
 
-  // const shadowCatcherMaterial = new MeshStandardMaterial({
-  //   map: plm.progressiveLightMap2.texture,
-  // })
-
-  gPlane = new Mesh(new PlaneGeometry(1, 1).rotateX(-Math.PI / 2), shadowCatcherMaterial)
+  gPlane = new Mesh(new PlaneGeometry(1, 1).rotateX(-Math.PI / 2), shadowMaterial)
   gPlane.scale.setScalar(shadowParams.scale)
   gPlane.receiveShadow = true
   scene.add(gPlane)
@@ -317,6 +309,8 @@ function initProgressiveShadows() {
 }
 
 function randomiseLightPositions() {
+  const vLength = lightParams.position.length()
+
   for (let i = 0; i < gLights.children.length; i++) {
     const light = gLights.children[i]
     if (Math.random() > lightParams.ambient) {
@@ -329,9 +323,9 @@ function randomiseLightPositions() {
       let lambda = Math.acos(2 * Math.random() - 1) - Math.PI / 2.0
       let phi = 2 * Math.PI * Math.random()
       light.position.set(
-        Math.cos(lambda) * Math.cos(phi) * length,
-        Math.abs(Math.cos(lambda) * Math.sin(phi) * length),
-        Math.sin(lambda) * length
+        Math.cos(lambda) * Math.cos(phi) * vLength,
+        Math.abs(Math.cos(lambda) * Math.sin(phi) * vLength),
+        Math.sin(lambda) * vLength
       )
     }
   }
@@ -340,32 +334,38 @@ function randomiseLightPositions() {
 function reset() {
   console.log('reset')
   plm.clear()
-  lightParams.position.x = MathUtils.randFloatSpread(10)
-  lightParams.position.y = MathUtils.randFloat(4, 5)
-  lightParams.position.z = MathUtils.randFloatSpread(10)
-
-  const material = gPlane.material
-  material.opacity = 0
-  material.alphaTest = 0
+  shadowMaterial.opacity = 0
+  shadowMaterial.alphaTest = 0
   api.count = 0
 }
 
 function accumulateShadows() {
-  if ((api.temporal || api.frames === Infinity) && api.count < api.frames && api.count < shadowParams.limit) {
+  if (
+    (shadowParams.temporal || shadowParams.frames === Infinity) &&
+    api.count < shadowParams.frames &&
+    api.count < shadowParams.limit
+  ) {
     update()
     api.count++
   }
 }
 
 function update(frames = 1) {
+  shadowParams.blend = Math.max(2, shadowParams.frames === Infinity ? shadowParams.blend : shadowParams.frames)
+
   // Adapt the opacity-blend ratio to the number of frames
-  const material = gPlane.material
-  if (!api.temporal) {
-    material.opacity = shadowParams.opacity
-    material.alphaTest = shadowParams.alphaTest
+  if (!shadowParams.temporal) {
+    shadowMaterial.opacity = shadowParams.opacity
+    shadowMaterial.alphaTest = shadowParams.alphaTest
   } else {
-    material.opacity = Math.min(shadowParams.opacity, material.opacity + shadowParams.opacity / api.blend)
-    material.alphaTest = Math.min(shadowParams.alphaTest, material.alphaTest + shadowParams.alphaTest / api.blend)
+    shadowMaterial.opacity = Math.min(
+      shadowParams.opacity,
+      shadowMaterial.opacity + shadowParams.opacity / shadowParams.blend
+    )
+    shadowMaterial.alphaTest = Math.min(
+      shadowParams.alphaTest,
+      shadowMaterial.alphaTest + shadowParams.alphaTest / shadowParams.blend
+    )
   }
 
   // Switch accumulative lights on
@@ -376,9 +376,8 @@ function update(frames = 1) {
   // Update the lightmap and the accumulative lights
 
   for (let i = 0; i < frames; i++) {
-    // api.lights.forEach((light) => light.update())
     randomiseLightPositions()
-    plm.update(camera, api.blend)
+    plm.update(camera, shadowParams.blend)
   }
   // Switch lights off
   scene.remove(gLights)
@@ -386,13 +385,34 @@ function update(frames = 1) {
   plm.finish()
 }
 
-const color = new Color()
-function getRandomHexColor() {
-  return '#' + color.setHSL(Math.random(), 0.5, 0.5).getHexString()
-}
-
 function addPlmGui(gui) {
-  const folder = gui.addFolder('plm')
+  const shFolder = gui.addFolder('Shadow Material')
+  shFolder.open()
+  shFolder.add(shadowParams, 'opacity', 0, 1).onChange((v) => {
+    shadowMaterial.opacity = v
+  })
+  shFolder.add(shadowParams, 'alphaTest', 0, 1).onChange((v) => {
+    shadowMaterial.alphaTest = v
+  })
+  shFolder.addColor(shadowMaterial, 'color')
+  shFolder.add(shadowMaterial, 'blend', 0, 3)
+
+  const folder = gui.addFolder('Shadow params')
   folder.open()
-  folder.add(api, 'resetPlm')
+  folder.add(api, 'resetPlm').name('Re compute ⚡')
+
+  folder.add(shadowParams, 'frames', 2, 100, 1).onFinishChange(reset)
+  folder
+    .add(shadowParams, 'scale', 0.5, 30)
+    .onChange((v) => {
+      gPlane.scale.setScalar(v)
+    })
+    .onFinishChange(reset)
+
+  folder.add(lightParams, 'radius', 0.1, 5).onFinishChange(reset)
+  folder.add(lightParams, 'ambient', 0, 1).onFinishChange(reset)
+
+  folder.add(lightParams.position, 'x', -5, 5).name('Light Direction X').onFinishChange(reset)
+  folder.add(lightParams.position, 'y', 1, 5).name('Light Direction Y').onFinishChange(reset)
+  folder.add(lightParams.position, 'z', -5, 5).name('Light Direction Z').onFinishChange(reset)
 }
