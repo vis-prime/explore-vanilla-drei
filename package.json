@@ -12,11 +12,11 @@
     "vite": "^4.2.2"
   },
   "dependencies": {
-    "@pmndrs/vanilla": "^1.5.1",
+    "@pmndrs/vanilla": "^1.5.2",
     "@tweenjs/tween.js": "^20.0.3",
     "gh-pages": "^5.0.0",
     "lil-gui": "^0.18.1",
-    "postprocessing": "^6.30.2",
+    "postprocessing": "^6.31.0",
     "realism-effects": "^1.0.19",
     "three": "^0.152.2",
     "vite-plugin-compression": "^0.5.1"

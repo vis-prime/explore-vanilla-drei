@@ -46,7 +46,7 @@ const intersects = [] //raycast
 let useFrame = () => {} // runs on every frame frame
 let sceneGui
 
-export async function meshTransmissionMaterialDemo1(mainGui) {
+export async function meshTransmissionMaterialBasic(mainGui) {
   gui = mainGui
   sceneGui = gui.addFolder('Scene')
   stats = new Stats()
@@ -177,7 +177,7 @@ async function setupMeshTransmissionMaterial() {
   const model = gltf.scene
 
   const discardMaterial = new MeshDiscardMaterial()
-  const meshTransmissionMaterial = new MeshTransmissionMaterial(6, false)
+  const meshTransmissionMaterial = new MeshTransmissionMaterial({ anisotropy: 0.5 })
 
   const meshes = []
   model.traverse((child) => {

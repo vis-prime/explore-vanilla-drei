@@ -9,7 +9,7 @@ import { spotLightDemo1 } from './demos/SpotLightDemo1'
 
 import { realismEffectsDemo } from './demos/realismEffectsDemo'
 import { meshReflectorMaterialDemo } from './demos/MeshReflectorMaterialDemo'
-import { meshTransmissionMaterialDemo1 } from './demos/MeshTransmissionMaterialDemo1'
+import { meshTransmissionMaterialBasic } from './demos/MeshTransmissionMaterialBasicDemo'
 import { CausticsDemo } from './demos/CausticsDemo'
 import { AccumulativeShadowsDemo } from './demos/AccumulativeShadowsDemo'
 
@@ -22,7 +22,7 @@ let url = new URL(url_string)
  */
 const All_Scenes = {
   MeshTransmissionMaterial: meshTransmissionMaterialDemo,
-  MeshTransmissionMaterial1: meshTransmissionMaterialDemo1,
+  MeshTransmissionMaterialBasic: meshTransmissionMaterialBasic,
 
   PCSS: pcssDemo,
   SpotLight: spotLightDemo,
@@ -41,6 +41,11 @@ const params = {
 
 params.sceneName = params.sceneName.replace('WIP_', '') //to make sure old shared urls still work
 
+// to keep old urls alive
+if (params.sceneName === 'MeshTransmissionMaterial1') {
+  params.sceneName = 'MeshTransmissionMaterialBasic'
+}
+
 function updatePageDesc(path) {
   console.log({ path })
   const paramsU = new URLSearchParams(window.location.search)
@@ -48,6 +53,7 @@ function updatePageDesc(path) {
   window.history.replaceState({}, '', `${window.location.pathname}?${paramsU}`)
   document.title = `Explore | ${path}`
 }
+
 const gui = new GUI({
   title: 'Explore Drei Vanilla' + version,
   closeFolders: true,
