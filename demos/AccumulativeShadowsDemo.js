@@ -96,9 +96,7 @@ const lightParams = {
 
 const api = {
   count: 0,
-  resetPlm: () => {
-    reset()
-  },
+  resetPlm: () => {},
 }
 
 export async function AccumulativeShadowsDemo(mainGui) {
@@ -277,6 +275,7 @@ function initProgressiveShadows() {
     depthWrite: false,
     toneMapped: true,
     blend: 2,
+    alphaTest: 0, // so that first frame does not show a black plane
   })
   shadowMaterial.color.set(0x000000)
 
@@ -337,9 +336,15 @@ function reset() {
   shadowMaterial.opacity = 0
   shadowMaterial.alphaTest = 0
   api.count = 0
+
+  // if not temporal, accumulate all frames in one shot, expect renderer freeze while it's computing
+  if (!shadowParams.temporal && shadowParams.frames !== Infinity) {
+    update(shadowParams.frames)
+  }
 }
 
 function accumulateShadows() {
+  // if temporal , accumulate one frame at a time
   if (
     (shadowParams.temporal || shadowParams.frames === Infinity) &&
     api.count < shadowParams.frames &&
@@ -399,7 +404,8 @@ function addPlmGui(gui) {
 
   const folder = gui.addFolder('Shadow params')
   folder.open()
-  folder.add(api, 'resetPlm').name('Re compute ⚡')
+  folder.add(shadowParams, 'temporal')
+  folder.add(api, 'resetPlm').name('Re compute ⚡').onChange(reset)
 
   folder.add(shadowParams, 'frames', 2, 100, 1).onFinishChange(reset)
   folder
@@ -412,7 +418,9 @@ function addPlmGui(gui) {
   folder.add(lightParams, 'radius', 0.1, 5).onFinishChange(reset)
   folder.add(lightParams, 'ambient', 0, 1).onFinishChange(reset)
 
-  folder.add(lightParams.position, 'x', -5, 5).name('Light Direction X').onFinishChange(reset)
-  folder.add(lightParams.position, 'y', 1, 5).name('Light Direction Y').onFinishChange(reset)
-  folder.add(lightParams.position, 'z', -5, 5).name('Light Direction Z').onFinishChange(reset)
+  const bulbFolder = gui.addFolder('💡 Light source')
+  bulbFolder.open()
+  bulbFolder.add(lightParams.position, 'x', -5, 5).name('Light Direction X').onFinishChange(reset)
+  bulbFolder.add(lightParams.position, 'y', 1, 5).name('Light Direction Y').onFinishChange(reset)
+  bulbFolder.add(lightParams.position, 'z', -5, 5).name('Light Direction Z').onFinishChange(reset)
 }
