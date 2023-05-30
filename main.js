@@ -12,6 +12,7 @@ import { meshReflectorMaterialDemo } from './demos/MeshReflectorMaterialDemo'
 import { meshTransmissionMaterialBasic } from './demos/MeshTransmissionMaterialBasicDemo'
 import { CausticsDemo } from './demos/CausticsDemo'
 import { AccumulativeShadowsDemo } from './demos/AccumulativeShadowsDemo'
+import { SpriteAnimatorDemo } from './demos/SpriteAnimatorDemo'
 
 let url_string = window.location.href
 let url = new URL(url_string)
@@ -32,6 +33,7 @@ const All_Scenes = {
 
   MeshReflectionMaterial: meshReflectorMaterialDemo,
   AccumulativeShadows: AccumulativeShadowsDemo,
+  SpriteAnimatorDemo: SpriteAnimatorDemo,
 }
 
 const params = {
