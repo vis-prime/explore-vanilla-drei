@@ -312,7 +312,7 @@ async function setupMRM() {
     reflectorOffset = 0,
     metalness = 0.6,
     roughness = 1,
-    color = new Color('#151515')
+    color = new Color(0x474747)
 
   const gl = renderer
   //   const camera = camera
@@ -409,7 +409,7 @@ async function setupMRM() {
     const parameters = {
       minFilter: LinearFilter,
       magFilter: LinearFilter,
-      encoding: gl.outputEncoding,
+      colorSpace: gl.outputColorSpace,
       type: HalfFloatType,
     }
     const fbo1 = new WebGLRenderTarget(MRMParams.resolution, MRMParams.resolution, parameters)

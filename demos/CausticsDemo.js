@@ -473,7 +473,7 @@ export function useFBO(
   target = new WebGLRenderTarget(_width, _height, {
     minFilter: LinearFilter,
     magFilter: LinearFilter,
-    encoding: gl.outputEncoding,
+    colorSpace: gl.outputColorSpace,
     type: HalfFloatType,
     ...targetSettings,
   })

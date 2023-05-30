@@ -275,14 +275,14 @@ const NORMAL_PROPS = {
   depth: true,
   minFilter: LinearFilter,
   magFilter: LinearFilter,
-  encoding: LinearEncoding,
+  colorSpace: LinearEncoding,
   type: UnsignedByteType,
 }
 
 const CAUSTIC_PROPS = {
   minFilter: LinearMipmapLinearFilter,
   magFilter: LinearFilter,
-  encoding: LinearEncoding,
+  colorSpace: LinearEncoding,
   format: RGBAFormat,
   type: FloatType,
   generateMipmaps: true,

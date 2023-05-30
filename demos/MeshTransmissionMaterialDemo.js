@@ -423,13 +423,13 @@ async function setupMTM() {
   const fboBack = new WebGLRenderTarget(512, 512, {
     minFilter: LinearFilter,
     magFilter: LinearFilter,
-    encoding: renderer.outputEncoding,
+    colorSpace: renderer.outputColorSpace,
     type: HalfFloatType,
   })
   const fboMain = new WebGLRenderTarget(512, 512, {
     minFilter: LinearFilter,
     magFilter: LinearFilter,
-    encoding: renderer.outputEncoding,
+    colorSpace: renderer.outputColorSpace,
     type: HalfFloatType,
   })
 
