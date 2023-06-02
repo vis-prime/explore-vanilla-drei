@@ -146,13 +146,13 @@ function onWindowResize() {
   renderer.setSize(window.innerWidth, window.innerHeight)
 }
 
-const clock = new Clock()
+// const clock = new Clock()
 function render() {
   stats.update()
   // Update the inertia on the orbit controls
   controls.update()
   spritesInstances.forEach((cls) => {
-    cls(true, clock.getDelta())
+    cls()
   })
 
   renderer.render(scene, camera)
@@ -227,54 +227,43 @@ async function loadModels() {
 }
 
 async function loadSprites() {
-  {
-    const { group, init, useFrame, onSpriteTextureChange, getJsonStatus } = SpriteAnimator({
-      scale: [4, 4, 4],
-      position: [0, 2, 1.2],
-      startFrame: 0,
-      fps: 40,
-      autoPlay: true,
-      loop: true,
-      textureImageURL: './sprites/flame.png',
-      textureDataURL: './sprites/flame.json',
-      alphaTest: 0.01,
-    })
-    init()
-    scene.add(group)
-    console.log({ group })
+  const FlameSpriteAnimator = SpriteAnimator({
+    startFrame: 0,
+    fps: 40,
+    autoPlay: true,
+    loop: false,
+    textureImageURL: './sprites/flame.png',
+    textureDataURL: './sprites/flame.json',
+    alphaTest: 0.01,
+  })
+  await FlameSpriteAnimator.init()
+  FlameSpriteAnimator.group.position.set(0, 2, 1.2)
+  FlameSpriteAnimator.group.scale.set(4, 4, 4)
+  scene.add(FlameSpriteAnimator.group)
 
-    let int = setInterval(() => {
-      if (getJsonStatus()) {
-        console.log('Flame Ready')
-        onSpriteTextureChange()
-        spritesInstances.push(useFrame)
-        clearInterval(int)
-      }
-    }, 100)
-  }
+  spritesInstances.push(FlameSpriteAnimator.useFrame)
 
-  {
-    const { group, init, useFrame, onSpriteTextureChange, getJsonStatus } = SpriteAnimator({
-      scale: [1, 1, 1],
-      position: [-2, 0.5, 2.5],
-      startFrame: 0,
-      autoPlay: true,
-      loop: true,
-      numberOfFrames: 16,
-      alphaTest: 0.01,
-      textureImageURL: './sprites/alien.png',
-    })
-    init()
-    scene.add(group)
-    console.log({ group })
+  const AlienSpriteAnimator = SpriteAnimator({
+    startFrame: 0,
+    autoPlay: true,
+    loop: true,
+    numberOfFrames: 16,
+    alphaTest: 0.01,
+    textureImageURL: './sprites/alien.png',
+  })
+  await AlienSpriteAnimator.init()
+  AlienSpriteAnimator.group.scale.set(1, 1, 1)
+  AlienSpriteAnimator.group.position.set(-2, 0.5, 2.5)
 
-    let int = setInterval(() => {
-      if (getJsonStatus()) {
-        console.log('ALIEN Ready')
-        onSpriteTextureChange()
-        spritesInstances.push(useFrame)
-        clearInterval(int)
-      }
-    }, 100)
-  }
+  scene.add(AlienSpriteAnimator.group)
+
+  spritesInstances.push(AlienSpriteAnimator.useFrame)
+
+  const alienFolder = gui.addFolder('ALIEN')
+  alienFolder.add(AlienSpriteAnimator, 'pauseAnimation')
+  alienFolder.add(AlienSpriteAnimator, 'playAnimation')
+
+  const flameFolder = gui.addFolder('Flame')
+  flameFolder.add(FlameSpriteAnimator, 'pauseAnimation')
+  flameFolder.add(FlameSpriteAnimator, 'playAnimation')
 }
