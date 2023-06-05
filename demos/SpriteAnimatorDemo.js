@@ -68,8 +68,8 @@ export async function SpriteAnimatorDemo(mainGui) {
   renderer.setPixelRatio(Math.min(1.5, window.devicePixelRatio))
   renderer.setSize(window.innerWidth, window.innerHeight)
   renderer.shadowMap.enabled = true
-  renderer.outputColorSpace = SRGBColorSpace
-  renderer.toneMapping = ACESFilmicToneMapping
+  // renderer.outputColorSpace = SRGBColorSpace
+  // renderer.toneMapping = ACESFilmicToneMapping
 
   app.appendChild(renderer.domElement)
 
@@ -241,7 +241,7 @@ async function loadSprites() {
   FlameSpriteAnimator.group.scale.set(4, 4, 4)
   scene.add(FlameSpriteAnimator.group)
 
-  spritesInstances.push(FlameSpriteAnimator.useFrame)
+  spritesInstances.push(FlameSpriteAnimator.update)
 
   const AlienSpriteAnimator = SpriteAnimator({
     startFrame: 0,
@@ -257,7 +257,7 @@ async function loadSprites() {
 
   scene.add(AlienSpriteAnimator.group)
 
-  spritesInstances.push(AlienSpriteAnimator.useFrame)
+  spritesInstances.push(AlienSpriteAnimator.update)
 
   const alienFolder = gui.addFolder('ALIEN')
   alienFolder.add(AlienSpriteAnimator, 'pauseAnimation')
@@ -266,4 +266,38 @@ async function loadSprites() {
   const flameFolder = gui.addFolder('Flame')
   flameFolder.add(FlameSpriteAnimator, 'pauseAnimation')
   flameFolder.add(FlameSpriteAnimator, 'playAnimation')
+
+  const boySA = SpriteAnimator({
+    // onLoopEnd={onEnd}
+    frameName: 'idle',
+    fps: 24,
+    animationNames: ['idle', 'celebration'],
+    autoPlay: true,
+    loop: true,
+    alphaTest: 0.01,
+    textureImageURL: './sprites/boy_hash.png',
+    textureDataURL: './sprites/boy_hash.json',
+  })
+  await boySA.init()
+  boySA.group.scale.set(1, 1, 1)
+  boySA.group.position.set(-2, 0.5, -1)
+
+  scene.add(boySA.group)
+
+  spritesInstances.push(boySA.update)
+
+  const boyFolder = gui.addFolder('Boy _hash')
+  boyFolder.add(boySA, 'pauseAnimation')
+  boyFolder.add(boySA, 'playAnimation')
+  const anims = {
+    idle: () => {
+      boySA.setFrameName('idle')
+    },
+    celebration: () => {
+      boySA.setFrameName('celebration')
+    },
+  }
+
+  boyFolder.add(anims, 'idle')
+  boyFolder.add(anims, 'celebration')
 }

@@ -174,7 +174,8 @@ export const SpriteAnimator = ({
     pause = false
   }
 
-  const onFrameNameChange = () => {
+  const setFrameName = (name: string) => {
+    frameName = name
     if (currentFrameName !== frameName && frameName) {
       currentFrame = 0
       currentFrameName = frameName
@@ -367,7 +368,7 @@ export const SpriteAnimator = ({
 
   // *** Warning! It runs on every frame! ***
 
-  const useFrame = () => {
+  const update = () => {
     if (!spriteData?.frames || !matRef?.map) {
       return
     }
@@ -401,9 +402,10 @@ export const SpriteAnimator = ({
   const returnDictionary = {
     group,
     init,
-    useFrame,
+    update,
     pauseAnimation,
     playAnimation,
+    setFrameName,
   }
 
   return returnDictionary
