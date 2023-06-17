@@ -20,6 +20,7 @@
     "postprocessing": "^6.31.0",
     "realism-effects": "^1.1.2",
     "three": "^0.152.2",
+    "three-stdlib": "^2.23.10",
     "vite-plugin-compression": "^0.5.1"
   },
   "prettier": {
