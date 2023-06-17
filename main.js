@@ -38,6 +38,8 @@ const All_Scenes = {
   MeshPortalMaterial: meshPortalMaterialDemo,
 }
 
+const wip = [meshPortalMaterialDemo, SpriteAnimatorDemo, CausticsDemo]
+
 const params = {
   sceneName: url.searchParams.get('scene') || Object.keys(All_Scenes)[0],
   sceneInitFunction: () => {},
@@ -58,10 +60,15 @@ function updatePageDesc(path) {
   document.title = `Explore | ${path}`
 }
 
+const title = wip.includes(All_Scenes[params.sceneName]) ? ' WIP' : 'Explore Drei Vanilla' + version
 const gui = new GUI({
-  title: 'Explore Drei Vanilla' + version,
+  title: title,
   closeFolders: true,
 })
+
+if (!Object.keys(All_Scenes).includes(params.sceneName)) {
+  params.sceneName = Object.keys(All_Scenes)[0]
+}
 
 gui
   .add(params, 'sceneName', Object.keys(All_Scenes))
@@ -72,10 +79,6 @@ gui
     updatePageDesc(v)
     window.location.reload()
   })
-
-if (!Object.keys(All_Scenes).includes(params.sceneName)) {
-  params.sceneName = Object.keys(All_Scenes)[0]
-}
 
 params.sceneInitFunction = All_Scenes[params.sceneName]
 params.sceneInitFunction(gui)

@@ -62,9 +62,6 @@ let stats,
   gui,
   pointer = new Vector2()
 
-const params = {
-  printCam: () => {},
-}
 const mainObjects = new Group()
 const textureLoader = new TextureLoader()
 
@@ -83,6 +80,11 @@ let portal
  */
 let scene1RenderTarget
 
+const params = {
+  masterFov: 50,
+  renderScene1: false,
+}
+
 export async function meshPortalMaterialDemo(mainGui) {
   gui = mainGui
 
@@ -100,8 +102,8 @@ export async function meshPortalMaterialDemo(mainGui) {
   app.appendChild(renderer.domElement)
 
   // camera
-  camera = new PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 200)
-  camera.position.set(6, 3, 6)
+  camera = new PerspectiveCamera(params.masterFov, window.innerWidth / window.innerHeight, 0.1, 200)
+  camera.position.set(2, 0.5, 2)
   camera.name = 'Camera'
 
   camera1 = camera.clone()
@@ -109,6 +111,12 @@ export async function meshPortalMaterialDemo(mainGui) {
   camera1.aspect = 1
   camera1.updateProjectionMatrix()
   camera.add(camera1)
+
+  gui.add(params, 'masterFov', 10, 120, 1).onChange((v) => {
+    camera.fov = camera1.fov = v
+    camera.updateProjectionMatrix()
+    camera1.updateProjectionMatrix()
+  })
 
   // scene
   scene = new Scene()
@@ -128,7 +136,6 @@ export async function meshPortalMaterialDemo(mainGui) {
   controls.dampingFactor = 0.05
   controls.minDistance = 0.1
   controls.maxDistance = 100
-  controls.maxPolarAngle = Math.PI / 1.5
   controls.target.set(0, 0, 0)
 
   // transformControls = new TransformControls(camera, renderer.domElement)
@@ -189,11 +196,14 @@ function render() {
   // Update the inertia on the orbit controls
   controls.update()
   useFrame()
-
-  renderer.setRenderTarget(scene1RenderTarget)
-  renderer.render(scene1, camera1)
-  renderer.setRenderTarget(null)
-  renderer.render(scene, camera)
+  if (params.renderScene1) {
+    renderer.render(scene1, camera)
+  } else {
+    renderer.setRenderTarget(scene1RenderTarget)
+    renderer.render(scene1, camera1)
+    renderer.setRenderTarget(null)
+    renderer.render(scene, camera)
+  }
 }
 
 function animate() {
@@ -321,8 +331,9 @@ function populateScene() {
   scene.add(...axesHelpers)
 
   const planeMesh = new THREE.Mesh(
-    new THREE.PlaneGeometry(1, 1),
-    new THREE.MeshBasicMaterial({ map: scene1RenderTarget.texture })
+    // new THREE.BoxGeometry().translate(0, 0, -0.5),
+    new THREE.PlaneGeometry(),
+    new THREE.MeshBasicMaterial({ map: scene1RenderTarget.texture, toneMapped: false })
   )
 
   scene.add(planeMesh)
@@ -335,7 +346,7 @@ function populateScene() {
 function populateScene1() {
   scene1.background = new Color().set('#51c995')
 
-  const geometry = new THREE.TorusKnotGeometry(1, 0.5, 150, 20)
+  const geometry = new THREE.TorusKnotGeometry(0.5, 0.25, 150, 20)
   const material = new THREE.MeshStandardMaterial({
     metalness: 0,
     roughness: 0.2,
@@ -345,7 +356,7 @@ function populateScene1() {
   const torusMesh = new THREE.Mesh(geometry, material)
   scene1.add(torusMesh)
   torusMesh.receiveShadow = true
-
+  torusMesh.position.z = -1
   const dirLight = new THREE.DirectionalLight(0xffffff, 1)
   dirLight.color.setHSL(0.1, 1, 0.95)
   dirLight.position.set(-1, 1.75, 1)
@@ -361,11 +372,19 @@ function populateScene1() {
   dirLight.shadow.camera.right = d
   dirLight.shadow.camera.top = d
   dirLight.shadow.camera.bottom = -d
-  dirLight.shadow.bias = -0.0001
+  dirLight.shadow.bias = -0.0003
 
   scene1.add(dirLight)
 
   const fol = gui.addFolder('scene1')
   fol.open()
   fol.addColor(scene1, 'background')
+  fol.add(torusMesh.position, 'z', -1, 0).name('torus Z')
+  fol
+    .add(torusMesh.scale, 'z', 0.1, 1)
+    .name('torusScale')
+    .onChange((v) => {
+      torusMesh.scale.setScalar(v)
+    })
+  fol.add(params, 'renderScene1')
 }
