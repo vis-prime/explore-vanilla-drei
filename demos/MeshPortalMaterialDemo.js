@@ -22,14 +22,24 @@ import {
   AxesHelper,
   PlaneGeometry,
   DirectionalLight,
+  Plane,
+  Vector3,
+  ShadowMaterial,
+  CircleGeometry,
+  MeshPhongMaterial,
+  EquirectangularReflectionMapping,
 } from 'three'
 import Stats from 'three/examples/jsm/libs/stats.module'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
+import { TransformControls } from 'three/examples/jsm/controls/TransformControls'
+
 import { Easing, Tween, update } from '@tweenjs/tween.js'
-import { MODEL_LIST } from '../models/MODEL_LIST'
+import { MODEL_LIST, MODEL_LOADER } from '../models/MODEL_LIST'
 import { shaderMaterial } from '@pmndrs/vanilla'
+import { HDRI_LIST } from '../hdri/HDRI_LIST'
+import { EXRLoader } from 'three-stdlib'
 
 let stats,
   /**
@@ -70,9 +80,25 @@ let size = new Vector2()
  */
 let scene1RenderTarget
 
+let car, carPortal
+
 const params = {
   masterFov: 50,
   renderScene1: false,
+}
+
+const wheels = {
+  R: null,
+  steerL: null,
+  steerR: null,
+  steerVal: 0,
+}
+
+const wheelsPortal = {
+  R: null,
+  steerL: null,
+  steerR: null,
+  steerVal: 0,
 }
 
 export async function meshPortalMaterialDemo(mainGui) {
@@ -88,6 +114,7 @@ export async function meshPortalMaterialDemo(mainGui) {
   renderer.shadowMap.type = VSMShadowMap
   renderer.outputColorSpace = SRGBColorSpace
   renderer.toneMapping = ACESFilmicToneMapping
+  renderer.localClippingEnabled = true
 
   app.appendChild(renderer.domElement)
 
@@ -129,21 +156,31 @@ export async function meshPortalMaterialDemo(mainGui) {
   controls.maxDistance = 100
   controls.target.set(0, 0, 0)
 
-  // transformControls = new TransformControls(camera, renderer.domElement)
-  // transformControls.addEventListener('dragging-changed', (event) => {
-  //   controls.enabled = !event.value
-  //   if (!event.value) {
-  //   }
-  // })
+  transformControls = new TransformControls(camera, renderer.domElement)
+  transformControls.addEventListener('dragging-changed', (event) => {
+    controls.enabled = !event.value
+    if (!event.value) {
+    }
+  })
+  transformControls.showX = false
+  transformControls.addEventListener('change', () => {
+    if (transformControls.object) {
+      car.position.z = MathUtils.clamp(car.position.z, -1, 1)
+      car.position.y = MathUtils.clamp(car.position.y, -0.5, 1)
 
-  // transformControls.addEventListener('change', () => {
-  //   if (transformControls.object) {
-  //     if (transformControls.object.position.y < 0) {
-  //       transformControls.object.position.y = 0
-  //     }
-  //   }
-  // })
-  // scene.add(transformControls)
+      carPortal.position.copy(car.position)
+
+      const rot = car.position.z * (Math.PI * 4)
+
+      for (const key in wheels) {
+        const w = wheels[key]
+        const wp = wheelsPortal[key]
+        if (w) w.rotation.x = rot
+        if (w) wp.rotation.x = rot
+      }
+    }
+  })
+  scene.add(transformControls)
 
   window.addEventListener('resize', onWindowResize)
   document.addEventListener('pointermove', onPointerMove)
@@ -159,18 +196,16 @@ export async function meshPortalMaterialDemo(mainGui) {
     }
   })
 
-  // sceneGui.add(transformControls, 'mode', ['translate', 'rotate', 'scale'])
-  // sceneGui.add(scene, "backgroundBlurriness", 0, 1, 0.01)
-  // sceneGui.addColor(params, "bgColor").onChange(() => {
-  //   scene.background = params.bgColor
-  // })
-
-  // const light = new PointLight()
-  // light.position.set(5, 5, 5)
-  // scene.add(light)
-
   populateScene()
-  populateScene1()
+  populatePortal()
+
+  const exrLoader = new EXRLoader()
+  exrLoader.load(HDRI_LIST.old_hall.exr, (tex) => {
+    tex.mapping = EquirectangularReflectionMapping
+    scene.environment = tex
+    scene1.environment = tex
+    scene1.background = tex
+  })
 
   animate()
 }
@@ -207,111 +242,28 @@ function animate() {
 }
 
 function raycast() {
+  intersects.length = 0
   // update the picking ray with the camera and pointer position
   raycaster.setFromCamera(pointer, camera)
 
   // calculate objects intersecting the picking ray
-  raycaster.intersectObject(mainObjects, true, intersects)
+  raycaster.intersectObject(car, true, intersects)
+  console.log(intersects)
 
   if (!intersects.length) {
-    // transformControls.detach()
+    transformControls.detach()
     return
   }
 
   if (intersects[0].object.selectOnRaycast) {
-    // transformControls.attach(intersects[0].object.selectOnRaycast)
-  } else {
-    // transformControls.attach(intersects[0].object)
+    console.log('raycast select', intersects[0])
+    transformControls.attach(intersects[0].object.selectOnRaycast)
   }
-
-  intersects.length = 0
 }
 
 function onPointerMove(event) {
   pointer.x = (event.clientX / window.innerWidth) * 2 - 1
   pointer.y = -(event.clientY / window.innerHeight) * 2 + 1
-}
-
-async function loadModels() {
-  // sphere
-  const sphere = new Mesh(
-    new SphereGeometry(0.5).translate(0, 0.5, 0),
-    new MeshStandardMaterial({
-      color: getRandomHexColor(),
-      roughness: 0,
-      metalness: 1,
-    })
-  )
-  sphere.name = 'sphere'
-  sphere.castShadow = true
-  sphere.receiveShadow = true
-  sphere.position.set(2, 0, -1.5)
-  mainObjects.add(sphere)
-
-  // cube
-  const cube = new Mesh(
-    new BoxGeometry(1, 1, 1).translate(0, 0.5, 0),
-    new MeshStandardMaterial({
-      color: getRandomHexColor(),
-      roughness: 0,
-      metalness: 1,
-    })
-  )
-  cube.name = 'cube'
-  cube.castShadow = true
-  cube.receiveShadow = true
-  cube.position.set(-2, 0, -1.5)
-  mainObjects.add(cube)
-
-  // car
-  const gltf = await gltfLoader.loadAsync(MODEL_LIST.porsche_1975.url)
-  const model = gltf.scene
-  model.name = 'car'
-  let carBody
-  model.traverse((child) => {
-    if (child.isMesh) {
-      child.castShadow = true
-      child.receiveShadow = true
-      child.selectOnRaycast = model
-
-      if (child.name === 'body') carBody = child
-    }
-  })
-  mainObjects.add(model)
-
-  // wheel references
-  const wheels = {
-    FL: null,
-    FR: null,
-    R: null,
-    steerL: null,
-    steerR: null,
-    steerVal: 0,
-  }
-
-  wheels.R = model.getObjectByName('wheels_rear')
-
-  wheels.steerL = model.getObjectByName('wheel_L')
-  wheels.steerR = model.getObjectByName('wheel_R')
-  const steerLimit = MathUtils.degToRad(30)
-  const tween = new Tween(wheels)
-    .to({ steerVal: 1 }, 3000)
-    .easing(Easing.Elastic.Out)
-    .delay(3000)
-    .repeatDelay(5000)
-    .repeat(10000)
-    .yoyo(true)
-    .onUpdate(() => {
-      const rotY = MathUtils.mapLinear(wheels.steerVal, 0, 1, -steerLimit, steerLimit)
-      wheels.steerL.rotation.y = rotY
-      wheels.steerR.rotation.y = rotY
-    })
-    .start()
-}
-
-const color = new Color()
-function getRandomHexColor() {
-  return '#' + color.setHSL(Math.random(), 0.5, 0.5).getHexString()
 }
 
 function populateScene() {
@@ -334,14 +286,14 @@ function populateScene() {
     new PortalMaterialImpl({
       blur: 0,
       blend: 0,
-      transparent: true,
+      // transparent: true,
       map: scene1RenderTarget.texture,
       toneMapped: false,
       resolution: size,
-      side: DoubleSide,
+      // side: DoubleSide,
     })
   )
-
+  portalMesh.castShadow = true
   scene.add(portalMesh)
 
   const fol = gui.addFolder('scene')
@@ -353,8 +305,49 @@ function populateScene() {
   fol.add(portalMesh.scale, 'y', 0.1, 2).name('Portal Scale Y')
 }
 
-function populateScene1() {
+async function populatePortal() {
   scene1.background = new Color().set('#51c995')
+
+  // car
+  const gltf = await MODEL_LOADER(MODEL_LIST.porsche_1975.url)
+  const model = gltf.scene
+  model.scale.setScalar(0.3)
+  model.position.y = -0.5
+  model.name = 'car'
+  model.traverse((child) => {
+    child.positionBackup = child.position.clone()
+    if (child.isMesh) {
+      child.castShadow = true
+      child.receiveShadow = true
+      child.selectOnRaycast = model
+    }
+  })
+
+  const localPlane = new Plane(new Vector3(0, 0, 1), 0)
+  gui.add(localPlane, 'constant', 0, 5)
+
+  car = model
+  carPortal = model.clone()
+
+  car.traverse((child) => {
+    if (child.isMesh) {
+      child.selectOnRaycast = car
+      child.material = child.material.clone()
+      child.material.clippingPlanes = [localPlane]
+      child.material.clipShadows = true
+    }
+  })
+
+  scene.add(car)
+  scene1.add(carPortal)
+
+  wheels.R = car.getObjectByName('wheels_rear')
+  wheels.steerL = car.getObjectByName('wheel_L')
+  wheels.steerR = car.getObjectByName('wheel_R')
+
+  wheelsPortal.R = carPortal.getObjectByName('wheels_rear')
+  wheelsPortal.steerL = carPortal.getObjectByName('wheel_L')
+  wheelsPortal.steerR = carPortal.getObjectByName('wheel_R')
 
   const geometry = new TorusKnotGeometry(0.5, 0.25, 150, 20)
   const material = new MeshStandardMaterial({
@@ -362,29 +355,45 @@ function populateScene1() {
     roughness: 0.2,
     color: 0xff0000,
   })
-
   const torusMesh = new Mesh(geometry, material)
   scene1.add(torusMesh)
   torusMesh.receiveShadow = true
+  torusMesh.scale.setScalar(0.2)
   torusMesh.position.z = -1
+  torusMesh.position.y = 0.2
+
   const dirLight = new DirectionalLight(0xffffff, 1)
-  dirLight.color.setHSL(0.1, 1, 0.95)
-  dirLight.position.set(-1, 1.75, 1)
-  dirLight.position.multiplyScalar(5)
+  dirLight.position.set(-2, 3, 2)
   dirLight.castShadow = true
 
   dirLight.shadow.mapSize.width = 1024
   dirLight.shadow.mapSize.height = 1024
 
-  const d = 5
+  const d = 6
 
   dirLight.shadow.camera.left = -d
   dirLight.shadow.camera.right = d
   dirLight.shadow.camera.top = d
   dirLight.shadow.camera.bottom = -d
   dirLight.shadow.bias = -0.0003
+  dirLight.shadow.blurSamples = 6
+  dirLight.shadow.radius = 3
 
+  gui.add(dirLight.shadow, 'blurSamples')
+  gui.add(dirLight.shadow, 'radius')
+
+  scene.add(dirLight.clone())
   scene1.add(dirLight)
+
+  const shadowFloor = new Mesh(
+    new CircleGeometry(1.5, 48).rotateX(-Math.PI / 2),
+    new MeshPhongMaterial({ color: 'grey' })
+  )
+  shadowFloor.name = 'shadowFloor'
+  shadowFloor.receiveShadow = true
+  shadowFloor.position.set(0, -0.5, 0)
+  scene.add(shadowFloor)
+  scene1.add(shadowFloor.clone())
 
   const fol = gui.addFolder('scene1')
   fol.open()
@@ -398,22 +407,6 @@ function populateScene1() {
     })
   fol.add(params, 'renderScene1')
 }
-
-const PortalMaterialImpl_GIST = shaderMaterial(
-  { map: null, blend: 0, resolution: new Vector2() },
-  `void main() {
-     gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-   }`,
-  `uniform sampler2D map;   
-   uniform vec2 resolution;
-   #include <packing>
-   void main() {
-     vec2 uv = gl_FragCoord.xy / resolution.xy;          
-     gl_FragColor = texture2D(map, uv);
-     #include <tonemapping_fragment>
-     #include <encodings_fragment>
-   }`
-)
 
 const PortalMaterialImpl = shaderMaterial(
   {
