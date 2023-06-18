@@ -11,7 +11,7 @@ import { RenderTexture } from './RenderTexture'
 import { shaderMaterial } from './shaderMaterial'
 import { FullScreenQuad } from 'three-stdlib'
 
-const PortalMaterialImpl = shaderMaterial(
+export const PortalMaterialImpl = shaderMaterial(
   { map: null, blend: 0, resolution: new THREE.Vector2() },
   `void main() {
      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);

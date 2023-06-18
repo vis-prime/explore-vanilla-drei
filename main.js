@@ -60,7 +60,7 @@ function updatePageDesc(path) {
   document.title = `Explore | ${path}`
 }
 
-const title = wip.includes(All_Scenes[params.sceneName]) ? ' WIP' : 'Explore Drei Vanilla' + version
+const title = wip.includes(All_Scenes[params.sceneName]) ? '⚠ WIP ' + version : 'Explore Drei Vanilla' + version
 const gui = new GUI({
   title: title,
   closeFolders: true,
