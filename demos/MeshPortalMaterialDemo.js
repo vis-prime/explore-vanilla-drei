@@ -28,6 +28,8 @@ import {
   CircleGeometry,
   MeshPhongMaterial,
   EquirectangularReflectionMapping,
+  HalfFloatType,
+  FloatType,
 } from 'three'
 import Stats from 'three/examples/jsm/libs/stats.module'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
@@ -142,7 +144,7 @@ export async function meshPortalMaterialDemo(mainGui) {
   scene.add(camera)
 
   renderer.getSize(size)
-  scene1RenderTarget = new WebGLRenderTarget(size.x, size.y, { colorSpace: SRGBColorSpace })
+  scene1RenderTarget = new WebGLRenderTarget(size.x, size.y, { colorSpace: SRGBColorSpace, samples: 2 })
 
   //   scene.backgroundBlurriness = 0.8
 
@@ -217,7 +219,10 @@ function onWindowResize() {
 
   renderer.getSize(size)
   scene1RenderTarget.dispose()
-  scene1RenderTarget = new WebGLRenderTarget(size.x, size.y, { colorSpace: SRGBColorSpace })
+  scene1RenderTarget = new WebGLRenderTarget(size.x, size.y, {
+    colorSpace: SRGBColorSpace,
+    samples: 2,
+  })
   portalMesh.material.map = scene1RenderTarget.texture
 }
 
@@ -324,7 +329,7 @@ async function populatePortal() {
   })
 
   const localPlane = new Plane(new Vector3(0, 0, 1), 0)
-  gui.add(localPlane, 'constant', 0, 5)
+  gui.add(localPlane, 'constant', 0, 5).name('Clipping plane constant')
 
   car = model
   carPortal = model.clone()
@@ -375,19 +380,16 @@ async function populatePortal() {
   dirLight.shadow.camera.right = d
   dirLight.shadow.camera.top = d
   dirLight.shadow.camera.bottom = -d
-  dirLight.shadow.bias = -0.0003
+  dirLight.shadow.bias = -0.0001
   dirLight.shadow.blurSamples = 6
   dirLight.shadow.radius = 3
-
-  gui.add(dirLight.shadow, 'blurSamples')
-  gui.add(dirLight.shadow, 'radius')
 
   scene.add(dirLight.clone())
   scene1.add(dirLight)
 
   const shadowFloor = new Mesh(
     new CircleGeometry(1.5, 48).rotateX(-Math.PI / 2),
-    new MeshPhongMaterial({ color: 'grey' })
+    new MeshStandardMaterial({ color: 'grey' })
   )
   shadowFloor.name = 'shadowFloor'
   shadowFloor.receiveShadow = true
