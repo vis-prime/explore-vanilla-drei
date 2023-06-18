@@ -30,6 +30,7 @@ import {
   EquirectangularReflectionMapping,
   HalfFloatType,
   FloatType,
+  LinearSRGBColorSpace,
 } from 'three'
 import Stats from 'three/examples/jsm/libs/stats.module'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
@@ -144,9 +145,7 @@ export async function meshPortalMaterialDemo(mainGui) {
   scene.add(camera)
 
   renderer.getSize(size)
-  scene1RenderTarget = new WebGLRenderTarget(size.x, size.y, { colorSpace: SRGBColorSpace, samples: 2 })
-
-  //   scene.backgroundBlurriness = 0.8
+  scene1RenderTarget = new WebGLRenderTarget(size.x, size.y, { samples: 2 })
 
   scene.add(mainObjects)
 
@@ -219,10 +218,7 @@ function onWindowResize() {
 
   renderer.getSize(size)
   scene1RenderTarget.dispose()
-  scene1RenderTarget = new WebGLRenderTarget(size.x, size.y, {
-    colorSpace: SRGBColorSpace,
-    samples: 2,
-  })
+  scene1RenderTarget = new WebGLRenderTarget(size.x, size.y, { samples: 2 })
   portalMesh.material.map = scene1RenderTarget.texture
 }
 
