@@ -1,36 +1,27 @@
 import {
-  DoubleSide,
   ACESFilmicToneMapping,
   Mesh,
   MeshStandardMaterial,
   PerspectiveCamera,
   Scene,
-  SphereGeometry,
   SRGBColorSpace,
   WebGLRenderer,
   Vector2,
   Raycaster,
   Group,
-  BoxGeometry,
   Color,
   TextureLoader,
   VSMShadowMap,
   WebGLRenderTarget,
   MathUtils,
   TorusKnotGeometry,
-  MeshBasicMaterial,
   AxesHelper,
   PlaneGeometry,
   DirectionalLight,
   Plane,
   Vector3,
-  ShadowMaterial,
   CircleGeometry,
-  MeshPhongMaterial,
   EquirectangularReflectionMapping,
-  HalfFloatType,
-  FloatType,
-  LinearSRGBColorSpace,
 } from 'three'
 import Stats from 'three/examples/jsm/libs/stats.module'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
@@ -38,7 +29,7 @@ import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { TransformControls } from 'three/examples/jsm/controls/TransformControls'
 
-import { Easing, Tween, update } from '@tweenjs/tween.js'
+import { update } from '@tweenjs/tween.js'
 import { MODEL_LIST, MODEL_LOADER } from '../models/MODEL_LIST'
 import { shaderMaterial } from '@pmndrs/vanilla'
 import { HDRI_LIST } from '../hdri/HDRI_LIST'
@@ -230,10 +221,10 @@ function render() {
   if (params.renderScene1) {
     renderer.render(scene1, camera)
   } else {
+    renderer.render(scene, camera)
     renderer.setRenderTarget(scene1RenderTarget)
     renderer.render(scene1, camera)
     renderer.setRenderTarget(null)
-    renderer.render(scene, camera)
   }
 }
 
