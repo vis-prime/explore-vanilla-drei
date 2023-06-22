@@ -7,6 +7,14 @@ import vase_url from './vase_2k_comp.glb?url'
 import bunny_url from './stanford _bunny_comp.glb?url'
 import bunny_drei_url from './bunny-transformed.glb?url'
 
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
+import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader'
+
+const gltfLoader = new GLTFLoader()
+const draco = new DRACOLoader()
+draco.setDecoderPath('https://www.gstatic.com/draco/v1/decoders/')
+gltfLoader.setDRACOLoader(draco)
+
 /**
  * Vite friendly Model urls
  * @enum
@@ -36,4 +44,14 @@ export const MODEL_LIST = {
   bunnyDrei: {
     url: bunny_drei_url,
   },
+}
+
+/**
+ * Gltf Draco Loader
+ * @param {String} url
+ * @returns {Object}
+ * @enum
+ */
+export const MODEL_LOADER = async (url) => {
+  return await gltfLoader.loadAsync(url)
 }
