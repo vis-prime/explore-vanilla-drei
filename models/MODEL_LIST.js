@@ -5,6 +5,7 @@ import road_url from './road_comp.glb?url'
 import room_url from './room_comp.glb?url'
 import vase_url from './vase_2k_comp.glb?url'
 import bunny_url from './stanford _bunny_comp.glb?url'
+import bunny_drei_url from './bunny-transformed.glb?url'
 
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader'
@@ -39,6 +40,9 @@ export const MODEL_LIST = {
   },
   bunny: {
     url: bunny_url,
+  },
+  bunnyDrei: {
+    url: bunny_drei_url,
   },
 }
 
