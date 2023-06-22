@@ -13,6 +13,7 @@ import { meshTransmissionMaterialBasic } from './demos/MeshTransmissionMaterialB
 import { CausticsDemo } from './demos/CausticsDemo'
 import { AccumulativeShadowsDemo } from './demos/AccumulativeShadowsDemo'
 import { SpriteAnimatorDemo } from './demos/SpriteAnimatorDemo'
+import { meshPortalMaterialDemo } from './demos/MeshPortalMaterialDemo'
 
 let url_string = window.location.href
 let url = new URL(url_string)
@@ -33,8 +34,11 @@ const All_Scenes = {
 
   MeshReflectionMaterial: meshReflectorMaterialDemo,
   AccumulativeShadows: AccumulativeShadowsDemo,
-  SpriteAnimatorDemo: SpriteAnimatorDemo,
+  SpriteAnimator: SpriteAnimatorDemo,
+  MeshPortalMaterial: meshPortalMaterialDemo,
 }
+
+const wip = [meshPortalMaterialDemo, SpriteAnimatorDemo, CausticsDemo]
 
 const params = {
   sceneName: url.searchParams.get('scene') || Object.keys(All_Scenes)[0],
@@ -56,10 +60,15 @@ function updatePageDesc(path) {
   document.title = `Explore | ${path}`
 }
 
+const title = wip.includes(All_Scenes[params.sceneName]) ? '⚠ WIP ' + version : 'Explore Drei Vanilla' + version
 const gui = new GUI({
-  title: 'Explore Drei Vanilla' + version,
+  title: title,
   closeFolders: true,
 })
+
+if (!Object.keys(All_Scenes).includes(params.sceneName)) {
+  params.sceneName = Object.keys(All_Scenes)[0]
+}
 
 gui
   .add(params, 'sceneName', Object.keys(All_Scenes))
@@ -70,10 +79,6 @@ gui
     updatePageDesc(v)
     window.location.reload()
   })
-
-if (!Object.keys(All_Scenes).includes(params.sceneName)) {
-  params.sceneName = Object.keys(All_Scenes)[0]
-}
 
 params.sceneInitFunction = All_Scenes[params.sceneName]
 params.sceneInitFunction(gui)
