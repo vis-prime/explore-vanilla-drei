@@ -1,6 +1,4 @@
 import Stats from 'three/examples/jsm/libs/stats.module'
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
-import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { TransformControls } from 'three/examples/jsm/controls/TransformControls'
 import {
@@ -13,39 +11,15 @@ import {
   Raycaster,
   Group,
   VSMShadowMap,
-  Clock,
-  WebGLRenderTarget,
-  LinearFilter,
-  HalfFloatType,
-  NoToneMapping,
-  BackSide,
-  Mesh,
-  PlaneGeometry,
-  CameraHelper,
   Color,
-  SrcAlphaFactor,
-  OneFactor,
-  CustomBlending,
-  OrthographicCamera,
-  Box3,
-  Vector3,
-  Plane,
-  Matrix4,
-  Frustum,
-  DepthTexture,
-  FloatType,
-  FrontSide,
-  DirectionalLight,
   Object3D,
 } from 'three'
-import * as THREE from 'three'
 
 // Model and Env
-import { MODEL_LIST } from '../models/MODEL_LIST'
+import { MODEL_LIST, MODEL_LOADER } from '../models/MODEL_LIST'
 import { BG_ENV } from './BG_ENV'
-import { Caustics, CausticsFunc } from '../wip/Caustics'
-import { FullScreenQuad } from 'three-stdlib'
-import { Tween, update } from '@tweenjs/tween.js'
+import { Caustics } from '../wip/Caustics'
+import { update } from '@tweenjs/tween.js'
 import { EffectComposer, RenderPass, BloomEffect, EffectPass } from 'postprocessing'
 
 let stats,
@@ -59,11 +33,7 @@ let stats,
   pointer = new Vector2()
 
 const mainObjects = new Group()
-const gltfLoader = new GLTFLoader()
-const draco = new DRACOLoader()
 let transformControls
-draco.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.5/')
-gltfLoader.setDRACOLoader(draco)
 const raycaster = new Raycaster()
 const intersects = [] //raycast
 let useFrame = () => {} // runs on every frame frame
@@ -73,8 +43,7 @@ const CausticsModels = {
   Vase: MODEL_LIST.vase,
   Monkey: MODEL_LIST.monkey,
   Bunny: MODEL_LIST.bunny,
-  BunnyD: MODEL_LIST.bunnyDrei,
-
+  // BunnyD: MODEL_LIST.bunnyDrei,
   Porsche: MODEL_LIST.porsche_1975,
 }
 
@@ -223,7 +192,7 @@ async function setupModel() {
   const loadModel = async () => {
     let gltf = modelCache[params.model.url]
     if (!gltf) {
-      gltf = await gltfLoader.loadAsync(params.model.url)
+      gltf = await MODEL_LOADER(params.model.url)
       modelCache[params.model.url] = gltf
     }
 
@@ -268,224 +237,12 @@ const causticsParams = {
   falloff: 0,
 }
 
-async function setupCausticsOld() {
-  const lightSource = new Group()
-  lightSource.position.set(1, 1, 1)
-  transformControls.attach(lightSource)
-  transformControls.addEventListener('change', () => {})
-  scene.add(lightSource)
-
-  // Buffers for front and back faces
-  const res = causticsParams.resolution
-  const normalTarget = useFBO(res, res, Caustics.NORMALPROPS)
-  const normalTargetB = useFBO(res, res, Caustics.NORMALPROPS)
-  const causticsTarget = useFBO(res, res, Caustics.CAUSTICPROPS)
-  const causticsTargetB = useFBO(res, res, Caustics.CAUSTICPROPS)
-
-  // Normal materials for front and back faces
-  const normalMat = Caustics.createNormalMaterial()
-  const normalMatB = Caustics.createNormalMaterial(BackSide)
-
-  // The quad that catches the caustics
-  const causticsMaterial = new Caustics.CausticsMaterial()
-  const causticsQuad = new FullScreenQuad(causticsMaterial)
-  causticsMaterial.far = 1000
-  const causticsGroup = new Group()
-  causticsGroup.name = 'caustics_group'
-
-  const causticsCam = new OrthographicCamera()
-  causticsCam.near = 0.01
-  causticsCam.far = 0.5
-  const gl = renderer
-  const helper = new CameraHelper(causticsCam)
-  const causticsScene = new Scene()
-  causticsScene.name = 'caustics_scene'
-
-  const plane = new Mesh(
-    new PlaneGeometry(1, 1),
-    new Caustics.CausticsProjectionMaterial({
-      transparent: true,
-      color: causticsParams.color,
-      causticsTexture: causticsTarget.texture,
-      causticsTextureB: causticsTargetB.texture,
-      blending: THREE.CustomBlending,
-      blendSrc: THREE.OneFactor,
-      blendDst: THREE.SrcAlphaFactor,
-      depthWrite: false,
-    })
-  )
-  plane.name = 'caustics_plane'
-  plane.rotation.x = -Math.PI / 2
-  plane.renderOrder = 2
-  causticsGroup.add(causticsScene, plane)
-  causticsScene.add(activeModel) //add glb to caustics scene
-  mainObjects.add(causticsGroup, helper) // add entire group to scene
-  causticsGroup.updateWorldMatrix(false, true)
-  // math
-  let count = 0
-
-  const v = new THREE.Vector3()
-  const lpF = new THREE.Frustum()
-  const lpM = new THREE.Matrix4()
-  const lpP = new THREE.Plane()
-
-  const lightDir = new THREE.Vector3()
-  const lightDirInv = new THREE.Vector3()
-  const bounds = new THREE.Box3()
-  const focusPos = new THREE.Vector3()
-
-  const boundsVertices = []
-  const worldVerts = []
-  const projectedVerts = []
-  const lightDirs = []
-
-  const cameraPos = new THREE.Vector3()
-
-  for (let i = 0; i < 8; i++) {
-    boundsVertices.push(new THREE.Vector3())
-    worldVerts.push(new THREE.Vector3())
-    projectedVerts.push(new THREE.Vector3())
-    lightDirs.push(new THREE.Vector3())
-  }
-
-  console.log({ causticsMaterial })
-  useFrame = () => {
-    if (causticsParams.frames === Infinity || count++ < causticsParams.frames) {
-      lightDir.copy(causticsGroup.worldToLocal(lightSource.getWorldPosition(v)).normalize())
-
-      lightDirInv.copy(lightDir).multiplyScalar(-1)
-
-      causticsScene.parent?.matrixWorld.identity()
-      bounds.setFromObject(causticsScene, true)
-      boundsVertices[0].set(bounds.min.x, bounds.min.y, bounds.min.z)
-      boundsVertices[1].set(bounds.min.x, bounds.min.y, bounds.max.z)
-      boundsVertices[2].set(bounds.min.x, bounds.max.y, bounds.min.z)
-      boundsVertices[3].set(bounds.min.x, bounds.max.y, bounds.max.z)
-      boundsVertices[4].set(bounds.max.x, bounds.min.y, bounds.min.z)
-      boundsVertices[5].set(bounds.max.x, bounds.min.y, bounds.max.z)
-      boundsVertices[6].set(bounds.max.x, bounds.max.y, bounds.min.z)
-      boundsVertices[7].set(bounds.max.x, bounds.max.y, bounds.max.z)
-
-      for (let i = 0; i < 8; i++) {
-        worldVerts[i].copy(boundsVertices[i])
-      }
-
-      bounds.getCenter(focusPos)
-      boundsVertices.map((v) => v.sub(focusPos))
-      const lightPlane = lpP.set(lightDirInv, 0)
-
-      boundsVertices.map((v, i) => lightPlane.projectPoint(v, projectedVerts[i]))
-
-      const centralVert = projectedVerts.reduce((a, b) => a.add(b), v.set(0, 0, 0)).divideScalar(projectedVerts.length)
-      const radius = projectedVerts.map((v) => v.distanceTo(centralVert)).reduce((a, b) => Math.max(a, b))
-      const dirLength = boundsVertices.map((x) => x.dot(lightDir)).reduce((a, b) => Math.max(a, b))
-      // Shadows
-      causticsCam.position.copy(cameraPos.copy(lightDir).multiplyScalar(dirLength).add(focusPos))
-      causticsCam.lookAt(causticsScene.localToWorld(focusPos))
-      const dirMatrix = lpM.lookAt(causticsCam.position, focusPos, v.set(0, 1, 0))
-      causticsCam.left = -radius
-      causticsCam.right = radius
-      causticsCam.top = radius
-      causticsCam.bottom = -radius
-      const yOffset = v.set(0, radius, 0).applyMatrix4(dirMatrix)
-      const yTime = (causticsCam.position.y + yOffset.y) / lightDir.y
-      causticsCam.near = 0.1
-      causticsCam.far = yTime
-      causticsCam.updateProjectionMatrix()
-      causticsCam.updateMatrixWorld()
-
-      // Now find size of ground plane
-      const groundProjectedCoords = worldVerts.map((v, i) =>
-        v.add(lightDirs[i].copy(lightDir).multiplyScalar(-v.y / lightDir.y))
-      )
-      const centerPos = groundProjectedCoords
-        .reduce((a, b) => a.add(b), v.set(0, 0, 0))
-        .divideScalar(groundProjectedCoords.length)
-      const maxSize =
-        2 *
-        groundProjectedCoords
-          .map((v) => Math.hypot(v.x - centerPos.x, v.z - centerPos.z))
-          .reduce((a, b) => Math.max(a, b))
-      plane.scale.setScalar(maxSize)
-      plane.position.copy(centerPos)
-
-      if (causticsParams.debug) helper?.update()
-
-      // Inject uniforms
-      normalMatB.viewMatrix.value = normalMat.viewMatrix.value = causticsCam.matrixWorldInverse
-
-      const dirLightNearPlane = lpF.setFromProjectionMatrix(
-        lpM.multiplyMatrices(causticsCam.projectionMatrix, causticsCam.matrixWorldInverse)
-      ).planes[4]
-
-      causticsMaterial.cameraMatrixWorld = causticsCam.matrixWorld
-      causticsMaterial.cameraProjectionMatrixInv = causticsCam.projectionMatrixInverse
-      causticsMaterial.lightDir = lightDirInv
-
-      causticsMaterial.lightPlaneNormal = dirLightNearPlane.normal
-      causticsMaterial.lightPlaneConstant = dirLightNearPlane.constant
-
-      causticsMaterial.near = causticsCam.near
-      causticsMaterial.far = causticsCam.far
-      causticsMaterial.resolution = causticsParams.resolution
-      causticsMaterial.size = radius
-      causticsMaterial.intensity = causticsParams.intensity
-      causticsMaterial.worldRadius = causticsParams.worldRadius
-
-      // Switch the scene on
-      causticsScene.visible = true
-
-      // Render front face normals
-      gl.setRenderTarget(normalTarget)
-      gl.clear()
-      causticsScene.overrideMaterial = normalMat
-      gl.render(causticsScene, causticsCam)
-
-      // Render back face normals, if enabled
-      gl.setRenderTarget(normalTargetB)
-      gl.clear()
-      if (causticsParams.backside) {
-        causticsScene.overrideMaterial = normalMatB
-        gl.render(causticsScene, causticsCam)
-      }
-
-      // Remove the override material
-      causticsScene.overrideMaterial = null
-      causticsMaterial.falloff = causticsParams.falloff
-      // Render front face caustics
-      causticsMaterial.ior = causticsParams.ior
-      plane.material.lightProjMatrix = causticsCam.projectionMatrix
-      plane.material.lightViewMatrix = causticsCam.matrixWorldInverse
-      causticsMaterial.normalTexture = normalTarget.texture
-      causticsMaterial.depthTexture = normalTarget.depthTexture
-      gl.setRenderTarget(causticsTarget)
-      gl.clear()
-      causticsQuad.render(gl)
-
-      // Render back face caustics, if enabled
-      causticsMaterial.ior = causticsParams.backsideIOR
-      causticsMaterial.normalTexture = normalTargetB.texture
-      causticsMaterial.depthTexture = normalTargetB.depthTexture
-      gl.setRenderTarget(causticsTargetB)
-      gl.clear()
-      if (causticsParams.backside) causticsQuad.render(gl)
-
-      // Reset render target
-      gl.setRenderTarget(null)
-
-      // Switch the scene off if caustics is all that's wanted
-      if (causticsParams.causticsOnly) causticsScene.visible = false
-    }
-  }
-
-  addCausticsGui()
-
-  console.log(scene)
-}
-
+/**
+ * @type {import('../wip/Caustics').CausticsType}
+ */
 let caustics
 async function setupCaustics() {
-  caustics = CausticsFunc(renderer, { frames: Infinity })
+  caustics = Caustics(renderer, { frames: Infinity })
 
   scene.add(caustics.group, caustics.helper)
 
@@ -504,7 +261,7 @@ function addCausticsGui() {
   folder.add(caustics.params, 'backside').onChange((v) => {
     if (!v) {
       // to prevent last frame from persisting
-      // causticsTargetB.dispose()
+      caustics.normalTargetB.dispose()
     }
   })
   folder.add(caustics.params, 'backsideIOR', 0, Math.PI)

@@ -269,7 +269,15 @@ const CAUSTICPROPS = {
   colorSpace: THREE.LinearSRGBColorSpace,
 }
 
-export const CausticsFunc = (
+export type CausticsType = {
+  normalTargetB: THREE.WebGLRenderTarget
+  scene: THREE.Scene
+  group: THREE.Group
+  helper: THREE.CameraHelper
+  params: CausticsProps
+  update: () => void
+}
+export const Caustics = (
   renderer: THREE.WebGLRenderer,
   {
     frames = 1,
@@ -285,7 +293,7 @@ export const CausticsFunc = (
     near = 0.1,
     far = 0, // auto calculates if zero
   }: CausticsProps = {}
-) => {
+): CausticsType => {
   const params = {
     frames,
     ior,
@@ -510,6 +518,7 @@ export const CausticsFunc = (
   }
 
   return {
+    normalTargetB,
     scene,
     group,
     helper,
@@ -518,13 +527,13 @@ export const CausticsFunc = (
   }
 }
 
-export const Caustics = {
-  CausticsMaterial,
-  CausticsProjectionMaterial,
-  CAUSTICPROPS,
-  createNormalMaterial,
-  NORMALPROPS,
-}
+// export const Caustics = {
+//   CausticsMaterial,
+//   CausticsProjectionMaterial,
+//   CAUSTICPROPS,
+//   createNormalMaterial,
+//   NORMALPROPS,
+// }
 
 function useFBO(
   /** Width in pixels */
