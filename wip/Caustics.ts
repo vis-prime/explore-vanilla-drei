@@ -271,6 +271,7 @@ const CAUSTICPROPS = {
 
 export type CausticsType = {
   normalTargetB: THREE.WebGLRenderTarget
+  causticsTargetB: THREE.WebGLRenderTarget
   scene: THREE.Scene
   group: THREE.Group
   helper: THREE.CameraHelper
@@ -518,6 +519,7 @@ export const Caustics = (
   }
 
   return {
+    causticsTargetB,
     normalTargetB,
     scene,
     group,

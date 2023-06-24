@@ -36,7 +36,6 @@ const mainObjects = new Group()
 let transformControls
 const raycaster = new Raycaster()
 const intersects = [] //raycast
-let useFrame = () => {} // runs on every frame frame
 let sceneGui
 
 const CausticsModels = {
@@ -133,7 +132,7 @@ export async function CausticsDemo(mainGui) {
   await bg_env.updateAll()
   bg_env.addGui(sceneGui)
   scene.backgroundBlurriness = 0.4
-  scene.backgroundIntensity = 0.4
+  scene.backgroundIntensity = 0.2
 
   await setupModel()
   setupCaustics()
@@ -151,7 +150,6 @@ function render() {
   stats.update()
   update()
   controls.update()
-  useFrame()
   if (caustics) caustics.update()
   composer.render(scene, camera)
 }
@@ -223,26 +221,12 @@ async function setupModel() {
     })
 }
 
-const causticsParams = {
-  debug: true,
-  frames: Infinity,
-  ior: 1.1,
-  color: new Color('white'),
-  causticsOnly: false,
-  backside: false,
-  backsideIOR: 1.1,
-  worldRadius: 0.3125 / 100,
-  intensity: 0.05,
-  resolution: 2024,
-  falloff: 0,
-}
-
 /**
  * @type {import('../wip/Caustics').CausticsType}
  */
 let caustics
 async function setupCaustics() {
-  caustics = Caustics(renderer, { frames: Infinity })
+  caustics = Caustics(renderer, { frames: Infinity, worldRadius: 0.01 })
 
   scene.add(caustics.group, caustics.helper)
 
@@ -258,18 +242,22 @@ function addCausticsGui() {
   folder.open()
   folder.addColor(caustics.params, 'color')
   folder.add(caustics.params, 'ior', 0, Math.PI)
+  folder.add(caustics.params, 'far', 0, 5)
+
+  folder.add(caustics.helper, 'visible').name('helper')
+
   folder.add(caustics.params, 'backside').onChange((v) => {
     if (!v) {
       // to prevent last frame from persisting
-      caustics.normalTargetB.dispose()
+      caustics.causticsTargetB.dispose()
     }
   })
   folder.add(caustics.params, 'backsideIOR', 0, Math.PI)
   folder.add(caustics.params, 'worldRadius', 0, 0.05)
   folder.add(caustics.params, 'intensity', 0, 1)
   folder.add(caustics.params, 'causticsOnly')
+
   folder.add(caustics.params.lightSource, 'x', -1, 1)
-  folder.add(caustics.params.lightSource, 'y', 0, 10)
+  folder.add(caustics.params.lightSource, 'y', 0.1, 10)
   folder.add(caustics.params.lightSource, 'z', -1, 1)
-  folder.add(caustics.params, 'far', 0, 5)
 }
