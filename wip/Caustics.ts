@@ -2,6 +2,8 @@ import * as THREE from 'three'
 import { shaderMaterial } from '@pmndrs/vanilla'
 import { FullScreenQuad } from 'three-stdlib'
 
+const isVector3 = (object: any): object is THREE.Vector3 => object?.isVector3
+
 type CausticsProjectionMaterialType = THREE.MeshNormalMaterial & {
   viewMatrix: { value?: THREE.Matrix4 }
   color?: THREE.Color
@@ -375,7 +377,7 @@ export const CausticsFunc = (
 
   const update = () => {
     if (params.frames === Infinity || count++ < params.frames) {
-      if (lightSource instanceof THREE.Vector3) lightDir.copy(lightSource).normalize()
+      if (isVector3(lightSource)) lightDir.copy(lightSource).normalize()
       else lightDir.copy(ref.worldToLocal(lightSource.getWorldPosition(v)).normalize())
 
       lightDirInv.copy(lightDir).multiplyScalar(-1)
