@@ -43,7 +43,7 @@ import * as THREE from 'three'
 // Model and Env
 import { MODEL_LIST } from '../models/MODEL_LIST'
 import { BG_ENV } from './BG_ENV'
-import { Caustics } from '../wip/Caustics'
+import { Caustics, CausticsFunc } from '../wip/Caustics'
 import { FullScreenQuad } from 'three-stdlib'
 import { Tween, update } from '@tweenjs/tween.js'
 import { EffectComposer, RenderPass, BloomEffect, EffectPass } from 'postprocessing'
@@ -164,6 +164,7 @@ export async function CausticsDemo(mainGui) {
   await bg_env.updateAll()
   bg_env.addGui(sceneGui)
   scene.backgroundBlurriness = 0.4
+  scene.backgroundIntensity = 0.4
 
   await setupModel()
   setupCaustics()
@@ -182,6 +183,7 @@ function render() {
   update()
   controls.update()
   useFrame()
+  if (caustics) caustics.update()
   composer.render(scene, camera)
 }
 
@@ -266,7 +268,7 @@ const causticsParams = {
   falloff: 0,
 }
 
-async function setupCaustics() {
+async function setupCausticsOld() {
   const lightSource = new Group()
   lightSource.position.set(1, 1, 1)
   transformControls.attach(lightSource)
@@ -287,7 +289,7 @@ async function setupCaustics() {
   // The quad that catches the caustics
   const causticsMaterial = new Caustics.CausticsMaterial()
   const causticsQuad = new FullScreenQuad(causticsMaterial)
-
+  causticsMaterial.far = 1000
   const causticsGroup = new Group()
   causticsGroup.name = 'caustics_group'
 
@@ -345,6 +347,7 @@ async function setupCaustics() {
     projectedVerts.push(new THREE.Vector3())
     lightDirs.push(new THREE.Vector3())
   }
+
   console.log({ causticsMaterial })
   useFrame = () => {
     if (causticsParams.frames === Infinity || count++ < causticsParams.frames) {
@@ -480,54 +483,36 @@ async function setupCaustics() {
   console.log(scene)
 }
 
+let caustics
+async function setupCaustics() {
+  caustics = CausticsFunc(renderer, { frames: Infinity })
+
+  scene.add(caustics.group, caustics.helper)
+
+  caustics.scene.add(activeModel)
+
+  addCausticsGui()
+
+  console.log(scene)
+}
+
 function addCausticsGui() {
   const folder = gui.addFolder('Caustics')
   folder.open()
-  folder.addColor(causticsParams, 'color')
-  folder.add(causticsParams, 'ior', 0, Math.PI)
-  folder.add(causticsParams, 'backside').onChange((v) => {
+  folder.addColor(caustics.params, 'color')
+  folder.add(caustics.params, 'ior', 0, Math.PI)
+  folder.add(caustics.params, 'backside').onChange((v) => {
     if (!v) {
       // to prevent last frame from persisting
       // causticsTargetB.dispose()
     }
   })
-  folder.add(causticsParams, 'backsideIOR', 0, Math.PI)
-  folder.add(causticsParams, 'worldRadius', 0, 0.05)
-  folder.add(causticsParams, 'intensity', 0, 1)
-  folder.add(causticsParams, 'causticsOnly')
-  folder.add(causticsParams, 'falloff', 0, 2)
-}
-
-// 👇 uncomment when TS version supports function overloads
-// export function useFBO(settings?: FBOSettings)
-export function useFBO(
-  /** Width in pixels, or settings (will render fullscreen by default) */
-  width,
-  /** Height in pixels */
-  height,
-  /**Settings */
-  settings
-) {
-  const gl = renderer
-  const _width = width
-  const _height = height
-  const _settings = settings
-  const { samples = 0, depth, ...targetSettings } = _settings
-
-  let target
-  target = new WebGLRenderTarget(_width, _height, {
-    minFilter: LinearFilter,
-    magFilter: LinearFilter,
-    colorSpace: gl.outputColorSpace,
-    type: HalfFloatType,
-    ...targetSettings,
-  })
-
-  if (depth) {
-    target.depthTexture = new DepthTexture(_width, _height, FloatType)
-  }
-
-  target.samples = samples
-
-  return target
+  folder.add(caustics.params, 'backsideIOR', 0, Math.PI)
+  folder.add(caustics.params, 'worldRadius', 0, 0.05)
+  folder.add(caustics.params, 'intensity', 0, 1)
+  folder.add(caustics.params, 'causticsOnly')
+  folder.add(caustics.params.lightSource, 'x', -1, 1)
+  folder.add(caustics.params.lightSource, 'y', 0, 10)
+  folder.add(caustics.params.lightSource, 'z', -1, 1)
+  folder.add(caustics.params, 'far', 0, 5)
 }
