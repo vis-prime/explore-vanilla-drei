@@ -228,13 +228,16 @@ let caustics
 async function setupCaustics() {
   caustics = Caustics(renderer, { frames: Infinity, worldRadius: 0.01 })
 
+  // add caustics group (and helper if needed into the your scene)
   scene.add(caustics.group, caustics.helper)
 
+  // add your models you want caustics from into the caustics scene
   caustics.scene.add(activeModel)
 
-  addCausticsGui()
+  // add to the render loop
+  // caustics.update()
 
-  console.log(scene)
+  addCausticsGui()
 }
 
 function addCausticsGui() {
