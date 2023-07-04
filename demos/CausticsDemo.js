@@ -18,7 +18,7 @@ import {
 // Model and Env
 import { MODEL_LIST, MODEL_LOADER } from '../models/MODEL_LIST'
 import { BG_ENV } from './BG_ENV'
-import { Caustics } from '../wip/Caustics'
+import { Caustics } from '@pmndrs/vanilla'
 import { update } from '@tweenjs/tween.js'
 import { EffectComposer, RenderPass, BloomEffect, EffectPass } from 'postprocessing'
 
@@ -222,7 +222,7 @@ async function setupModel() {
 }
 
 /**
- * @type {import('../wip/Caustics').CausticsType}
+ * @type {import('@pmndrs/vanilla').CausticsType}
  */
 let caustics
 async function setupCaustics() {
