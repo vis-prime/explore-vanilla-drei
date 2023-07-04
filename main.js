@@ -38,7 +38,7 @@ const All_Scenes = {
   MeshPortalMaterial: meshPortalMaterialDemo,
 }
 
-const wip = [meshPortalMaterialDemo, SpriteAnimatorDemo, CausticsDemo]
+const wip = [meshPortalMaterialDemo, SpriteAnimatorDemo]
 
 const params = {
   sceneName: url.searchParams.get('scene') || Object.keys(All_Scenes)[0],
