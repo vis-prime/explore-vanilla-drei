@@ -26,7 +26,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { TransformControls } from 'three/examples/jsm/controls/TransformControls'
 import { MODEL_LIST } from '../models/MODEL_LIST'
 import { HDRI_LIST } from '../hdri/HDRI_LIST'
-import { ProgressiveLightMap, SoftShadowMaterial } from '../wip/AccumulativeShadows'
+import { ProgressiveLightMap, SoftShadowMaterial } from '@pmndrs/vanilla'
 
 let stats,
   renderer,
