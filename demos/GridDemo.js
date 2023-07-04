@@ -167,7 +167,6 @@ function animate() {
 }
 
 function raycast() {
-  return
   // update the picking ray with the camera and pointer position
   raycaster.setFromCamera(pointer, camera)
 
@@ -195,6 +194,8 @@ function onPointerMove(event) {
 
 async function setupModel() {
   const loadModel = async () => {
+    transformControls.detach()
+
     let gltf = modelCache[params.model.url]
     if (!gltf) {
       gltf = await MODEL_LOADER(params.model.url)
@@ -203,8 +204,8 @@ async function setupModel() {
 
     gltf.scene.traverse((node) => {
       node.frustumCulled = false
+      if (node.isMesh) node.selectOnRaycast = gltf.scene
     })
-
     let parent
     if (activeModel) {
       parent = activeModel.parent
