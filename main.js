@@ -14,6 +14,7 @@ import { CausticsDemo } from './demos/CausticsDemo'
 import { AccumulativeShadowsDemo } from './demos/AccumulativeShadowsDemo'
 import { SpriteAnimatorDemo } from './demos/SpriteAnimatorDemo'
 import { meshPortalMaterialDemo } from './demos/MeshPortalMaterialDemo'
+import { GridDemo } from './demos/GridDemo'
 
 let url_string = window.location.href
 let url = new URL(url_string)
@@ -36,9 +37,10 @@ const All_Scenes = {
   AccumulativeShadows: AccumulativeShadowsDemo,
   SpriteAnimator: SpriteAnimatorDemo,
   MeshPortalMaterial: meshPortalMaterialDemo,
+  Grid: GridDemo,
 }
 
-const wip = [meshPortalMaterialDemo, SpriteAnimatorDemo]
+const wip = [meshPortalMaterialDemo, SpriteAnimatorDemo, GridDemo]
 
 const params = {
   sceneName: url.searchParams.get('scene') || Object.keys(All_Scenes)[0],
