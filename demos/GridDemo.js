@@ -244,7 +244,7 @@ function setupGrid() {
   scene.add(grid.mesh)
 
   // add in animate loop
-  grid.update()
+  // grid.update()
 
   addGridGui(grid)
 }
