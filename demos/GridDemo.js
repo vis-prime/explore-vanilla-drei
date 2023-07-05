@@ -268,11 +268,11 @@ function addGridGui(grid) {
   const folder = gui.addFolder('G R I D')
   folder.open()
   folder.addColor(grid.mesh.material, 'cellColor')
-  folder.add(grid.mesh.material, 'cellSize', 0, 1)
+  folder.add(grid.mesh.material, 'cellSize', 0.01, 2, 0.1)
   folder.add(grid.mesh.material, 'cellThickness', 0, 5)
 
   folder.addColor(grid.mesh.material, 'sectionColor')
-  folder.add(grid.mesh.material, 'sectionSize', 0, 1)
+  folder.add(grid.mesh.material, 'sectionSize', 0.01, 2, 0.1)
   folder.add(grid.mesh.material, 'sectionThickness', 0, 5)
 
   folder.add(grid.mesh.material, 'fadeDistance', 0, 50)
