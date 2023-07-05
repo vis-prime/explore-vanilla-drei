@@ -13,6 +13,8 @@ import {
   TextureLoader,
   SRGBColorSpace,
   LinearFilter,
+  MeshStandardMaterial,
+  DirectionalLightHelper,
 } from 'three'
 import { EXRLoader } from 'three/examples/jsm/loaders/EXRLoader'
 import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader'
@@ -69,13 +71,13 @@ export class BG_ENV {
 
     this.bgColor = new Color('#ffffff')
 
-    this.sunEnabled
+    this.sunEnabled = false
     this.sunPivot
     this.sunLight
     this.sunPos = new Vector3(1, 1, 1)
     this.sunColor = new Color('#ffffff')
 
-    this.shadowFloorEnabled
+    this.shadowFloorEnabled = false
     this.shadowFloor
     this.shadowOpacity = 1
 
@@ -112,8 +114,9 @@ export class BG_ENV {
       this.sunLight.shadow.mapSize.height = 1024
       this.sunLight.shadow.radius = 1.95
       this.sunLight.shadow.blurSamples = 6
-      sunLight.shadow.bias = -0.0005
-      this.sunPivot.add(sunLight)
+      this.sunLight.shadow.bias = -0.0005
+      this.sunPivot.add(this.sunLight)
+      // this.sunPivot.add(new DirectionalLightHelper(this.sunLight))
     }
 
     //   floor
@@ -121,6 +124,7 @@ export class BG_ENV {
       this.shadowFloor = new Mesh(
         new PlaneGeometry(10, 10).rotateX(-Math.PI / 2),
         new ShadowMaterial({ opacity: this.shadowOpacity })
+        // new MeshStandardMaterial({ color: 'grey' })
       )
       this.shadowFloor.name = 'shadow_floor'
       this.shadowFloor.receiveShadow = true
@@ -236,6 +240,16 @@ export class BG_ENV {
           break
         }
       }
+    }
+
+    if (data.sunPos && this.sunLight) {
+      this.sunLight.position.fromArray(data.sunPos)
+    }
+    if (data.sunColor && this.sunLight) {
+      this.sunLight.color.set(data.sunColor)
+    }
+    if (data.shadowOpacity && this.shadowFloor) {
+      this.shadowFloor.material.opacity = data.shadowOpacity
     }
   }
 

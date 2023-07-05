@@ -25,6 +25,7 @@ import { BG_ENV } from './BG_ENV'
 import { update } from '@tweenjs/tween.js'
 import { EffectComposer, RenderPass, BloomEffect, EffectPass } from 'postprocessing'
 import { Grid } from '../wip/Grid'
+import { HDRI_LIST } from '../hdri/HDRI_LIST'
 
 let stats,
   renderer,
@@ -138,7 +139,13 @@ export async function GridDemo(mainGui) {
   const bg_env = new BG_ENV(scene)
   bg_env.setBGType('Default')
   bg_env.setEnvType('HDRI')
+
+  bg_env.shadowFloorEnabled = true
+  bg_env.sunEnabled = true
   await bg_env.updateAll()
+  scene.add(bg_env.sunPivot)
+  scene.add(bg_env.shadowFloor)
+  console.log(bg_env.sunLight, bg_env.shadowFloor)
   bg_env.addGui(sceneGui)
   scene.backgroundBlurriness = 0.4
   scene.backgroundIntensity = 0.2
@@ -206,7 +213,11 @@ async function setupModel() {
 
     gltf.scene.traverse((node) => {
       node.frustumCulled = false
-      if (node.isMesh) node.selectOnRaycast = gltf.scene
+      if (node.isMesh) {
+        node.selectOnRaycast = gltf.scene
+        node.castShadow = true
+        node.receiveShadow = true
+      }
     })
     let parent
     if (activeModel) {
@@ -244,7 +255,7 @@ function setupGrid() {
   scene.add(grid.mesh)
 
   // add in animate loop
-  // grid.update()
+  // grid.update(camera)
 
   addGridGui(grid)
 }
