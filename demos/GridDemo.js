@@ -15,6 +15,8 @@ import {
   Object3D,
   GridHelper,
   FrontSide,
+  BackSide,
+  DoubleSide,
 } from 'three'
 
 // Model and Env
@@ -241,6 +243,9 @@ function setupGrid() {
 
   scene.add(grid.mesh)
 
+  // add in animate loop
+  grid.update()
+
   addGridGui(grid)
 }
 
@@ -263,4 +268,14 @@ function addGridGui(grid) {
   folder.add(grid.mesh.material, 'fadeStrength', 0, 1)
   folder.add(grid.mesh.material, 'followCamera')
   folder.add(grid.mesh.material, 'infiniteGrid')
+  folder.add(grid.mesh.material, 'side', { FrontSide, BackSide, DoubleSide })
+
+  const tFol = folder.addFolder('Transforms')
+  tFol.add(grid.mesh.position, 'x', -3, 3, 0.1).name('Position x')
+  tFol.add(grid.mesh.position, 'y', -3, 3, 0.1).name('Position y')
+  tFol.add(grid.mesh.position, 'z', -3, 3, 0.1).name('Position z')
+
+  tFol.add(grid.mesh.rotation, 'x', 0, 2 * Math.PI, 0.1).name('Rotation x')
+  tFol.add(grid.mesh.rotation, 'y', 0, 2 * Math.PI, 0.1).name('Rotation y')
+  tFol.add(grid.mesh.rotation, 'z', 0, 2 * Math.PI, 0.1).name('Rotation z')
 }
