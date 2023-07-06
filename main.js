@@ -40,7 +40,7 @@ const All_Scenes = {
   Grid: GridDemo,
 }
 
-const wip = [meshPortalMaterialDemo, SpriteAnimatorDemo, GridDemo]
+const wip = [meshPortalMaterialDemo, SpriteAnimatorDemo]
 
 const params = {
   sceneName: url.searchParams.get('scene') || Object.keys(All_Scenes)[0],

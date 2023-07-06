@@ -24,7 +24,7 @@ import { MODEL_LIST, MODEL_LOADER } from '../models/MODEL_LIST'
 import { BG_ENV } from './BG_ENV'
 import { update } from '@tweenjs/tween.js'
 import { EffectComposer, RenderPass, BloomEffect, EffectPass } from 'postprocessing'
-import { Grid } from '../wip/Grid'
+import { Grid } from '@pmndrs/vanilla'
 import { HDRI_LIST } from '../hdri/HDRI_LIST'
 
 let stats,
@@ -66,7 +66,7 @@ const modelCache = {}
 let activeModel
 
 /**
- * @type {import('../wip/Grid').GridType}
+ * @type {import('@pmndrs/vanilla').GridType}
  */
 let grid
 
@@ -251,7 +251,7 @@ function setupGrid() {
     followCamera: false,
     infiniteGrid: true,
   })
-
+  grid.mesh.position.y = -0.001
   scene.add(grid.mesh)
 
   // add in animate loop
