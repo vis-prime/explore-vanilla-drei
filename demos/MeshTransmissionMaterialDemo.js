@@ -532,7 +532,7 @@ function addTransmissionGui(gui, mat, mtmParams) {
   fol.add(mat, 'chromaticAberration', 0, 2)
   fol.add(mat, 'distortion', 0, 10)
   fol.add(mat, 'temporalDistortion', 0, 1)
-  fol.add(mat, 'anisotropy', 0, 10)
+  fol.add(mat, 'anisotropicBlur', 0, 10)
   fol.add(mat, 'reflectivity', 0, 1)
 
   fol.add(mtmParams, 'renderEachMesh').name('⚠ Render Each Mesh separately')
