@@ -254,6 +254,7 @@ async function setupMeshTransmissionMaterial() {
         state.gl.setRenderTarget(fboMain)
         state.gl.render(state.scene, state.camera)
 
+        parent.material = mtm
         parent.material.thickness = mtmParams.thickness
         parent.material.side = oldSide
         parent.material.buffer = fboMain.texture
@@ -261,7 +262,7 @@ async function setupMeshTransmissionMaterial() {
         // Set old state back
         state.scene.background = oldBg
         state.gl.setRenderTarget(null)
-        parent.material = mtm
+
         state.gl.toneMapping = oldTone
       }
     }

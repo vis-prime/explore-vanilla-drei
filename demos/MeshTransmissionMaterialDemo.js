@@ -491,6 +491,7 @@ async function setupMTM() {
         state.gl.setRenderTarget(fboMain)
         state.gl.render(state.scene, state.camera)
 
+        parent.material = ref
         parent.material.thickness = mtmParams.thickness
         parent.material.side = oldSide
         parent.material.buffer = fboMain.texture
@@ -498,7 +499,6 @@ async function setupMTM() {
         // Set old state back
         state.scene.background = oldBg
         state.gl.setRenderTarget(null)
-        parent.material = ref
         state.gl.toneMapping = oldTone
       }
     }
