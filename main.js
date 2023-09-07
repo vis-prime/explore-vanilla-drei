@@ -14,6 +14,7 @@ import { CausticsDemo } from './demos/CausticsDemo'
 import { AccumulativeShadowsDemo } from './demos/AccumulativeShadowsDemo'
 import { SpriteAnimatorDemo } from './demos/SpriteAnimatorDemo'
 import { meshPortalMaterialDemo } from './demos/MeshPortalMaterialDemo'
+import { meshTransmissionMaterialInstant } from './demos/MeshTransmissionMaterialInstantDemo'
 
 let url_string = window.location.href
 let url = new URL(url_string)
@@ -25,7 +26,7 @@ let url = new URL(url_string)
 const All_Scenes = {
   MeshTransmissionMaterial: meshTransmissionMaterialDemo,
   MeshTransmissionMaterialBasic: meshTransmissionMaterialBasic,
-
+  MeshTransmissionMaterialInstant: meshTransmissionMaterialInstant,
   PCSS: pcssDemo,
   SpotLight: spotLightDemo,
   SpotLight1: spotLightDemo1,
