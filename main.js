@@ -15,6 +15,7 @@ import { AccumulativeShadowsDemo } from './demos/AccumulativeShadowsDemo'
 import { SpriteAnimatorDemo } from './demos/SpriteAnimatorDemo'
 import { meshPortalMaterialDemo } from './demos/MeshPortalMaterialDemo'
 import { meshTransmissionMaterialInstant } from './demos/MeshTransmissionMaterialInstantDemo'
+import { OutlinesDemo } from './demos/OutlineDemo'
 
 let url_string = window.location.href
 let url = new URL(url_string)
@@ -32,14 +33,14 @@ const All_Scenes = {
   SpotLight1: spotLightDemo1,
   RealismEffects: realismEffectsDemo,
   Caustics: CausticsDemo,
-
   MeshReflectionMaterial: meshReflectorMaterialDemo,
   AccumulativeShadows: AccumulativeShadowsDemo,
   SpriteAnimator: SpriteAnimatorDemo,
   MeshPortalMaterial: meshPortalMaterialDemo,
+  Outlines: OutlinesDemo,
 }
 
-const wip = [meshPortalMaterialDemo, SpriteAnimatorDemo]
+const wip = [meshPortalMaterialDemo, SpriteAnimatorDemo, meshTransmissionMaterialInstant]
 
 const params = {
   sceneName: url.searchParams.get('scene') || Object.keys(All_Scenes)[0],
