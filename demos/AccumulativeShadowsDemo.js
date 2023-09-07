@@ -90,7 +90,7 @@ const lightParams = {
   position: new Vector3(3, 5, 3),
   radius: 1,
   amount: 8,
-  intensity: 1,
+  intensity: 2,
   ambient: 0.5,
 }
 

@@ -9,18 +9,18 @@
     "deploy": "gh-pages -d dist"
   },
   "devDependencies": {
-    "vite": "^4.3.9"
+    "vite": "^4.4.9"
   },
   "dependencies": {
-    "@pmndrs/vanilla": "^1.8.0",
-    "@tweenjs/tween.js": "^20.0.3",
-    "@types/three": "^0.152.1",
-    "gh-pages": "^5.0.0",
-    "lil-gui": "^0.18.1",
-    "postprocessing": "^6.32.1",
+    "@pmndrs/vanilla": "^1.10.1",
+    "@tweenjs/tween.js": "^21.0.0",
+    "@types/three": "^0.155.1",
+    "gh-pages": "^6.0.0",
+    "lil-gui": "^0.18.2",
+    "postprocessing": "^6.33.0",
     "realism-effects": "^1.1.2",
-    "three": "^0.153.0",
-    "three-stdlib": "^2.23.10",
+    "three": "^0.156.1",
+    "three-stdlib": "^2.25.1",
     "vite-plugin-compression": "^0.5.1"
   },
   "prettier": {

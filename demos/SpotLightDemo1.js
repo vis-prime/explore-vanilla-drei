@@ -18,6 +18,9 @@ import {
   LinearFilter,
   Clock,
   FogExp2,
+  Color,
+  SpotLightHelper,
+  MeshBasicMaterial,
 } from 'three'
 import Stats from 'three/examples/jsm/libs/stats.module'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
@@ -69,6 +72,8 @@ let useFrame = () => {}
 let sceneGui
 
 export async function spotLightDemo1(mainGui) {
+  console.log('EXAMPLE BROKEN! ')
+  return
   gui = mainGui
   sceneGui = gui.addFolder('Scene')
   stats = new Stats()
@@ -128,23 +133,23 @@ export async function spotLightDemo1(mainGui) {
   controls.maxPolarAngle = Math.PI / 1.5
   controls.target.set(0, 0, 0)
 
-  transformControls = new TransformControls(camera, renderer.domElement)
-  transformControls.addEventListener('dragging-changed', (event) => {
-    controls.enabled = !event.value
-    if (!event.value) {
-    }
-  })
+  // transformControls = new TransformControls(camera, renderer.domElement)
+  // transformControls.addEventListener('dragging-changed', (event) => {
+  //   controls.enabled = !event.value
+  //   if (!event.value) {
+  //   }
+  // })
 
-  transformControls.addEventListener('change', () => {
-    if (transformControls.object) {
-      if (transformControls.object.position.y < 0) {
-        transformControls.object.position.y = 0
-      }
-    }
-  })
-  scene.add(transformControls)
+  // transformControls.addEventListener('change', () => {
+  //   if (transformControls.object) {
+  //     if (transformControls.object.position.y < 0) {
+  //       transformControls.object.position.y = 0
+  //     }
+  //   }
+  // })
+  // scene.add(transformControls)
 
-  scene.fog = new FogExp2(0x000000, 0.1)
+  // scene.fog = new FogExp2(0x000000, 0.1)
 
   window.addEventListener('resize', onWindowResize)
   document.addEventListener('pointermove', onPointerMove)
@@ -187,7 +192,7 @@ export async function spotLightDemo1(mainGui) {
       if (node.material && node.material.envMapIntensity !== undefined) {
         node.material.envMapIntensity = envVals.int
         if (node.material.type === 'MeshPhysicalMaterial') {
-          console.log(node.material)
+          // console.log(node.material)
         }
       }
     })
@@ -415,9 +420,9 @@ async function setupScene() {
   useFrame = () => {
     tick = clock.getDelta() * params.speed
 
-    roadOnFrame(tick)
+    // roadOnFrame(tick)
     carOnFrame(tick)
-    poleOnFrame(tick)
+    // poleOnFrame(tick)
 
     if (params.useDepth) {
       //remove depth from material to avoid webgl warnings
@@ -476,7 +481,7 @@ async function addCar(AllVolumeMaterials) {
     distance: 8,
   }
   const headLightL = new SpotLight()
-  headLightL.intensity = 5
+  headLightL.intensity = 500
   headLightL.color.set('#ffbb73')
   headLightL.angle = MathUtils.degToRad(20)
   headLightL.penumbra = 0.2
@@ -500,7 +505,7 @@ async function addCar(AllVolumeMaterials) {
 
   let radiusTop = 0.08
   const volumeMaterialL = new SpotLightMaterial()
-  // volumeMaterialL.spotPosition = new Vector3()
+  volumeMaterialL.spotPosition = new Vector3()
   volumeMaterialL.opacity = 1
   volumeMaterialL.lightColor = headLightL.color
   volumeMaterialL.attenuation = params.distance
@@ -509,7 +514,7 @@ async function addCar(AllVolumeMaterials) {
   volumeMaterialL.cameraFar = camera.far
 
   const volumeMaterialR = new SpotLightMaterial()
-  // volumeMaterialR.spotPosition = new Vector3()
+  volumeMaterialR.spotPosition = new Vector3()
   volumeMaterialR.opacity = 1
   volumeMaterialR.lightColor = headLightR.color
   volumeMaterialR.attenuation = params.distance
@@ -556,7 +561,7 @@ async function addCar(AllVolumeMaterials) {
     sp.addColor(headLightL, 'color').onChange(() => {
       headLightR.color.copy(headLightL.color)
     })
-    sp.add(headLightL, 'intensity', 0, 5).onChange(() => {
+    sp.add(headLightL, 'intensity', 0, 1000).onChange(() => {
       headLightR.intensity = headLightL.intensity
     })
     sp.add(headLightL, 'angle', 0, Math.PI / 2).onChange(() => {
@@ -695,16 +700,19 @@ async function addRoad() {
 async function addPoles(AllVolumeMaterials) {
   // poles
   const vec = new Vector3()
+
   const radiusTop = 0.1
   const gltfPole = await gltfLoader.loadAsync(MODEL_LIST.pole.url)
   const modelPole = gltfPole.scene
   modelPole.name = 'pole'
 
+  const lampLightColor = new Color('#ffbb73')
+
   modelPole.traverse((child) => {
     if (child.isMesh) {
       child.selectOnRaycast = modelPole
       child.castShadow = true
-      child.receiveShadow = true
+      // child.receiveShadow = true
     }
   })
   // mainObjects.add(modelPole)
@@ -721,11 +729,21 @@ async function addPoles(AllVolumeMaterials) {
 
   const lamps = []
   const volMeshes = []
+  const spotLights = []
 
   const lampParams = {
     gap: 15,
+    intensity: 1000,
+    color: lampLightColor,
   }
   const folder = gui.addFolder('Street Lamps')
+
+  folder.addColor(lampParams, 'color')
+  folder.add(lampParams, 'intensity', 0, 2000).onChange((v) => {
+    spotLights.forEach((spot) => {
+      spot.intensity = v
+    })
+  })
 
   folder.add(lampParams, 'gap', 10, 30, 1).onChange(() => {
     for (let index = 0; index < lamps.length; index++) {
@@ -742,8 +760,9 @@ async function addPoles(AllVolumeMaterials) {
     lamps.push(pole)
     pole.position.z = index * lampParams.gap
     const spotLight = new SpotLight()
-
-    spotLight.intensity = 100
+    spotLights.push(spotLight)
+    spotLight.color = lampLightColor
+    spotLight.intensity = lampParams.intensity
     spotLight.angle = MathUtils.degToRad(30)
     spotLight.penumbra = 0.5
     spotLight.distance = 12
@@ -753,17 +772,18 @@ async function addPoles(AllVolumeMaterials) {
     spotLight.shadow.bias = -0.0001
 
     const lampVolMat = new SpotLightMaterial()
+    console.log(lampVolMat.uuid)
     AllVolumeMaterials.push(lampVolMat)
-    // lampVolMat.spotPosition = new Vector3()
+    lampVolMat.spotPosition = new Vector3()
     lampVolMat.opacity = 0.5
-    lampVolMat.lightColor = spotLight.color
-
+    lampVolMat.lightColor = lampLightColor
     lampVolMat.anglePower = 5
     lampVolMat.cameraNear = camera.near
     lampVolMat.cameraFar = camera.far
     const volMesh = new Mesh(getSpotGeo(spotLight.distance, radiusTop, 0.5), lampVolMat)
     spotLight.add(volMesh)
     updateVolumeGeometry(spotLight, volMesh, radiusTop)
+
     volMesh.lookAt(spotLight.target.getWorldPosition(vec))
 
     volMeshes.push(volMesh)
@@ -779,15 +799,15 @@ async function addPoles(AllVolumeMaterials) {
     lampGui.add(lampVolMat, 'cameraFar', 0, 10)
 
     pole.add(spotLight, spotLight.target)
-    // const helper = new SpotLightHelper(spotLight)
-    // scene.add(helper)
+    const helper = new SpotLightHelper(spotLight)
+    scene.add(helper)
     mainObjects.add(pole)
   }
 
-  for (let index = 0; index < lamps.length; index++) {
-    const pole = lamps[index]
-    volMeshes[index].material.spotPosition.copy(pole.getWorldPosition(vec))
-    volMeshes[index].lookAt(volMeshes[index].parent.target.getWorldPosition(vec))
+  for (let index = 0; index < spotLights.length; index++) {
+    const spot = spotLights[index]
+    volMeshes[index].material.spotPosition.copy(spot.getWorldPosition(vec))
+    volMeshes[index].lookAt(spot.target.getWorldPosition(vec))
   }
 
   return (tick) => {
