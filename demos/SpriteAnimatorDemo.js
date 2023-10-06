@@ -28,7 +28,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { TransformControls } from 'three/examples/jsm/controls/TransformControls'
 import { MODEL_LIST } from '../models/MODEL_LIST'
 import { HDRI_LIST } from '../hdri/HDRI_LIST'
-import { SpriteAnimator } from '../wip/SpriteAnimator'
+import { SpriteAnimator } from '@pmndrs/vanilla'
 
 let stats,
   renderer,
@@ -137,6 +137,7 @@ export async function SpriteAnimatorDemo(mainGui) {
   })
 
   await loadModels()
+  // loadSpritesOLD()
   loadSprites()
 }
 
@@ -231,7 +232,7 @@ async function loadSprites() {
     startFrame: 0,
     fps: 40,
     autoPlay: true,
-    loop: false,
+    loop: true,
     textureImageURL: './sprites/flame.png',
     textureDataURL: './sprites/flame.json',
     alphaTest: 0.01,
@@ -240,8 +241,9 @@ async function loadSprites() {
   FlameSpriteAnimator.group.position.set(0, 2, 1.2)
   FlameSpriteAnimator.group.scale.set(4, 4, 4)
   scene.add(FlameSpriteAnimator.group)
-
   spritesInstances.push(FlameSpriteAnimator.update)
+
+  createSpriteGui('flame NEW', FlameSpriteAnimator)
 
   const AlienSpriteAnimator = SpriteAnimator({
     startFrame: 0,
@@ -250,24 +252,18 @@ async function loadSprites() {
     numberOfFrames: 16,
     alphaTest: 0.01,
     textureImageURL: './sprites/alien.png',
+    asSprite: false,
   })
   await AlienSpriteAnimator.init()
   AlienSpriteAnimator.group.scale.set(1, 1, 1)
   AlienSpriteAnimator.group.position.set(-2, 0.5, 2.5)
 
   scene.add(AlienSpriteAnimator.group)
+  createSpriteGui('Alien NEW', AlienSpriteAnimator)
 
   spritesInstances.push(AlienSpriteAnimator.update)
 
-  const alienFolder = gui.addFolder('ALIEN')
-  alienFolder.add(AlienSpriteAnimator, 'pauseAnimation')
-  alienFolder.add(AlienSpriteAnimator, 'playAnimation')
-
-  const flameFolder = gui.addFolder('Flame')
-  flameFolder.add(FlameSpriteAnimator, 'pauseAnimation')
-  flameFolder.add(FlameSpriteAnimator, 'playAnimation')
-
-  const boySA = SpriteAnimator({
+  const boySA = SpriteAnimatorOld({
     // onLoopEnd={onEnd}
     frameName: 'idle',
     fps: 24,
@@ -286,18 +282,31 @@ async function loadSprites() {
 
   spritesInstances.push(boySA.update)
 
-  const boyFolder = gui.addFolder('Boy _hash')
-  boyFolder.add(boySA, 'pauseAnimation')
-  boyFolder.add(boySA, 'playAnimation')
-  const anims = {
-    idle: () => {
-      boySA.setFrameName('idle')
-    },
-    celebration: () => {
-      boySA.setFrameName('celebration')
-    },
-  }
+  createSpriteGui('boySA NEW', boySA, ['idle', 'celebration'])
+}
 
-  boyFolder.add(anims, 'idle')
-  boyFolder.add(anims, 'celebration')
+function createSpriteGui(name, spriteAnimator, animationNames = []) {
+  const fol = gui.addFolder(name)
+  fol.add(spriteAnimator, 'pauseAnimation')
+  fol.add(spriteAnimator, 'playAnimation')
+
+  const spriteType = ['mesh', 'sprite']
+  const spType = {
+    type: 'sprite',
+  }
+  fol.add(spType, 'playAnimation')
+
+  for (const name of animationNames) {
+    const anims = {
+      playAnim: () => {
+        spriteAnimator.setFrameName(name)
+      },
+    }
+    fol
+      .add(anims, 'playAnim')
+      .name('play: ' + name)
+      .onChange(() => {
+        spriteAnimator.setFrameName(name)
+      })
+  }
 }
