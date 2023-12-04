@@ -16,6 +16,7 @@ import { SpriteAnimatorDemo } from './demos/SpriteAnimatorDemo'
 import { meshPortalMaterialDemo } from './demos/MeshPortalMaterialDemo'
 import { meshTransmissionMaterialInstant } from './demos/MeshTransmissionMaterialInstantDemo'
 import { OutlinesDemo } from './demos/OutlineDemo'
+import { SplatDemo } from './demos/splatDemo'
 
 let url_string = window.location.href
 let url = new URL(url_string)
@@ -38,6 +39,7 @@ const All_Scenes = {
   SpriteAnimator: SpriteAnimatorDemo,
   MeshPortalMaterial: meshPortalMaterialDemo,
   Outlines: OutlinesDemo,
+  SplatDemo:SplatDemo
 }
 
 const wip = [meshPortalMaterialDemo, SpriteAnimatorDemo, meshTransmissionMaterialInstant]
