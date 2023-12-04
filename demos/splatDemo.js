@@ -16,9 +16,12 @@ import {
 } from 'three'
 
 // Model and Env
+import * as THREE from 'three'
+
 import { MODEL_LIST } from '../models/MODEL_LIST'
 import { BG_ENV } from './BG_ENV'
-import { SplatComp } from '../wip/splatlib/SplatComp'
+import { SplatLoader } from '../wip/splatlib/SplatLoader'
+import { SplatMaterial } from '../wip/splatlib/SplatMaterial'
 
 let stats,
   renderer,
@@ -110,9 +113,9 @@ export async function SplatDemo(mainGui) {
   bg_env.updateAll()
   bg_env.addGui(sceneGui)
 
-  await setupSplats()
-
   animate()
+
+  await setupSplats()
 }
 
 function onWindowResize() {
@@ -122,10 +125,11 @@ function onWindowResize() {
 }
 
 function render() {
+  onEachFrame()
   stats.update()
   // Update the inertia on the orbit controls
   controls.update()
-  onEachFrame()
+
   renderer.render(scene, camera)
 }
 
@@ -166,19 +170,127 @@ async function setupSplats() {
 
   // SplatComp returns object with { mesh , update}
 
-  const kitchen = SplatComp({ gl: renderer, camera, src: url })
-  scene.add(kitchen.mesh)
+  // const kitchen = SplatComp({ gl: renderer, camera, src: url })
+  // scene.add(kitchen.mesh)
 
-  const nike = SplatComp({ gl: renderer, camera, src: nike_url })
-  nike.mesh.position.y = 3
-  scene.add(nike.mesh)
+  // const nike = SplatComp({ gl: renderer, camera, src: nike_url })
+  // nike.mesh.position.y = 3
+  // scene.add(nike.mesh)
 
-  console.log({ kitchen, nike })
+  // console.log({ kitchen, nike })
+
+  // onEachFrame = () => {
+  //   kitchen.update()
+  //   nike.update()
+  //   nike.mesh.rotation.y += 0.001
+  // }
+  const toneMapped = false,
+    alphaTest = 0,
+    alphaHash = false,
+    chunkSize = 25000
+
+  // const loader = new SplatLoader()
+  // loader.gl = renderer
+  // loader.chunkSize = 25000
+  // const data = await new Promise((res) => loader.load('nike.splat', res))
+  // const m1 = new THREE.Mesh()
+  // m1.material = new SplatMaterial({
+  //   transparent: !alphaHash,
+  //   depthTest: true,
+  //   alphaTest: alphaHash ? 0 : alphaTest,
+  //   centerAndScaleTexture: shared.centerAndScaleTexture,
+  //   covAndColorTexture: shared.covAndColorTexture,
+  //   depthWrite: alphaHash ? true : alphaTest > 0,
+  //   blending: alphaHash ? THREE.NormalBlending : THREE.CustomBlending,
+  //   blendSrcAlpha: THREE.OneFactor,
+  //   alphaHash: !!alphaHash,
+  //   toneMapped: toneMapped,
+  // })
+  // data.connect(data, m1)
+
+  // const m2 = new THREE.Mesh()
+  // m2.material = new SplatMaterial( transparent: !alphaHash,
+  //   depthTest: true,
+  //   alphaTest: alphaHash ? 0 : alphaTest,
+  //   centerAndScaleTexture: shared.centerAndScaleTexture,
+  //   covAndColorTexture: shared.covAndColorTexture,
+  //   depthWrite: alphaHash ? true : alphaTest > 0,
+  //   blending: alphaHash ? THREE.NormalBlending : THREE.CustomBlending,
+  //   blendSrcAlpha: THREE.OneFactor,
+  //   alphaHash: !!alphaHash,
+  //   toneMapped: toneMapped,)
+  // data.connect(data, m2)
+
+  const loader = new SplatLoader()
+  loader.gl = renderer
+  loader.chunkSize = 25000
+
+  const data = await new Promise((res) => loader.load(nike_url, res))
+  console.log({ nikeData: data })
+  const shoe1 = new THREE.Mesh()
+  shoe1.position.y = 3
+  shoe1.material = new SplatMaterial({
+    transparent: !alphaHash,
+    depthTest: true,
+    alphaTest: alphaHash ? 0 : alphaTest,
+    centerAndScaleTexture: data.centerAndScaleTexture,
+    covAndColorTexture: data.covAndColorTexture,
+    depthWrite: alphaHash ? true : alphaTest > 0,
+    blending: alphaHash ? THREE.NormalBlending : THREE.CustomBlending,
+    blendSrcAlpha: THREE.OneFactor,
+    alphaHash: !!alphaHash,
+    toneMapped: toneMapped,
+  })
+  scene.add(shoe1)
+  data.connect(shoe1)
+
+  const shoe2 = new THREE.Mesh()
+  shoe2.position.y = 2
+
+  shoe2.material = new SplatMaterial({
+    transparent: !alphaHash,
+    depthTest: true,
+    alphaTest: alphaHash ? 0 : alphaTest,
+    centerAndScaleTexture: data.centerAndScaleTexture,
+    covAndColorTexture: data.covAndColorTexture,
+    depthWrite: alphaHash ? true : alphaTest > 0,
+    blending: alphaHash ? THREE.NormalBlending : THREE.CustomBlending,
+    blendSrcAlpha: THREE.OneFactor,
+    alphaHash: !!alphaHash,
+    toneMapped: toneMapped,
+  })
+  scene.add(shoe2)
+  data.connect(shoe2)
+
+  // const loaderKitchen = new SplatLoader()
+  // loaderKitchen.gl = renderer
+  // loaderKitchen.chunkSize = 25000
+  // const dataK = await new Promise((res) => loaderKitchen.load(url, res))
+  // console.log({ kitchenData: dataK })
+
+  // const kitchen = new THREE.Mesh()
+  // kitchen.material = new SplatMaterial({
+  //   transparent: !alphaHash,
+  //   depthTest: true,
+  //   alphaTest: alphaHash ? 0 : alphaTest,
+  //   centerAndScaleTexture: dataK.centerAndScaleTexture,
+  //   covAndColorTexture: dataK.covAndColorTexture,
+  //   depthWrite: alphaHash ? true : alphaTest > 0,
+  //   blending: alphaHash ? THREE.NormalBlending : THREE.CustomBlending,
+  //   blendSrcAlpha: THREE.OneFactor,
+  //   alphaHash: !!alphaHash,
+  //   toneMapped: toneMapped,
+  // })
+  // scene.add(kitchen)
+  // dataK.connect(kitchen)
 
   onEachFrame = () => {
-    kitchen.update()
-    nike.update()
-    nike.mesh.rotation.y += 0.001
+    shoe1.rotation.y = Date.now() * 0.001
+    shoe2.rotation.y = Date.now() * -0.001
+
+    data.update(shoe1, camera)
+    data.update(shoe2, camera)
+    // dataK.update(kitchen, camera)
   }
 
   const gltf = await gltfLoader.loadAsync(MODEL_LIST.monkey.url)
