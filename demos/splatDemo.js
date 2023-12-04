@@ -171,24 +171,22 @@ function onPointerMove(event) {
 }
 
 async function setupSplats() {
-  {
-    const url = 'https://raw.githubusercontent.com/drcmda/splats/main/public/kitchen-7k.splat'
-    const nike_url = 'https://raw.githubusercontent.com/drcmda/splats/main/public/nike.splat'
+  const url = 'https://raw.githubusercontent.com/drcmda/splats/main/public/kitchen-7k.splat'
+  const nike_url = 'https://raw.githubusercontent.com/drcmda/splats/main/public/nike.splat'
 
-    //SplatComp returns object with { mesh , update}
+  //SplatComp returns object with { mesh , update}
 
-    const kitchen = await SplatComp({ gl: renderer, camera, src: url })
-    scene.add(kitchen.mesh)
+  const kitchen = await SplatComp({ gl: renderer, camera, src: url })
+  scene.add(kitchen.mesh)
 
-    const nike = await SplatComp({ gl: renderer, camera, src: nike_url })
-    scene.add(nike.mesh)
+  const nike = await SplatComp({ gl: renderer, camera, src: nike_url })
+  scene.add(nike.mesh)
 
-    console.log({ kitchen, nike })
+  console.log({ kitchen, nike })
 
-    onEachFrame = () => {
-      kitchen.update()
-      nike.update()
-    }
+  onEachFrame = () => {
+    kitchen.update()
+    nike.update()
   }
 
   const gltf = await gltfLoader.loadAsync(MODEL_LIST.monkey.url)
