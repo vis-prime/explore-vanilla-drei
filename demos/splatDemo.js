@@ -3,7 +3,6 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { TransformControls } from 'three/examples/jsm/controls/TransformControls'
-import { MeshTransmissionMaterial, MeshDiscardMaterial, Outlines } from '@pmndrs/vanilla'
 import {
   ACESFilmicToneMapping,
   PerspectiveCamera,
@@ -14,16 +13,6 @@ import {
   Raycaster,
   Group,
   VSMShadowMap,
-  Clock,
-  WebGLRenderTarget,
-  LinearFilter,
-  HalfFloatType,
-  NoToneMapping,
-  BackSide,
-  Color,
-  BoxGeometry,
-  MeshBasicMaterial,
-  Mesh,
 } from 'three'
 
 // Model and Env
@@ -116,6 +105,7 @@ export async function SplatDemo(mainGui) {
   sceneGui.add(transformControls, 'mode', ['translate', 'rotate', 'scale'])
   const bg_env = new BG_ENV(scene)
   bg_env.setBGType('Color')
+  bg_env.bgColor.set('grey')
   bg_env.setEnvType('HDRI')
   bg_env.updateAll()
   bg_env.addGui(sceneGui)
@@ -174,12 +164,13 @@ async function setupSplats() {
   const url = 'https://raw.githubusercontent.com/drcmda/splats/main/public/kitchen-7k.splat'
   const nike_url = 'https://raw.githubusercontent.com/drcmda/splats/main/public/nike.splat'
 
-  //SplatComp returns object with { mesh , update}
+  // SplatComp returns object with { mesh , update}
 
-  const kitchen = await SplatComp({ gl: renderer, camera, src: url })
+  const kitchen = SplatComp({ gl: renderer, camera, src: url })
   scene.add(kitchen.mesh)
 
-  const nike = await SplatComp({ gl: renderer, camera, src: nike_url })
+  const nike = SplatComp({ gl: renderer, camera, src: nike_url })
+  nike.mesh.position.y = 3
   scene.add(nike.mesh)
 
   console.log({ kitchen, nike })
@@ -187,6 +178,7 @@ async function setupSplats() {
   onEachFrame = () => {
     kitchen.update()
     nike.update()
+    nike.mesh.rotation.y += 0.001
   }
 
   const gltf = await gltfLoader.loadAsync(MODEL_LIST.monkey.url)

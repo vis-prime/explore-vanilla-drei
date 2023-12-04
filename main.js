@@ -39,7 +39,7 @@ const All_Scenes = {
   SpriteAnimator: SpriteAnimatorDemo,
   MeshPortalMaterial: meshPortalMaterialDemo,
   Outlines: OutlinesDemo,
-  SplatDemo:SplatDemo
+  Splat: SplatDemo,
 }
 
 const wip = [meshPortalMaterialDemo, SpriteAnimatorDemo, meshTransmissionMaterialInstant]
