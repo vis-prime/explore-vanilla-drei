@@ -3,7 +3,7 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { TransformControls } from 'three/examples/jsm/controls/TransformControls'
-import { MeshTransmissionMaterial, MeshDiscardMaterial, Outlines } from '@pmndrs/vanilla'
+import { Outlines } from '@pmndrs/vanilla'
 import {
   ACESFilmicToneMapping,
   PerspectiveCamera,
@@ -14,16 +14,7 @@ import {
   Raycaster,
   Group,
   VSMShadowMap,
-  Clock,
-  WebGLRenderTarget,
-  LinearFilter,
-  HalfFloatType,
-  NoToneMapping,
-  BackSide,
   Color,
-  BoxGeometry,
-  MeshBasicMaterial,
-  Mesh,
 } from 'three'
 
 // Model and Env
@@ -192,7 +183,7 @@ async function setupMeshTransmissionMaterial() {
       thickness: 0.02,
     })
     m.add(outlines.group)
-    outlines.render()
+    outlines.generate()
   })
 
   mainObjects.add(model)

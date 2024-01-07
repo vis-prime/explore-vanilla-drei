@@ -27,8 +27,7 @@ let url = new URL(url_string)
  */
 const All_Scenes = {
   MeshTransmissionMaterial: meshTransmissionMaterialDemo,
-  MeshTransmissionMaterialBasic: meshTransmissionMaterialBasic,
-  MeshTransmissionMaterialInstant: meshTransmissionMaterialInstant,
+
   PCSS: pcssDemo,
   SpotLight: spotLightDemo,
   SpotLight1: spotLightDemo1,
@@ -40,6 +39,9 @@ const All_Scenes = {
   MeshPortalMaterial: meshPortalMaterialDemo,
   Outlines: OutlinesDemo,
   Splat: SplatDemo,
+
+  MeshTransmissionMaterialBasic: meshTransmissionMaterialBasic,
+  MeshTransmissionMaterialInstant: meshTransmissionMaterialInstant,
 }
 
 const wip = [meshPortalMaterialDemo, SpriteAnimatorDemo, meshTransmissionMaterialInstant]
@@ -64,7 +66,7 @@ function updatePageDesc(path) {
   document.title = `Explore | ${path}`
 }
 
-const title = wip.includes(All_Scenes[params.sceneName]) ? '⚠ WIP ' + version : 'Explore Drei Vanilla' + version
+const title = wip.includes(All_Scenes[params.sceneName]) ? '⚠ WIP ' + version : 'Explore Drei Vanilla ' + version
 const gui = new GUI({
   title: title,
   closeFolders: true,
