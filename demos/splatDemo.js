@@ -3,25 +3,13 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { TransformControls } from 'three/examples/jsm/controls/TransformControls'
-import {
-  ACESFilmicToneMapping,
-  PerspectiveCamera,
-  Scene,
-  SRGBColorSpace,
-  WebGLRenderer,
-  Vector2,
-  Raycaster,
-  Group,
-  VSMShadowMap,
-} from 'three'
+import { PerspectiveCamera, Scene, WebGLRenderer, Vector2, Raycaster, Group } from 'three'
 
 // Model and Env
-import * as THREE from 'three'
 
-import { MODEL_LIST } from '../models/MODEL_LIST'
 import { BG_ENV } from './BG_ENV'
-import { SplatLoader } from '../wip/splatlib/SplatLoader'
-import { SplatMaterial } from '../wip/splatlib/SplatMaterial'
+import { SplatLoader, Splat } from '@pmndrs/vanilla'
+import { PolarGridHelper } from 'three'
 
 let stats,
   renderer,
@@ -49,13 +37,9 @@ export async function SplatDemo(mainGui) {
   stats = new Stats()
   app.appendChild(stats.dom)
   // renderer
-  renderer = new WebGLRenderer({ antialias: true })
+  renderer = new WebGLRenderer({ antialias: true, alpha: true })
   renderer.setPixelRatio(Math.min(1.5, window.devicePixelRatio))
   renderer.setSize(window.innerWidth, window.innerHeight)
-  renderer.shadowMap.enabled = true
-  renderer.shadowMap.type = VSMShadowMap
-  renderer.outputColorSpace = SRGBColorSpace
-  renderer.toneMapping = ACESFilmicToneMapping
   app.appendChild(renderer.domElement)
 
   // camera
@@ -113,9 +97,10 @@ export async function SplatDemo(mainGui) {
   bg_env.updateAll()
   bg_env.addGui(sceneGui)
 
-  animate()
+  scene.add(new PolarGridHelper())
 
-  await setupSplats()
+  setupSplats()
+  animate()
 }
 
 function onWindowResize() {
@@ -165,146 +150,29 @@ function onPointerMove(event) {
 }
 
 async function setupSplats() {
-  const url = 'https://raw.githubusercontent.com/drcmda/splats/main/public/kitchen-7k.splat'
-  const nike_url = 'https://raw.githubusercontent.com/drcmda/splats/main/public/nike.splat'
+  const cakewalk = 'https://huggingface.co/cakewalk/splat-data/resolve/main'
+  // const dylanebert = 'https://huggingface.co/datasets/dylanebert/3dgs/resolve/main/kitchen'
 
-  // SplatComp returns object with { mesh , update}
+  const loader = new SplatLoader(renderer, 25000)
+  const [dataS, dataK] = await Promise.all([
+    new Promise((res) => loader.load(`${cakewalk}/nike.splat`, res)),
+    // new Promise((res) => loader.load(`${dylanebert}/kitchen-7k.splat`, res)),
+  ])
 
-  // const kitchen = SplatComp({ gl: renderer, camera, src: url })
-  // scene.add(kitchen.mesh)
-
-  // const nike = SplatComp({ gl: renderer, camera, src: nike_url })
-  // nike.mesh.position.y = 3
-  // scene.add(nike.mesh)
-
-  // console.log({ kitchen, nike })
-
-  // onEachFrame = () => {
-  //   kitchen.update()
-  //   nike.update()
-  //   nike.mesh.rotation.y += 0.001
-  // }
-  const toneMapped = false,
-    alphaTest = 0,
-    alphaHash = false,
-    chunkSize = 25000
-
-  // const loader = new SplatLoader()
-  // loader.gl = renderer
-  // loader.chunkSize = 25000
-  // const data = await new Promise((res) => loader.load('nike.splat', res))
-  // const m1 = new THREE.Mesh()
-  // m1.material = new SplatMaterial({
-  //   transparent: !alphaHash,
-  //   depthTest: true,
-  //   alphaTest: alphaHash ? 0 : alphaTest,
-  //   centerAndScaleTexture: shared.centerAndScaleTexture,
-  //   covAndColorTexture: shared.covAndColorTexture,
-  //   depthWrite: alphaHash ? true : alphaTest > 0,
-  //   blending: alphaHash ? THREE.NormalBlending : THREE.CustomBlending,
-  //   blendSrcAlpha: THREE.OneFactor,
-  //   alphaHash: !!alphaHash,
-  //   toneMapped: toneMapped,
-  // })
-  // data.connect(data, m1)
-
-  // const m2 = new THREE.Mesh()
-  // m2.material = new SplatMaterial( transparent: !alphaHash,
-  //   depthTest: true,
-  //   alphaTest: alphaHash ? 0 : alphaTest,
-  //   centerAndScaleTexture: shared.centerAndScaleTexture,
-  //   covAndColorTexture: shared.covAndColorTexture,
-  //   depthWrite: alphaHash ? true : alphaTest > 0,
-  //   blending: alphaHash ? THREE.NormalBlending : THREE.CustomBlending,
-  //   blendSrcAlpha: THREE.OneFactor,
-  //   alphaHash: !!alphaHash,
-  //   toneMapped: toneMapped,)
-  // data.connect(data, m2)
-
-  const loader = new SplatLoader()
-  loader.gl = renderer
-  loader.chunkSize = 25000
-
-  const data = await new Promise((res) => loader.load(nike_url, res))
-  console.log({ nikeData: data })
-  const shoe1 = new THREE.Mesh()
-  shoe1.position.y = 3
-  shoe1.material = new SplatMaterial({
-    transparent: !alphaHash,
-    depthTest: true,
-    alphaTest: alphaHash ? 0 : alphaTest,
-    centerAndScaleTexture: data.centerAndScaleTexture,
-    covAndColorTexture: data.covAndColorTexture,
-    depthWrite: alphaHash ? true : alphaTest > 0,
-    blending: alphaHash ? THREE.NormalBlending : THREE.CustomBlending,
-    blendSrcAlpha: THREE.OneFactor,
-    alphaHash: !!alphaHash,
-    toneMapped: toneMapped,
-  })
+  const shoe1 = new Splat(dataS, camera, { alphaTest: 0.1 })
+  shoe1.scale.setScalar(0.5)
+  shoe1.position.set(0, 1.6, 2)
   scene.add(shoe1)
-  data.connect(shoe1)
 
-  const shoe2 = new THREE.Mesh()
-  shoe2.position.y = 2
-
-  shoe2.material = new SplatMaterial({
-    transparent: !alphaHash,
-    depthTest: true,
-    alphaTest: alphaHash ? 0 : alphaTest,
-    centerAndScaleTexture: data.centerAndScaleTexture,
-    covAndColorTexture: data.covAndColorTexture,
-    depthWrite: alphaHash ? true : alphaTest > 0,
-    blending: alphaHash ? THREE.NormalBlending : THREE.CustomBlending,
-    blendSrcAlpha: THREE.OneFactor,
-    alphaHash: !!alphaHash,
-    toneMapped: toneMapped,
-  })
+  const shoe2 = new Splat(dataS, camera, { alphaTest: 0.1 })
+  shoe2.scale.setScalar(0.5)
+  shoe2.position.set(0, 1.6, -1.5)
+  shoe2.rotation.set(Math.PI, 0, Math.PI)
   scene.add(shoe2)
-  data.connect(shoe2)
 
-  // const loaderKitchen = new SplatLoader()
-  // loaderKitchen.gl = renderer
-  // loaderKitchen.chunkSize = 25000
-  // const dataK = await new Promise((res) => loaderKitchen.load(url, res))
-  // console.log({ kitchenData: dataK })
+  transformControls.attach(shoe2)
 
-  // const kitchen = new THREE.Mesh()
-  // kitchen.material = new SplatMaterial({
-  //   transparent: !alphaHash,
-  //   depthTest: true,
-  //   alphaTest: alphaHash ? 0 : alphaTest,
-  //   centerAndScaleTexture: dataK.centerAndScaleTexture,
-  //   covAndColorTexture: dataK.covAndColorTexture,
-  //   depthWrite: alphaHash ? true : alphaTest > 0,
-  //   blending: alphaHash ? THREE.NormalBlending : THREE.CustomBlending,
-  //   blendSrcAlpha: THREE.OneFactor,
-  //   alphaHash: !!alphaHash,
-  //   toneMapped: toneMapped,
-  // })
-  // scene.add(kitchen)
-  // dataK.connect(kitchen)
-
-  onEachFrame = () => {
-    shoe1.rotation.y = Date.now() * 0.001
-    shoe2.rotation.y = Date.now() * -0.001
-
-    data.update(shoe1, camera)
-    data.update(shoe2, camera)
-    // dataK.update(kitchen, camera)
-  }
-
-  const gltf = await gltfLoader.loadAsync(MODEL_LIST.monkey.url)
-  model = gltf.scene
-
-  const meshes = []
-  model.traverse((child) => {
-    if (child.isMesh) {
-      child.castShadow = true
-      child.receiveShadow = true
-      child.selectOnRaycast = model
-      meshes.push(child)
-    }
-  })
-
-  mainObjects.add(model)
+  // const kittchen = new Splat(dataK, camera)
+  // kittchen.position.set(0, 0.25, 0)
+  // scene.add(kittchen)
 }

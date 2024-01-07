@@ -12,7 +12,7 @@
     "vite": "^4.4.9"
   },
   "dependencies": {
-    "@pmndrs/vanilla": "^1.13.4",
+    "@pmndrs/vanilla": "^1.14.1",
     "@tweenjs/tween.js": "^21.0.0",
     "@types/three": "^0.155.1",
     "@vitejs/plugin-basic-ssl": "^1.0.1",
@@ -20,7 +20,7 @@
     "lil-gui": "^0.18.2",
     "postprocessing": "^6.33.0",
     "realism-effects": "^1.1.2",
-    "three": "^0.156.1",
+    "three": "^0.159.0",
     "three-stdlib": "^2.25.1",
     "vite-plugin-compression": "^0.5.1"
   },
