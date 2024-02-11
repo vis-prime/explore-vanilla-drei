@@ -14,7 +14,7 @@ import { CausticsDemo } from './demos/CausticsDemo'
 import { AccumulativeShadowsDemo } from './demos/AccumulativeShadowsDemo'
 import { SpriteAnimatorDemo } from './demos/SpriteAnimatorDemo'
 import { meshPortalMaterialDemo } from './demos/MeshPortalMaterialDemo'
-import { meshTransmissionMaterialInstant } from './demos/MeshTransmissionMaterialInstantDemo'
+// import { meshTransmissionMaterialInstant } from './demos/MeshTransmissionMaterialInstantDemo'
 import { OutlinesDemo } from './demos/OutlineDemo'
 import { SplatDemo } from './demos/splatDemo'
 
@@ -41,10 +41,14 @@ const All_Scenes = {
   Splat: SplatDemo,
 
   MeshTransmissionMaterialBasic: meshTransmissionMaterialBasic,
-  MeshTransmissionMaterialInstant: meshTransmissionMaterialInstant,
+  // MeshTransmissionMaterialInstant: meshTransmissionMaterialInstant,
 }
 
-const wip = [meshPortalMaterialDemo, SpriteAnimatorDemo, meshTransmissionMaterialInstant]
+const wip = [
+  meshPortalMaterialDemo,
+  SpriteAnimatorDemo,
+  //  meshTransmissionMaterialInstant
+]
 
 const params = {
   sceneName: url.searchParams.get('scene') || Object.keys(All_Scenes)[0],

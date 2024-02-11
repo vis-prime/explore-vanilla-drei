@@ -105,7 +105,7 @@ export async function AccumulativeShadowsDemo(mainGui) {
   stats = new Stats()
   app.appendChild(stats.dom)
   // renderer
-  renderer = new WebGLRenderer({ antialias: true })
+  renderer = new WebGLRenderer({ antialias: true, powerPreference: 'high-performance' })
   renderer.setPixelRatio(Math.min(1.5, window.devicePixelRatio))
   renderer.setSize(window.innerWidth, window.innerHeight)
   renderer.shadowMap.enabled = true

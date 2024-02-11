@@ -9,15 +9,15 @@
     "deploy": "gh-pages -d dist"
   },
   "devDependencies": {
-    "vite": "^4.4.9"
+    "vite": "^5.1.1"
   },
   "dependencies": {
-    "@pmndrs/vanilla": "^1.14.1",
-    "@tweenjs/tween.js": "^21.0.0",
-    "@types/three": "^0.155.1",
+    "@pmndrs/vanilla": "^1.14.3",
+    "@tweenjs/tween.js": "^23.1.1",
+    "@types/three": "^0.159.0",
     "@vitejs/plugin-basic-ssl": "^1.0.1",
-    "gh-pages": "^6.0.0",
-    "lil-gui": "^0.18.2",
+    "gh-pages": "^6.1.1",
+    "lil-gui": "^0.19.1",
     "postprocessing": "^6.33.0",
     "realism-effects": "^1.1.2",
     "three": "^0.159.0",

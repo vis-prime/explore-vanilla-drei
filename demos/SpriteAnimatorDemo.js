@@ -1,23 +1,16 @@
 import {
-  ACESFilmicToneMapping,
   EquirectangularReflectionMapping,
   Mesh,
   MeshStandardMaterial,
   PerspectiveCamera,
   Scene,
   SphereGeometry,
-  SRGBColorSpace,
   WebGLRenderer,
   Vector2,
   Raycaster,
   Group,
   BoxGeometry,
   Color,
-  PlaneGeometry,
-  DirectionalLight,
-  MathUtils,
-  Vector3,
-  Clock,
   GridHelper,
 } from 'three'
 import Stats from 'three/examples/jsm/libs/stats.module'
@@ -263,7 +256,7 @@ async function loadSprites() {
 
   spritesInstances.push(AlienSpriteAnimator.update)
 
-  const boySA = SpriteAnimatorOld({
+  const boySA = SpriteAnimator({
     // onLoopEnd={onEnd}
     frameName: 'idle',
     fps: 24,
@@ -289,12 +282,6 @@ function createSpriteGui(name, spriteAnimator, animationNames = []) {
   const fol = gui.addFolder(name)
   fol.add(spriteAnimator, 'pauseAnimation')
   fol.add(spriteAnimator, 'playAnimation')
-
-  const spriteType = ['mesh', 'sprite']
-  const spType = {
-    type: 'sprite',
-  }
-  fol.add(spType, 'playAnimation')
 
   for (const name of animationNames) {
     const anims = {
