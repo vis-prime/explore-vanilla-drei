@@ -9,7 +9,7 @@ import { extend, useFrame, useThree } from '@react-three/fiber'
 import { useFBO } from './useFBO'
 import { RenderTexture } from './RenderTexture'
 import { shaderMaterial } from './shaderMaterial'
-import { FullScreenQuad } from 'three-stdlib'
+import { FullScreenQuad } from 'three/examples/jsm/loaders/'
 
 export const PortalMaterialImpl = shaderMaterial(
   { map: null, blend: 0, resolution: new THREE.Vector2() },

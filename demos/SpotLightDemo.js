@@ -32,7 +32,7 @@ import {
 import Stats from 'three/examples/jsm/libs/stats.module'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
 import { EXRLoader } from 'three/examples/jsm/loaders/EXRLoader'
-import { GroundProjectedSkybox } from 'three/examples/jsm/objects/GroundProjectedSkybox'
+import { GroundProjectedSkybox } from '../hdri/GroundProjectedSkybox'
 
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'

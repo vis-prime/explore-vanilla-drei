@@ -33,7 +33,7 @@ import { update } from '@tweenjs/tween.js'
 import { MODEL_LIST, MODEL_LOADER } from '../models/MODEL_LIST'
 import { shaderMaterial } from '@pmndrs/vanilla'
 import { HDRI_LIST } from '../hdri/HDRI_LIST'
-import { EXRLoader } from 'three-stdlib'
+import { EXRLoader } from 'three/examples/jsm/loaders/EXRLoader'
 
 let stats,
   /**

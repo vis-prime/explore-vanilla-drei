@@ -16,7 +16,7 @@ import {
 } from 'three'
 import { EXRLoader } from 'three/examples/jsm/loaders/EXRLoader'
 import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader'
-import { GroundProjectedSkybox } from 'three/examples/jsm/objects/GroundProjectedSkybox'
+import { GroundProjectedSkybox } from '../hdri/GroundProjectedSkybox'
 import { HDRI_LIST } from '../hdri/HDRI_LIST'
 
 const textureLoader = new TextureLoader()

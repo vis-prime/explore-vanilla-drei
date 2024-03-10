@@ -17,6 +17,7 @@ import { meshPortalMaterialDemo } from './demos/MeshPortalMaterialDemo'
 // import { meshTransmissionMaterialInstant } from './demos/MeshTransmissionMaterialInstantDemo'
 import { OutlinesDemo } from './demos/OutlineDemo'
 import { SplatDemo } from './demos/splatDemo'
+import { CloudDemo } from './demos/CloudDemo'
 
 let url_string = window.location.href
 let url = new URL(url_string)
@@ -42,11 +43,14 @@ const All_Scenes = {
 
   MeshTransmissionMaterialBasic: meshTransmissionMaterialBasic,
   // MeshTransmissionMaterialInstant: meshTransmissionMaterialInstant,
+  Cloud: CloudDemo,
 }
 
 const wip = [
   meshPortalMaterialDemo,
   SpriteAnimatorDemo,
+  CloudDemo,
+
   //  meshTransmissionMaterialInstant
 ]
 
