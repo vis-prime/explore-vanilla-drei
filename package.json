@@ -12,7 +12,7 @@
     "vite": "^5.2.2"
   },
   "dependencies": {
-    "@pmndrs/vanilla": "^1.15.0",
+    "@pmndrs/vanilla": "^1.15.1",
     "@tweenjs/tween.js": "^23.1.1",
     "@types/three": "^0.162.0",
     "@vitejs/plugin-basic-ssl": "^1.1.0",

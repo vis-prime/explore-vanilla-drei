@@ -166,12 +166,6 @@ function onPointerMove(event) {
 }
 
 async function setupCloud() {
-  //lights
-  //<ambientLight intensity={Math.PI / 1.5} />
-  //<spotLight position={[0, 40, 0]} decay={0} distance={45} penumbra={1} intensity={100} />
-  //<spotLight position={[-20, 0, 10]} color="red" angle={0.15} decay={0} penumbra={-1} intensity={30} />
-  //<spotLight position={[20, -10, 10]} color="red" angle={0.2} decay={0} penumbra={-1} intensity={20} />
-
   const ambientLight = new AmbientLight()
   ambientLight.intensity = Math.PI / 1.5
   scene.add(ambientLight)
@@ -238,8 +232,9 @@ async function setupCloud() {
       cl.position.fromArray(posArray)
     } else {
       cl.position.random().multiplyScalar(20)
-      cl.bounds.random().multiplyScalar(MathUtils.randInt(1, 5))
+      cl.bounds.set(MathUtils.randInt(1, 8), MathUtils.randInt(1, 4), MathUtils.randInt(1, 4))
       cl.color.setHSL(Math.random(), Math.random(), Math.random())
+      cl.updateCloud()
     }
 
     clouds.ref.add(cl.ref)
@@ -249,10 +244,12 @@ async function setupCloud() {
 
     const t = new Tween(controls.target).to(cl.position, 500).easing(Easing.Quadratic.InOut).start()
   }
+  gui
+    .add({ visible: false }, 'visible')
+    .name('Helper visible')
+    .onChange((v) => helpers.forEach((h) => (h.visible = v)))
 
-  gui.add({ addCloud }, 'addCloud')
-
-  gui.add({ visible: false }, 'visible').onChange((v) => helpers.forEach((h) => (h.visible = v)))
+  gui.add({ addCloud }, 'addCloud').name('Add new Cloud')
 
   addCloud([0, 0, 0])
 
@@ -262,24 +259,35 @@ async function setupCloud() {
   }
 }
 
+/**
+ * Gui
+ * @param {Cloud} cloud
+ */
 function addCloudGui(cloud) {
-  const cFol = gui.addFolder(cloud.name)
-  cFol.onChange(() => cloud.updateClouds())
+  const fol = gui.addFolder('Edit: ' + cloud.name)
 
-  cFol.add(cloud, 'seed', 0, 100, 1)
-  cFol.add(cloud, 'segments', 1, 80, 1)
-  cFol.add(cloud, 'volume', 0, 100, 0.1)
-  cFol.add(cloud, 'opacity', 0, 1, 0.01)
-  cFol.add(cloud, 'fade', 0, 400, 1)
-  cFol.add(cloud, 'growth', 0, 20, 1)
-  cFol.add(cloud, 'speed', 0, 1, 0.01)
-  cFol.add(cloud.bounds, 'x', 0, 100, 1)
-  cFol.add(cloud.bounds, 'y', 0, 100, 1)
-  cFol.add(cloud.bounds, 'z', 0, 100, 1)
-  cFol.addColor(cloud, 'color')
-  cFol.add(cloud, 'updateClouds')
+  // during runtime call "cloud.updateCloud()" after changing any cloud property
+  fol.onChange(() => cloud.updateCloud())
 
-  cFol.add(cloud.position, 'x', -5, 5, 0.1)
-  cFol.add(cloud.position, 'y', -5, 5, 0.1)
-  cFol.add(cloud.position, 'z', -5, 5, 0.1)
+  fol.addColor(cloud, 'color')
+  fol.add(cloud, 'seed', 0, 100, 1)
+  fol.add(cloud, 'segments', 1, 80, 1)
+  fol.add(cloud, 'volume', 0, 100, 0.1)
+  fol.add(cloud, 'opacity', 0, 1, 0.01)
+  fol.add(cloud, 'fade', 0, 400, 1)
+  fol.add(cloud, 'growth', 0, 20, 1)
+  fol.add(cloud, 'speed', 0, 1, 0.01)
+  fol.add(cloud, 'removeFromParent').onChange(() => {
+    fol.destroy()
+  })
+
+  const bFol = fol.addFolder('bounds').close()
+  bFol.add(cloud.bounds, 'x', 0, 25, 0.5)
+  bFol.add(cloud.bounds, 'y', 0, 25, 0.5)
+  bFol.add(cloud.bounds, 'z', 0, 25, 0.5)
+
+  const pFol = fol.addFolder('position').close()
+  pFol.add(cloud.position, 'x', -10, 10, 0.1)
+  pFol.add(cloud.position, 'y', -10, 10, 0.1)
+  pFol.add(cloud.position, 'z', -10, 10, 0.1)
 }
