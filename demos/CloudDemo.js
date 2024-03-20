@@ -18,11 +18,12 @@ import {
   AmbientLight,
   SpotLight,
   SpotLightHelper,
+  MathUtils,
 } from 'three'
 import { Easing, Tween, update } from '@tweenjs/tween.js'
 // Model and Env
 import { BG_ENV } from './BG_ENV'
-import { Clouds, CLOUD_URL, SingleCloud } from '../wip/VanillaCloud'
+import { Clouds, CLOUD_URL, Cloud } from '@pmndrs/vanilla'
 
 let stats,
   renderer,
@@ -62,7 +63,7 @@ export async function CloudDemo(mainGui) {
 
   // camera
   camera = new PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 200)
-  camera.position.set(2, 2, 2)
+  camera.position.set(5, 5, 5)
   camera.name = 'Camera'
   // scene
   scene = new Scene()
@@ -174,7 +175,7 @@ async function setupCloud() {
   const ambientLight = new AmbientLight()
   ambientLight.intensity = Math.PI / 1.5
   scene.add(ambientLight)
-  gui.add(ambientLight, 'intensity', 0, 100)
+  gui.add(ambientLight, 'intensity', 0, 100).name('AmbientLight int')
 
   const helpers = []
 
@@ -188,7 +189,7 @@ async function setupCloud() {
     spotLight.intensity = 100
     scene.add(spotLight)
     const helper = new SpotLightHelper(spotLight)
-    gui.add(spotLight, 'intensity', 0, 100)
+    gui.add(spotLight, 'intensity', 0, 100).name('SpotLight 1 int')
     helper.visible = false
     helpers.push(helper)
     scene.add(helper)
@@ -201,7 +202,7 @@ async function setupCloud() {
     spotLight.decay = 0
     spotLight.penumbra = -1
     spotLight.intensity = 30
-    gui.add(spotLight, 'intensity', 0, 100)
+    gui.add(spotLight, 'intensity', 0, 100).name('SpotLight 2 int')
 
     scene.add(spotLight)
     const helper = new SpotLightHelper(spotLight)
@@ -217,7 +218,7 @@ async function setupCloud() {
     spotLight.decay = 0
     spotLight.penumbra = -1
     spotLight.intensity = 20
-    gui.add(spotLight, 'intensity', 0, 100)
+    gui.add(spotLight, 'intensity', 0, 100).name('SpotLight 3 int')
 
     scene.add(spotLight)
     const helper = new SpotLightHelper(spotLight)
@@ -228,17 +229,17 @@ async function setupCloud() {
 
   const texture = await textureLoader.loadAsync(CLOUD_URL)
 
-  const clouds = new Clouds({ texture, limit: 500 })
-  gui.add(clouds, 'updateCloudsDrawRange')
-  console.warn({ CLOUDS: clouds })
+  const clouds = new Clouds({ texture, limit: 1000, frustumCulled: false })
   scene.add(clouds)
 
   function addCloud(posArray) {
-    const cl = new SingleCloud()
+    const cl = new Cloud()
     if (posArray) {
       cl.position.fromArray(posArray)
     } else {
       cl.position.random().multiplyScalar(20)
+      cl.bounds.random().multiplyScalar(MathUtils.randInt(1, 5))
+      cl.color.setHSL(Math.random(), Math.random(), Math.random())
     }
 
     clouds.ref.add(cl.ref)
@@ -255,12 +256,9 @@ async function setupCloud() {
 
   addCloud([0, 0, 0])
 
-  const state = {
-    clock: new Clock(),
-    camera,
-  }
+  const clock = new Clock()
   useFrame = () => {
-    clouds.onFrame(state, state.clock.getDelta())
+    clouds.update(camera, clock.getElapsedTime(), clock.getDelta())
   }
 }
 

@@ -9,13 +9,13 @@
     "deploy": "vite build && gh-pages -d dist"
   },
   "devDependencies": {
-    "vite": "^5.1.5"
+    "vite": "^5.2.2"
   },
   "dependencies": {
-    "@pmndrs/vanilla": "^1.14.3",
+    "@pmndrs/vanilla": "^1.15.0",
     "@tweenjs/tween.js": "^23.1.1",
     "@types/three": "^0.162.0",
-    "@vitejs/plugin-basic-ssl": "^1.0.1",
+    "@vitejs/plugin-basic-ssl": "^1.1.0",
     "gh-pages": "^6.1.1",
     "lil-gui": "^0.19.2",
     "postprocessing": "^6.35.1",
