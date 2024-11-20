@@ -116,7 +116,7 @@ export async function meshReflectorMaterialDemo(mainGui) {
       }
     }
   })
-  scene.add(transformControls)
+  scene.add(transformControls.getHelper())
 
   window.addEventListener('resize', onWindowResize)
   document.addEventListener('pointermove', onPointerMove)

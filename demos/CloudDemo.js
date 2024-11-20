@@ -92,7 +92,7 @@ export async function CloudDemo(mainGui) {
       }
     }
   })
-  scene.add(transformControls)
+  scene.add(transformControls.getHelper())
 
   window.addEventListener('resize', onWindowResize)
   document.addEventListener('pointermove', onPointerMove)

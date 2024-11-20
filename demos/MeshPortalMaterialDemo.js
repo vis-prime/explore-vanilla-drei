@@ -22,6 +22,7 @@ import {
   Vector3,
   CircleGeometry,
   EquirectangularReflectionMapping,
+  REVISION,
 } from 'three'
 import Stats from 'three/examples/jsm/libs/stats.module'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
@@ -172,7 +173,7 @@ export async function meshPortalMaterialDemo(mainGui) {
       }
     }
   })
-  scene.add(transformControls)
+  scene.add(transformControls.getHelper())
 
   window.addEventListener('resize', onWindowResize)
   document.addEventListener('pointermove', onPointerMove)
@@ -280,7 +281,7 @@ function populateScene() {
       blend: 0,
       // transparent: true,
       map: scene1RenderTarget.texture,
-      toneMapped: false,
+      toneMapped: true,
       resolution: size,
       // side: DoubleSide,
     })
@@ -427,6 +428,6 @@ const PortalMaterialImpl = shaderMaterial(
        float alpha = 1.0 - smoothstep(0.0, 1.0, clamp(d/k + 1.0, 0.0, 1.0));
        gl_FragColor = vec4(t.rgb, blur == 0.0 ? t.a : t.a * alpha);
        #include <tonemapping_fragment>
-       #include <encodings_fragment>
+       #include <${parseInt(REVISION.replace(/\D+/g, '')) >= 154 ? 'colorspace_fragment' : 'encodings_fragment'}>
      }`
 )
