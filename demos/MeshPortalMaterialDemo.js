@@ -13,7 +13,6 @@ import {
   WebGLRenderTarget,
   MathUtils,
   TorusKnotGeometry,
-  AxesHelper,
   PlaneGeometry,
   DirectionalLight,
   Plane,
@@ -21,7 +20,6 @@ import {
   CircleGeometry,
   EquirectangularReflectionMapping,
   LineDashedMaterial,
-  LineSegments,
   BufferGeometry,
   Float32BufferAttribute,
   Line,
@@ -220,7 +218,7 @@ function raycast() {
 
   // calculate objects intersecting the picking ray
   raycaster.intersectObject(car, true, intersects)
-  console.log(intersects)
+  // console.log(intersects)
 
   if (!intersects.length) {
     transformControls.detach()
@@ -228,7 +226,7 @@ function raycast() {
   }
 
   if (intersects[0].object.selectOnRaycast) {
-    console.log('raycast select', intersects[0])
+    // console.log('raycast select', intersects[0])
     transformControls.attach(intersects[0].object.selectOnRaycast)
   }
 }
@@ -282,7 +280,6 @@ async function populatePortal() {
   model.scale.setScalar(0.3)
   model.position.y = -0.5
   model.position.z = -1
-  console.log(model.getWorldPosition(new Vector3()))
   model.name = 'car'
   model.traverse((child) => {
     child.positionBackup = child.position.clone()
@@ -333,6 +330,15 @@ async function populatePortal() {
       if (w) wp.rotation.x = rot
     }
   }
+  const carReverse = new Tween(car.position)
+    .onStart(() => {})
+    .to({ z: 0 })
+    .duration(3000)
+    .onUpdate((o, e) => {
+      carPosSet()
+    })
+    .easing(Easing.Quadratic.InOut)
+
   const camRestore = new Tween(controls.target)
     .to({ x: 0, y: 0, z: 0 })
     .delay(500)
@@ -341,24 +347,26 @@ async function populatePortal() {
     .easing(Easing.Quadratic.InOut)
     .onComplete(() => {
       controls.enabled = true
+
+      setTimeout(() => {
+        if (!transformControls.object) {
+          carReverse.startFromCurrentValues()
+        }
+      }, 2000)
     })
 
   const carIntro = new Tween(car.position)
-    .onStart(() => {
-      car.attach(camera)
-    })
+    .onStart(() => {})
     .to({ z: 1 })
     .delay(100)
     .duration(3000)
     .onUpdate((o, e) => {
+      controls.target.copy(car.position)
       carPosSet()
     })
     .easing(Easing.Quadratic.InOut)
     .chain(camRestore)
-    .onComplete(() => {
-      scene.attach(camera)
-      camera.removeFromParent()
-    })
+    .onComplete(() => {})
 
   const camStartPos = new Tween(camera.position)
     .to({ x: 1.5, y: 0.2, z: 0.25 })
@@ -380,8 +388,8 @@ async function populatePortal() {
   const material = new MeshStandardMaterial({
     metalness: 0,
     roughness: 0.2,
-    color: 0xff0000,
   })
+  material.color.setHSL(Math.random(), 0.4, 0.5)
   const torusMesh = new Mesh(geometry, material)
   portalScene.add(torusMesh)
   torusMesh.receiveShadow = true
@@ -389,8 +397,9 @@ async function populatePortal() {
   torusMesh.position.z = -1
   torusMesh.position.y = 0.2
   scene.add(torusMesh.clone())
-
-  const dirLight = new DirectionalLight(0xffffff, 1)
+  torusMesh.material = material.clone()
+  torusMesh.material.color.setHSL(Math.random(), 0.4, 0.5)
+  const dirLight = new DirectionalLight(0xabffff, 3)
   dirLight.position.set(-2, 3, 2)
   dirLight.castShadow = true
 
@@ -428,8 +437,8 @@ async function populatePortal() {
     .name('Portal Res')
     .onChange(() => onWindowResize())
 
-  fol.add(portalMesh.scale, 'x', 0.1, 2).name('Portal Scale X')
-  fol.add(portalMesh.scale, 'y', 0.1, 2).name('Portal Scale Y')
+  fol.add(portalMesh.scale, 'x', 0.1, 2, 0.1).name('Portal Scale X')
+  fol.add(portalMesh.scale, 'y', 0.1, 2, 0.1).name('Portal Scale Y')
 
   fol.add(params, 'renderOnlyPortal')
 }
