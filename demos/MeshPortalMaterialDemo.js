@@ -1,10 +1,8 @@
 import {
-  ACESFilmicToneMapping,
   Mesh,
   MeshStandardMaterial,
   PerspectiveCamera,
   Scene,
-  SRGBColorSpace,
   WebGLRenderer,
   Vector2,
   Raycaster,
@@ -22,7 +20,6 @@ import {
   Vector3,
   CircleGeometry,
   EquirectangularReflectionMapping,
-  REVISION,
 } from 'three'
 import Stats from 'three/examples/jsm/libs/stats.module'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
@@ -32,9 +29,9 @@ import { TransformControls } from 'three/examples/jsm/controls/TransformControls
 
 import { update } from '@tweenjs/tween.js'
 import { MODEL_LIST, MODEL_LOADER } from '../models/MODEL_LIST'
-import { shaderMaterial } from '@pmndrs/vanilla'
 import { HDRI_LIST } from '../hdri/HDRI_LIST'
 import { EXRLoader } from 'three/examples/jsm/loaders/EXRLoader'
+import { MeshPortalMaterial } from '@pmndrs/vanilla'
 
 let stats,
   /**
@@ -43,7 +40,6 @@ let stats,
   renderer,
   raf,
   camera,
-  camera1,
   /**
    * @type {Scene}
    */
@@ -51,7 +47,7 @@ let stats,
   /**
    * @type {Scene}
    */
-  scene1,
+  portalScene,
   controls,
   gui,
   pointer = new Vector2()
@@ -66,20 +62,18 @@ draco.setDecoderPath('https://www.gstatic.com/draco/v1/decoders/')
 gltfLoader.setDRACOLoader(draco)
 const raycaster = new Raycaster()
 const intersects = [] //raycast
-let useFrame = () => {}
-let sceneGui
 let portalMesh
 let size = new Vector2()
 /**
  * @type {WebGLRenderTarget}
  */
-let scene1RenderTarget
+const portalSceneRenderTarget = new WebGLRenderTarget(1024, 1024, { samples: 2 })
 
 let car, carPortal
 
 const params = {
   masterFov: 50,
-  renderScene1: false,
+  renderOnlyPortal: false,
 }
 
 const wheels = {
@@ -107,8 +101,6 @@ export async function meshPortalMaterialDemo(mainGui) {
   renderer.setSize(window.innerWidth, window.innerHeight)
   renderer.shadowMap.enabled = true
   renderer.shadowMap.type = VSMShadowMap
-  renderer.outputColorSpace = SRGBColorSpace
-  renderer.toneMapping = ACESFilmicToneMapping
   renderer.localClippingEnabled = true
 
   app.appendChild(renderer.domElement)
@@ -118,26 +110,18 @@ export async function meshPortalMaterialDemo(mainGui) {
   camera.position.set(2, 0.5, 2)
   camera.name = 'Camera'
 
-  camera1 = camera.clone()
-  camera1.position.set(0, 0, 0)
-  camera1.aspect = 1
-  camera1.updateProjectionMatrix()
-  camera.add(camera1)
-
   gui.add(params, 'masterFov', 10, 120, 1).onChange((v) => {
-    camera.fov = camera1.fov = v
+    camera.fov = v
     camera.updateProjectionMatrix()
-    camera1.updateProjectionMatrix()
   })
 
   // scene
   scene = new Scene()
-  scene1 = new Scene()
+  portalScene = new Scene()
 
   scene.add(camera)
 
   renderer.getSize(size)
-  scene1RenderTarget = new WebGLRenderTarget(size.x, size.y, { samples: 2 })
 
   scene.add(mainObjects)
 
@@ -156,6 +140,8 @@ export async function meshPortalMaterialDemo(mainGui) {
     }
   })
   transformControls.showX = false
+  transformControls.showY = false
+
   transformControls.addEventListener('change', () => {
     if (transformControls.object) {
       car.position.z = MathUtils.clamp(car.position.z, -1, 1)
@@ -196,8 +182,8 @@ export async function meshPortalMaterialDemo(mainGui) {
   exrLoader.load(HDRI_LIST.old_hall.exr, (tex) => {
     tex.mapping = EquirectangularReflectionMapping
     scene.environment = tex
-    scene1.environment = tex
-    scene1.background = tex
+    portalScene.environment = tex
+    portalScene.background = tex
   })
 
   animate()
@@ -206,25 +192,23 @@ export async function meshPortalMaterialDemo(mainGui) {
 function onWindowResize() {
   camera.aspect = window.innerWidth / window.innerHeight
   camera.updateProjectionMatrix()
+
   renderer.setSize(window.innerWidth, window.innerHeight)
 
   renderer.getSize(size)
-  scene1RenderTarget.dispose()
-  scene1RenderTarget = new WebGLRenderTarget(size.x, size.y, { samples: 2 })
-  portalMesh.material.map = scene1RenderTarget.texture
 }
 
 function render() {
   stats.update()
-  update() // tween
   controls.update()
-  useFrame()
-  if (params.renderScene1) {
-    renderer.render(scene1, camera)
+  update() // tween
+  if (params.renderOnlyPortal) {
+    renderer.render(portalScene, camera)
   } else {
     renderer.render(scene, camera)
-    renderer.setRenderTarget(scene1RenderTarget)
-    renderer.render(scene1, camera)
+
+    renderer.setRenderTarget(portalSceneRenderTarget)
+    renderer.render(portalScene, camera)
     renderer.setRenderTarget(null)
   }
 }
@@ -273,17 +257,10 @@ function populateScene() {
   renderer.getSize(size)
 
   portalMesh = new Mesh(
-    // new BoxGeometry().translate(0, 0, -0.5),
     new PlaneGeometry(),
-    // new MeshBasicMaterial({ map: scene1RenderTarget.texture, toneMapped: false })
-    new PortalMaterialImpl({
-      blur: 0,
-      blend: 0,
-      // transparent: true,
-      map: scene1RenderTarget.texture,
-      toneMapped: true,
+    new MeshPortalMaterial({
+      map: portalSceneRenderTarget.texture,
       resolution: size,
-      // side: DoubleSide,
     })
   )
   portalMesh.castShadow = true
@@ -292,14 +269,15 @@ function populateScene() {
   const fol = gui.addFolder('scene')
   fol.open()
   fol.addColor(scene, 'background')
-  fol.add(portalMesh.material, 'blend', 0, 1).name('❌ blend')
-  fol.add(portalMesh.material, 'blur', 0, 1).name('❌ blur')
+
+  // fol.add(portalMesh.material, 'blur', 0, 1)
+
   fol.add(portalMesh.scale, 'x', 0.1, 2).name('Portal Scale X')
   fol.add(portalMesh.scale, 'y', 0.1, 2).name('Portal Scale Y')
 }
 
 async function populatePortal() {
-  scene1.background = new Color().set('#51c995')
+  portalScene.background = new Color().set('#51c995')
 
   // car
   const gltf = await MODEL_LOADER(MODEL_LIST.porsche_1975.url)
@@ -332,7 +310,7 @@ async function populatePortal() {
   })
 
   scene.add(car)
-  scene1.add(carPortal)
+  portalScene.add(carPortal)
 
   wheels.R = car.getObjectByName('wheels_rear')
   wheels.steerL = car.getObjectByName('wheel_L')
@@ -349,11 +327,12 @@ async function populatePortal() {
     color: 0xff0000,
   })
   const torusMesh = new Mesh(geometry, material)
-  scene1.add(torusMesh)
+  portalScene.add(torusMesh)
   torusMesh.receiveShadow = true
   torusMesh.scale.setScalar(0.2)
   torusMesh.position.z = -1
   torusMesh.position.y = 0.2
+  scene.add(torusMesh.clone())
 
   const dirLight = new DirectionalLight(0xffffff, 1)
   dirLight.position.set(-2, 3, 2)
@@ -373,7 +352,7 @@ async function populatePortal() {
   dirLight.shadow.radius = 3
 
   scene.add(dirLight.clone())
-  scene1.add(dirLight)
+  portalScene.add(dirLight)
 
   const shadowFloor = new Mesh(
     new CircleGeometry(1.5, 48).rotateX(-Math.PI / 2),
@@ -383,11 +362,11 @@ async function populatePortal() {
   shadowFloor.receiveShadow = true
   shadowFloor.position.set(0, -0.5, 0)
   scene.add(shadowFloor)
-  scene1.add(shadowFloor.clone())
+  portalScene.add(shadowFloor.clone())
 
-  const fol = gui.addFolder('scene1')
+  const fol = gui.addFolder('portalScene')
   fol.open()
-  fol.addColor(scene1, 'background')
+  fol.addColor(portalScene, 'background')
   fol.add(torusMesh.position, 'z', -2, 2, 0.5).name('torus Z')
   fol
     .add(torusMesh.scale, 'z', 0.1, 1)
@@ -395,39 +374,5 @@ async function populatePortal() {
     .onChange((v) => {
       torusMesh.scale.setScalar(v)
     })
-  fol.add(params, 'renderScene1')
+  fol.add(params, 'renderOnlyPortal')
 }
-
-const PortalMaterialImpl = shaderMaterial(
-  {
-    blur: 0,
-    map: null,
-    sdf: null,
-    blend: 0,
-    size: 0,
-    resolution: new Vector2(),
-  },
-  `varying vec2 vUv;
-     void main() {
-       gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-       vUv = uv;
-     }`,
-  `uniform sampler2D sdf;
-     uniform sampler2D map;
-     uniform float blur;
-     uniform float size;
-     uniform float time;
-     uniform vec2 resolution;
-     varying vec2 vUv;
-     #include <packing>
-     void main() {
-       vec2 uv = gl_FragCoord.xy / resolution.xy;
-       vec4 t = texture2D(map, uv);
-       float k = blur;
-       float d = texture2D(sdf, vUv).r/size;
-       float alpha = 1.0 - smoothstep(0.0, 1.0, clamp(d/k + 1.0, 0.0, 1.0));
-       gl_FragColor = vec4(t.rgb, blur == 0.0 ? t.a : t.a * alpha);
-       #include <tonemapping_fragment>
-       #include <${parseInt(REVISION.replace(/\D+/g, '')) >= 154 ? 'colorspace_fragment' : 'encodings_fragment'}>
-     }`
-)
