@@ -47,10 +47,6 @@ const All_Scenes = {
 }
 
 const wip = [
-  meshPortalMaterialDemo,
-  SpriteAnimatorDemo,
-  CloudDemo,
-
   //  meshTransmissionMaterialInstant
 ]
 

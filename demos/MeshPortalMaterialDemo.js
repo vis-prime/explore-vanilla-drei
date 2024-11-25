@@ -20,14 +20,19 @@ import {
   Vector3,
   CircleGeometry,
   EquirectangularReflectionMapping,
+  LineDashedMaterial,
+  LineSegments,
+  BufferGeometry,
+  Float32BufferAttribute,
+  Line,
 } from 'three'
 import Stats from 'three/examples/jsm/libs/stats.module'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { TransformControls } from 'three/examples/jsm/controls/TransformControls'
-
-import { update } from '@tweenjs/tween.js'
+import { GroundedSkybox } from 'three/addons/objects/GroundedSkybox'
+import { Easing, Tween, update } from '@tweenjs/tween.js'
 import { MODEL_LIST, MODEL_LOADER } from '../models/MODEL_LIST'
 import { HDRI_LIST } from '../hdri/HDRI_LIST'
 import { EXRLoader } from 'three/examples/jsm/loaders/EXRLoader'
@@ -67,13 +72,14 @@ let size = new Vector2()
 /**
  * @type {WebGLRenderTarget}
  */
-const portalSceneRenderTarget = new WebGLRenderTarget(1024, 1024, { samples: 2 })
+const portalSceneRenderTarget = new WebGLRenderTarget(1, 1, { samples: 2 })
 
 let car, carPortal
 
 const params = {
-  masterFov: 50,
+  cameraFov: 50,
   renderOnlyPortal: false,
+  portalResolution: 1,
 }
 
 const wheels = {
@@ -89,6 +95,7 @@ const wheelsPortal = {
   steerR: null,
   steerVal: 0,
 }
+let carPosSet = () => {}
 
 export async function meshPortalMaterialDemo(mainGui) {
   gui = mainGui
@@ -106,11 +113,11 @@ export async function meshPortalMaterialDemo(mainGui) {
   app.appendChild(renderer.domElement)
 
   // camera
-  camera = new PerspectiveCamera(params.masterFov, window.innerWidth / window.innerHeight, 0.1, 200)
-  camera.position.set(2, 0.5, 2)
+  camera = new PerspectiveCamera(params.cameraFov, window.innerWidth / window.innerHeight, 0.1, 200)
+  camera.position.set(-1, 0.25, 2)
   camera.name = 'Camera'
 
-  gui.add(params, 'masterFov', 10, 120, 1).onChange((v) => {
+  gui.add(params, 'cameraFov', 10, 120, 1).onChange((v) => {
     camera.fov = v
     camera.updateProjectionMatrix()
   })
@@ -118,8 +125,6 @@ export async function meshPortalMaterialDemo(mainGui) {
   // scene
   scene = new Scene()
   portalScene = new Scene()
-
-  scene.add(camera)
 
   renderer.getSize(size)
 
@@ -131,32 +136,19 @@ export async function meshPortalMaterialDemo(mainGui) {
   controls.dampingFactor = 0.05
   controls.minDistance = 0.1
   controls.maxDistance = 100
-  controls.target.set(0, 0, 0)
+  controls.target.set(0, -0.5, -1)
+  controls.enabled = false
 
   transformControls = new TransformControls(camera, renderer.domElement)
   transformControls.addEventListener('dragging-changed', (event) => {
     controls.enabled = !event.value
-    if (!event.value) {
-    }
   })
   transformControls.showX = false
   transformControls.showY = false
 
   transformControls.addEventListener('change', () => {
     if (transformControls.object) {
-      car.position.z = MathUtils.clamp(car.position.z, -1, 1)
-      car.position.y = MathUtils.clamp(car.position.y, -0.5, 1)
-
-      carPortal.position.copy(car.position)
-
-      const rot = car.position.z * (Math.PI * 4)
-
-      for (const key in wheels) {
-        const w = wheels[key]
-        const wp = wheelsPortal[key]
-        if (w) w.rotation.x = rot
-        if (w) wp.rotation.x = rot
-      }
+      carPosSet()
     }
   })
   scene.add(transformControls.getHelper())
@@ -175,6 +167,7 @@ export async function meshPortalMaterialDemo(mainGui) {
     }
   })
 
+  onWindowResize()
   populateScene()
   populatePortal()
 
@@ -183,7 +176,8 @@ export async function meshPortalMaterialDemo(mainGui) {
     tex.mapping = EquirectangularReflectionMapping
     scene.environment = tex
     portalScene.environment = tex
-    portalScene.background = tex
+    const gBox = new GroundedSkybox(tex, 5, 10)
+    portalScene.add(gBox)
   })
 
   animate()
@@ -196,6 +190,7 @@ function onWindowResize() {
   renderer.setSize(window.innerWidth, window.innerHeight)
 
   renderer.getSize(size)
+  portalSceneRenderTarget.setSize(size.x * params.portalResolution, size.y * params.portalResolution)
 }
 
 function render() {
@@ -205,11 +200,11 @@ function render() {
   if (params.renderOnlyPortal) {
     renderer.render(portalScene, camera)
   } else {
-    renderer.render(scene, camera)
-
     renderer.setRenderTarget(portalSceneRenderTarget)
     renderer.render(portalScene, camera)
     renderer.setRenderTarget(null)
+
+    renderer.render(scene, camera)
   }
 }
 
@@ -244,15 +239,7 @@ function onPointerMove(event) {
 }
 
 function populateScene() {
-  scene.background = new Color().set('#aabbcc')
-
-  const axesHelpers = Array.from({ length: 4 }, () => new AxesHelper(0.1))
-  axesHelpers[0].position.set(0.5, 0.5, 0)
-  axesHelpers[1].position.set(-0.5, 0.5, 0)
-  axesHelpers[2].position.set(0.5, -0.5, 0)
-  axesHelpers[3].position.set(-0.5, -0.5, 0)
-
-  scene.add(...axesHelpers)
+  scene.background = new Color().setHSL(Math.random(), 0.3, 0.5)
 
   renderer.getSize(size)
 
@@ -264,16 +251,26 @@ function populateScene() {
     })
   )
   portalMesh.castShadow = true
+  portalMesh.scale.set(0, 0, 1)
   scene.add(portalMesh)
+
+  const geometry = new BufferGeometry()
+  const position = []
+
+  const s = 0.5
+  position.push(-s, -s, 0, -s, s, 0, s, s, 0, s, -s, 0)
+
+  geometry.setAttribute('position', new Float32BufferAttribute(position, 3))
+
+  const lineSegments = new Line(geometry, new LineDashedMaterial({ color: 0xffaa00, dashSize: 0.03, gapSize: 0.01 }))
+  lineSegments.computeLineDistances()
+  portalMesh.add(lineSegments)
 
   const fol = gui.addFolder('scene')
   fol.open()
   fol.addColor(scene, 'background')
 
   // fol.add(portalMesh.material, 'blur', 0, 1)
-
-  fol.add(portalMesh.scale, 'x', 0.1, 2).name('Portal Scale X')
-  fol.add(portalMesh.scale, 'y', 0.1, 2).name('Portal Scale Y')
 }
 
 async function populatePortal() {
@@ -284,6 +281,8 @@ async function populatePortal() {
   const model = gltf.scene
   model.scale.setScalar(0.3)
   model.position.y = -0.5
+  model.position.z = -1
+  console.log(model.getWorldPosition(new Vector3()))
   model.name = 'car'
   model.traverse((child) => {
     child.positionBackup = child.position.clone()
@@ -319,6 +318,63 @@ async function populatePortal() {
   wheelsPortal.R = carPortal.getObjectByName('wheels_rear')
   wheelsPortal.steerL = carPortal.getObjectByName('wheel_L')
   wheelsPortal.steerR = carPortal.getObjectByName('wheel_R')
+
+  carPosSet = () => {
+    car.position.z = MathUtils.clamp(car.position.z, -1, 1)
+
+    carPortal.position.copy(car.position)
+
+    const rot = car.position.z * (Math.PI * 4)
+
+    for (const key in wheels) {
+      const w = wheels[key]
+      const wp = wheelsPortal[key]
+      if (w) w.rotation.x = rot
+      if (w) wp.rotation.x = rot
+    }
+  }
+  const camRestore = new Tween(controls.target)
+    .to({ x: 0, y: 0, z: 0 })
+    .delay(500)
+    .duration(500)
+    .onUpdate(() => {})
+    .easing(Easing.Quadratic.InOut)
+    .onComplete(() => {
+      controls.enabled = true
+    })
+
+  const carIntro = new Tween(car.position)
+    .onStart(() => {
+      car.attach(camera)
+    })
+    .to({ z: 1 })
+    .delay(100)
+    .duration(3000)
+    .onUpdate((o, e) => {
+      carPosSet()
+    })
+    .easing(Easing.Quadratic.InOut)
+    .chain(camRestore)
+    .onComplete(() => {
+      scene.attach(camera)
+      camera.removeFromParent()
+    })
+
+  const camStartPos = new Tween(camera.position)
+    .to({ x: 1.5, y: 0.2, z: 0.25 })
+    .duration(1000)
+    .easing(Easing.Quadratic.InOut)
+    .chain(carIntro)
+
+  const portalIntro = new Tween(portalMesh.scale)
+    .to({ x: 1, y: 1 })
+    .delay(500)
+    .duration(1500)
+    .onUpdate(() => {})
+    .easing(Easing.Quadratic.InOut)
+    .chain(camStartPos)
+
+  portalIntro.start()
 
   const geometry = new TorusKnotGeometry(0.5, 0.25, 150, 20)
   const material = new MeshStandardMaterial({
@@ -365,14 +421,15 @@ async function populatePortal() {
   portalScene.add(shadowFloor.clone())
 
   const fol = gui.addFolder('portalScene')
+
   fol.open()
-  fol.addColor(portalScene, 'background')
-  fol.add(torusMesh.position, 'z', -2, 2, 0.5).name('torus Z')
   fol
-    .add(torusMesh.scale, 'z', 0.1, 1)
-    .name('torusScale')
-    .onChange((v) => {
-      torusMesh.scale.setScalar(v)
-    })
+    .add(params, 'portalResolution', 0.1, 1)
+    .name('Portal Res')
+    .onChange(() => onWindowResize())
+
+  fol.add(portalMesh.scale, 'x', 0.1, 2).name('Portal Scale X')
+  fol.add(portalMesh.scale, 'y', 0.1, 2).name('Portal Scale Y')
+
   fol.add(params, 'renderOnlyPortal')
 }
