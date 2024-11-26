@@ -398,14 +398,14 @@ async function populatePortal() {
 
   const camStartPos = new Tween(camera.position)
     .to({ x: 1.5, y: 0.2, z: 0.25 })
-    .duration(1000)
+    .duration(2000)
     .easing(Easing.Quadratic.InOut)
     .chain(carIntro)
 
   const portalIntro = new Tween(portalMesh.scale)
     .to({ x: 1, y: 1 })
     .delay(500)
-    .duration(1500)
+    .duration(3000)
     .onUpdate(() => {})
     .easing(Easing.Quadratic.InOut)
     .chain(camStartPos)
