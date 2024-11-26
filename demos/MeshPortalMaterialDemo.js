@@ -35,6 +35,7 @@ import { MODEL_LIST, MODEL_LOADER } from '../models/MODEL_LIST'
 import { HDRI_LIST } from '../hdri/HDRI_LIST'
 import { EXRLoader } from 'three/examples/jsm/loaders/EXRLoader'
 import { MeshPortalMaterial } from '@pmndrs/vanilla'
+import { calculateHorizontalFoV, calculateVerticalFoV } from './Helpers'
 
 let stats,
   /**
@@ -183,6 +184,9 @@ export async function meshPortalMaterialDemo(mainGui) {
 
 function onWindowResize() {
   camera.aspect = window.innerWidth / window.innerHeight
+  if (camera.aspect < 1) {
+    camera.fov = calculateVerticalFoV(45, camera.aspect)
+  }
   camera.updateProjectionMatrix()
 
   renderer.setSize(window.innerWidth, window.innerHeight)
@@ -330,6 +334,10 @@ async function populatePortal() {
       if (w) wp.rotation.x = rot
     }
   }
+
+  await renderer.compileAsync(scene, camera)
+  await renderer.compileAsync(portalScene, camera)
+
   const carReverse = new Tween(car.position)
     .onStart(() => {})
     .to({ z: 0 })
