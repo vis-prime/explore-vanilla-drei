@@ -53,6 +53,9 @@ let stats,
    */
   portalScene,
   controls,
+  /**
+   * @type {import('lil-gui').GUI}
+   */
   gui,
   pointer = new Vector2()
 
@@ -98,7 +101,7 @@ let carPosSet = () => {}
 
 export async function meshPortalMaterialDemo(mainGui) {
   gui = mainGui
-
+  gui.close()
   stats = new Stats()
   app.appendChild(stats.dom)
   // renderer
@@ -268,6 +271,8 @@ function populateScene() {
   lineSegments.computeLineDistances()
   portalMesh.add(lineSegments)
 
+  lineSegments.material.color.setHSL(Math.random(), 1, 0.5)
+
   const fol = gui.addFolder('scene')
   fol.open()
   fol.addColor(scene, 'background')
@@ -347,11 +352,25 @@ async function populatePortal() {
     })
     .easing(Easing.Quadratic.InOut)
 
-  const camRestore = new Tween(controls.target)
-    .to({ x: 0, y: 0, z: 0 })
-    .delay(500)
-    .duration(500)
-    .onUpdate(() => {})
+  const obj = {
+    val: 0,
+    camStart: new Vector3(),
+    camEnd: new Vector3(2, 0.2, 0.5),
+    tarStart: new Vector3(),
+    tarEnd: new Vector3(0, 0, 0),
+  }
+  const camRestore = new Tween(obj)
+    .to({ val: 1 })
+    .delay(100)
+    .onStart(() => {
+      obj.camStart.copy(camera.position)
+      obj.tarStart.copy(controls.target)
+    })
+    .duration(1000)
+    .onUpdate(() => {
+      camera.position.lerpVectors(obj.camStart, obj.camEnd, obj.val)
+      controls.target.lerpVectors(obj.tarStart, obj.tarEnd, obj.val)
+    })
     .easing(Easing.Quadratic.InOut)
     .onComplete(() => {
       controls.enabled = true
@@ -359,8 +378,9 @@ async function populatePortal() {
       setTimeout(() => {
         if (!transformControls.object) {
           carReverse.startFromCurrentValues()
+          gui.openAnimated()
         }
-      }, 2000)
+      }, 1000)
     })
 
   const carIntro = new Tween(car.position)
@@ -445,8 +465,8 @@ async function populatePortal() {
     .name('Portal Res')
     .onChange(() => onWindowResize())
 
-  fol.add(portalMesh.scale, 'x', 0.1, 2, 0.1).name('Portal Scale X')
-  fol.add(portalMesh.scale, 'y', 0.1, 2, 0.1).name('Portal Scale Y')
+  // fol.add(portalMesh.scale, 'x', 0.1, 2, 0.1).name('Portal Scale X')
+  // fol.add(portalMesh.scale, 'y', 0.1, 2, 0.1).name('Portal Scale Y')
 
   fol.add(params, 'renderOnlyPortal')
 }
