@@ -9,6 +9,7 @@ import bunny_drei_url from './bunny-transformed.glb?url'
 
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader'
+import { LoadingHelper } from '../demos/LoadingHelper'
 
 const gltfLoader = new GLTFLoader()
 const draco = new DRACOLoader()
@@ -47,11 +48,18 @@ export const MODEL_LIST = {
 }
 
 /**
- * Gltf Draco Loader
- * @param {String} url
- * @returns {Object}
- * @enum
+ * Loads a GLTF model using the Draco Loader.
+ * @async
+ * @enum MODEL_LOADER
+ * @param {string} url - The URL of the GLTF model to load.
+ * @param {Object} options - Additional options for loading.
+ * @param {LoadingHelper} [options.loadingHelper] - Optional helper for tracking loading progress.
+ * @returns {Promise<import("three/examples/jsm/loaders/GLTFLoader").GLTF>} A promise that resolves with the loaded GLTF scene or object.
  */
-export const MODEL_LOADER = async (url) => {
-  return await gltfLoader.loadAsync(url)
+export const MODEL_LOADER = async (url, { loadingHelper } = {}) => {
+  return await gltfLoader.loadAsync(url, (e) => {
+    if (loadingHelper) {
+      loadingHelper.setGlobalProgress(url, e.loaded / e.total)
+    }
+  })
 }

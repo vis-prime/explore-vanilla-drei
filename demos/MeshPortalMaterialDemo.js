@@ -35,8 +35,10 @@ import { MODEL_LIST, MODEL_LOADER } from '../models/MODEL_LIST'
 import { HDRI_LIST } from '../hdri/HDRI_LIST'
 import { EXRLoader } from 'three/examples/jsm/loaders/EXRLoader'
 import { MeshPortalMaterial } from '@pmndrs/vanilla'
-import { calculateHorizontalFoV, calculateVerticalFoV } from './Helpers'
+import { calculateVerticalFoV } from './Helpers'
+import { LoadingHelper } from './LoadingHelper'
 
+const l_h = new LoadingHelper()
 let stats,
   /**
    * @type {WebGLRenderer}
@@ -174,13 +176,19 @@ export async function meshPortalMaterialDemo(mainGui) {
   populatePortal()
 
   const exrLoader = new EXRLoader()
-  exrLoader.load(HDRI_LIST.old_hall.exr, (tex) => {
-    tex.mapping = EquirectangularReflectionMapping
-    scene.environment = tex
-    portalScene.environment = tex
-    const gBox = new GroundedSkybox(tex, 5, 10)
-    portalScene.add(gBox)
-  })
+  exrLoader.load(
+    HDRI_LIST.old_hall.exr,
+    (tex) => {
+      tex.mapping = EquirectangularReflectionMapping
+      scene.environment = tex
+      portalScene.environment = tex
+      const gBox = new GroundedSkybox(tex, 5, 10)
+      portalScene.add(gBox)
+    },
+    (e) => {
+      l_h.setGlobalProgress(HDRI_LIST.old_hall.exr, e.loaded / e.total)
+    }
+  )
 
   animate()
 }
@@ -284,7 +292,7 @@ async function populatePortal() {
   portalScene.background = new Color().set('#51c995')
 
   // car
-  const gltf = await MODEL_LOADER(MODEL_LIST.porsche_1975.url)
+  const gltf = await MODEL_LOADER(MODEL_LIST.porsche_1975.url, { loadingHelper: l_h })
   const model = gltf.scene
   model.scale.setScalar(0.3)
   model.position.y = -0.5
