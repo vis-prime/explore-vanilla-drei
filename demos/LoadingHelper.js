@@ -13,15 +13,17 @@ export class LoadingHelper {
     // Set container styles
     Object.assign(this.container.style, {
       position: 'fixed',
-      top: 0,
-      left: 0,
-      width: '100vw',
-      height: '100vh',
-      backgroundColor: 'rgba(0, 0, 0, 0.9)',
+      top: '0',
+      left: '0',
+      width: '100%',
+      height: '100%',
       display: 'flex',
       justifyContent: 'center',
       alignItems: 'center',
-      zIndex: 10000,
+      background: 'linear-gradient(135deg, #333333, #111111)', // Pleasant dull gradient
+      zIndex: '1000',
+      opacity: '0.9',
+      transition: 'opacity 0.3s ease',
     })
 
     // Set text styles

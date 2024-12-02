@@ -43,7 +43,8 @@ import { SpotLightMaterial } from '@pmndrs/vanilla'
 
 import { Easing, Tween, update } from '@tweenjs/tween.js'
 import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader'
-import { MODEL_LIST } from '../models/MODEL_LIST'
+import { MODEL_LIST, MODEL_LOADER } from '../models/MODEL_LIST'
+import { LoadingHelper } from './LoadingHelper'
 
 let stats,
   renderer,
@@ -300,7 +301,8 @@ async function loadModels() {
   floor.receiveShadow = true
   mainObjects.add(floor)
 
-  const gltf = await gltfLoader.loadAsync(MODEL_LIST.porsche_1975.url)
+  const l_h = new LoadingHelper()
+  const gltf = await MODEL_LOADER(MODEL_LIST.porsche_1975.url, { loadingHelper: l_h })
   const model = gltf.scene
   model.name = 'car'
 
@@ -375,8 +377,9 @@ function setupSpotLight() {
       depthTexture = dat[0]
       volumeMaterial.depth = dat[0]
       depthUseFrame = dat[1]
-      volumeMaterial.resolution.copy(renderer.getSize(rendererSize))
-      volumeMaterial.resolution.multiplyScalar(renderer.getPixelRatio())
+      renderer.getSize(rendererSize)
+      rendererSize.multiplyScalar(renderer.getPixelRatio())
+      volumeMaterial.resolution.copy(rendererSize)
       if (oldTex) {
         oldTex.dispose()
       }
@@ -445,8 +448,9 @@ function setupSpotLight() {
   }
 
   window.onresize = () => {
-    volumeMaterial.resolution.copy(renderer.getSize(rendererSize))
-    volumeMaterial.resolution.multiplyScalar(renderer.getPixelRatio())
+    renderer.getSize(rendererSize)
+    rendererSize.multiplyScalar(renderer.getPixelRatio())
+    volumeMaterial.resolution.copy(rendererSize)
   }
 
   function addGui(gui) {
