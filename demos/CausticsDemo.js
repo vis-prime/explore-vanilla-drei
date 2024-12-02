@@ -21,6 +21,7 @@ import { BG_ENV } from './BG_ENV'
 import { Caustics } from '@pmndrs/vanilla'
 import { update } from '@tweenjs/tween.js'
 import { EffectComposer, RenderPass, BloomEffect, EffectPass } from 'postprocessing'
+import { LoadingHelper } from './LoadingHelper'
 
 let stats,
   renderer,
@@ -59,6 +60,8 @@ const modelCache = {}
  * @type {Object3D}
  */
 let activeModel
+
+const l_h = new LoadingHelper()
 
 export async function CausticsDemo(mainGui) {
   gui = mainGui
@@ -126,15 +129,16 @@ export async function CausticsDemo(mainGui) {
   })
 
   sceneGui.add(transformControls, 'mode', ['translate', 'rotate', 'scale'])
-  const bg_env = new BG_ENV(scene)
+  const bg_env = new BG_ENV(scene, { loadingHelper: l_h })
   bg_env.setBGType('Default')
   bg_env.setEnvType('HDRI')
-  await bg_env.updateAll()
   bg_env.addGui(sceneGui)
+
+  await Promise.all([bg_env.updateAll(), setupModel()])
+
   scene.backgroundBlurriness = 0.4
   scene.backgroundIntensity = 0.2
 
-  await setupModel()
   setupCaustics()
 
   animate()

@@ -13,12 +13,17 @@ import {
   TextureLoader,
   SRGBColorSpace,
   LinearFilter,
+  Scene,
+  FileLoader,
 } from 'three'
 import { EXRLoader } from 'three/examples/jsm/loaders/EXRLoader'
 import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader'
 import { GroundProjectedSkybox } from '../hdri/GroundProjectedSkybox'
 import { HDRI_LIST } from '../hdri/HDRI_LIST'
+import { LoadingHelper } from './LoadingHelper'
 
+const fileLoader = new FileLoader()
+fileLoader.setResponseType('blob')
 const textureLoader = new TextureLoader()
 const exrLoader = new EXRLoader()
 const rgbeLoader = new RGBELoader()
@@ -52,8 +57,15 @@ const ENV_OPTIONS = {
 }
 
 export class BG_ENV {
-  constructor(scene) {
+  /**
+   * S
+   * @param {Scene} scene
+   * @param {Object} options
+   * @param {LoadingHelper} options.loadingHelper
+   */
+  constructor(scene, { loadingHelper = {} }) {
     this.scene = scene
+    this.loadingHelper = loadingHelper
 
     this.preset = Object.values(HDRI_LIST)[0]
 
@@ -252,8 +264,11 @@ export class BG_ENV {
     }
 
     let texture = this.envCache[key]
+
     if (!texture) {
-      texture = exr ? await exrLoader.loadAsync(key) : await rgbeLoader.loadAsync(key)
+      texture = exr
+        ? await exrLoader.loadAsync(key, (e) => this.loadingHelper?.setGlobalProgress(key, e.loaded / e.total))
+        : await rgbeLoader.loadAsync(key, (e) => this.loadingHelper?.setGlobalProgress(key, e.loaded / e.total))
       this.envCache[key] = texture
       texture.mapping = EquirectangularReflectionMapping
     }
@@ -271,7 +286,13 @@ export class BG_ENV {
     if (key) {
       let texture = this.bgCache[key]
       if (!texture) {
-        texture = await textureLoader.loadAsync(key)
+        const blob = await fileLoader.loadAsync(key, (e) =>
+          this.loadingHelper?.setGlobalProgress(key, e.loaded / e.total)
+        )
+        const objUrl = URL.createObjectURL(blob)
+        // Load the texture using the generated blob URL
+        texture = await textureLoader.loadAsync(objUrl)
+        URL.revokeObjectURL(objUrl)
         this.bgCache[key] = texture
         texture.mapping = EquirectangularReflectionMapping
         texture.colorSpace = SRGBColorSpace
@@ -302,31 +323,49 @@ export class BG_ENV {
       return
     }
 
-    if (envDict.exr) {
-      const texture = await exrLoader.loadAsync(envDict.exr)
+    const loadExr = async () => {
+      if (!envDict.exr) return
+      const texture = await exrLoader.loadAsync(envDict.exr, (e) =>
+        this.loadingHelper?.setGlobalProgress(envDict.exr, e.loaded / e.total)
+      )
       texture.mapping = EquirectangularReflectionMapping
       scene.environment = texture
-      env = texture
       console.log('exr loaded')
     }
 
-    if (envDict.hdr) {
-      const texture = await rgbeLoader.loadAsync(envDict.hdr)
+    const loadHdr = async () => {
+      if (!envDict.hdr) return
+      const texture = await rgbeLoader.loadAsync(envDict.hdr, (e) =>
+        this.loadingHelper?.setGlobalProgress(envDict.hdr, e.loaded / e.total)
+      )
       texture.mapping = EquirectangularReflectionMapping
       scene.environment = texture
-      bg = texture
-      console.log('exr loaded')
+      console.log('hdr loaded')
     }
 
-    if (envDict.webP || envDict.avif) {
-      const texture = await textureLoader.loadAsync(envDict.webP || envDict.avif)
-      texture.mapping = EquirectangularReflectionMapping
-      texture.colorSpace = SRGBColorSpace
-      scene.background = texture
-      console.log('bg loaded')
+    const loadImg = async () => {
+      const imgUrl = envDict.webP || envDict.avif
+      if (imgUrl) {
+        const blob = await fileLoader.loadAsync(imgUrl, (e) =>
+          this.loadingHelper?.setGlobalProgress(imgUrl, e.loaded / e.total)
+        )
 
-      if (params.groundProjection) loadGroundProj(params.environment)
+        const objUrl = URL.createObjectURL(blob)
+        // Load the texture using the generated blob URL
+        const texture = await textureLoader.loadAsync(objUrl)
+        URL.revokeObjectURL(objUrl)
+
+        texture.mapping = EquirectangularReflectionMapping
+        texture.colorSpace = SRGBColorSpace
+        scene.background = texture
+
+        console.log('Background loaded')
+
+        if (params.groundProjection) loadGroundProj(params.environment)
+      }
     }
+
+    await Promise.all([loadExr(), loadHdr(), loadImg()])
 
     if (envDict.sunPos) {
       sunLight.visible = true
