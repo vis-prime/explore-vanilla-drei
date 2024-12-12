@@ -450,7 +450,8 @@ function setupSpotLight() {
   window.onresize = () => {
     renderer.getSize(rendererSize)
     rendererSize.multiplyScalar(renderer.getPixelRatio())
-    volumeMaterial.resolution.copy(rendererSize)
+    if (testParams.useDepth) volumeMaterial.resolution.copy(rendererSize)
+    console.log(volumeMaterial.resolution)
   }
 
   function addGui(gui) {
@@ -461,13 +462,16 @@ function setupSpotLight() {
     })
 
     folder.add(testParams, 'useDepth').onChange(updateDepthTexture)
-    folder.add(testParams, 'depthResolution', 128, 2048, 1).onChange(updateDepthTexture)
+    folder.add(testParams, 'depthResolution', 128, 2048, 128).onChange(updateDepthTexture)
 
     folder.add(volumeMaterial, 'opacity', 0, 2)
     folder.add(volumeMaterial, 'attenuation', 0, distance)
     folder.add(volumeMaterial, 'anglePower', 0, Math.PI)
     folder.add(volumeMaterial, 'cameraNear', 0, 10)
     folder.add(volumeMaterial, 'cameraFar', 0, 10)
+
+    folder.add(volumeMaterial.resolution, 'x', 0, 1000, 1).listen()
+    folder.add(volumeMaterial.resolution, 'y', 0, 1000, 1).listen()
 
     const sp = gui.addFolder('SpotLight')
     sp.open()
@@ -479,7 +483,7 @@ function setupSpotLight() {
       }
     })
     sp.addColor(spotLight, 'color')
-    sp.add(spotLight, 'intensity', 0, 5)
+    sp.add(spotLight, 'intensity', 0, 500)
     sp.add(spotLight, 'angle', 0, Math.PI / 2).onChange(updateVolumeGeometry)
     sp.add(spotLight, 'penumbra', 0, 1)
     sp.add(spotLight, 'distance', 0.1, 20).onChange(updateVolumeGeometry)
@@ -517,11 +521,13 @@ function getRandomHexColor() {
   return '#' + color.setHSL(Math.random(), 0.5, 0.5).getHexString()
 }
 
+let depthFBO
 function useDepthBuffer({ size, frames = Infinity } = {}) {
   const gl = renderer
 
   const rendererSize = new Vector3()
   gl.getSize(rendererSize)
+
   const w = size || rendererSize.x
   const h = size || rendererSize.y
 
@@ -533,7 +539,15 @@ function useDepthBuffer({ size, frames = Infinity } = {}) {
   depthTexture.name = 'Depth_Buffer'
 
   let count = 0
-  const depthFBO = useFBO(w, h, { depthTexture })
+
+  if (!depthFBO) {
+    depthFBO = useFBO(w, h)
+  } else {
+    depthFBO.depthTexture.dispose()
+  }
+
+  depthFBO.depthTexture = depthTexture
+  depthFBO.setSize(w, h)
 
   const useFrame = () => {
     if (frames === Infinity || count < frames) {
@@ -593,7 +607,7 @@ export function useFBO(
   /** Height in pixels */
   height,
   /**Settings */
-  settings
+  settings = {}
 ) {
   const gl = renderer
   const _width = width

@@ -3,7 +3,7 @@
   "private": false,
   "version": "0.0.54",
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --host",
     "build": "vite build",
     "preview": "vite preview",
     "deploy": "npm version patch && vite build && gh-pages -d dist"

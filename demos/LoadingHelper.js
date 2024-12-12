@@ -1,9 +1,10 @@
 export class LoadingHelper {
-  constructor() {
+  constructor({ debug = false } = {}) {
     this.progress = 0
     this.container = null
     this.textElement = null
     this.multiProgress = new Map()
+    this.debug = debug
   }
 
   _createLoadingDiv() {
@@ -62,6 +63,10 @@ export class LoadingHelper {
 
     if (this.multiProgress.size === 0) {
       this.updateProgress(1)
+      if (this.debug) {
+        const str = `${1} size:${this.multiProgress.size} id:${id.slice(0, 30)}=>${progress.toFixed(2)} `
+        console.log(str)
+      }
       return
     }
     // Calculate total progress
@@ -69,7 +74,13 @@ export class LoadingHelper {
       [...this.multiProgress.values()].reduce((sum, value) => sum + value, 0) / this.multiProgress.size
     this.updateProgress(totalProgress)
 
-    // console.log(id.slice(0, 30), progress.toFixed(2), totalProgress.toFixed(2), this.multiProgress)
+    if (this.debug) {
+      const str = `${totalProgress.toFixed(2)} size:${this.multiProgress.size} id:${id.slice(
+        0,
+        30
+      )}=>${progress.toFixed(2)} `
+      console.log(str)
+    }
   }
 
   _removeLoadingDiv() {

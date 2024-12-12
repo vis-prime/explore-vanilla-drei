@@ -63,7 +63,7 @@ export class BG_ENV {
    * @param {Object} options
    * @param {LoadingHelper} options.loadingHelper
    */
-  constructor(scene, { loadingHelper = {} }) {
+  constructor(scene, { loadingHelper } = {}) {
     this.scene = scene
     this.loadingHelper = loadingHelper
 

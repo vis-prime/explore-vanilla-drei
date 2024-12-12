@@ -21,26 +21,28 @@ import {
   Color,
   SpotLightHelper,
   MeshBasicMaterial,
+  DepthTexture,
+  DepthFormat,
+  UnsignedShortType,
+  MathUtils,
+  Fog,
 } from 'three'
 import Stats from 'three/examples/jsm/libs/stats.module'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
+import { SpotLightMaterial } from '@pmndrs/vanilla'
 
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { TransformControls } from 'three/examples/jsm/controls/TransformControls'
 
 import { HDRI_LIST } from '../hdri/HDRI_LIST'
-import { SpotLightMaterial } from '@pmndrs/vanilla'
-import { DepthTexture } from 'three'
-import { DepthFormat } from 'three'
-import { UnsignedShortType } from 'three'
 
 import { Easing, Tween, update } from '@tweenjs/tween.js'
-import { MathUtils } from 'three'
-import { EffectComposer, EffectPass, RenderPass, SelectiveBloomEffect } from 'postprocessing'
+import { BloomEffect, EffectComposer, EffectPass, KernelSize, RenderPass, SelectiveBloomEffect } from 'postprocessing'
 
 import { BG_ENV } from './BG_ENV'
-import { MODEL_LIST } from '../models/MODEL_LIST'
+import { MODEL_LIST, MODEL_LOADER } from '../models/MODEL_LIST'
+import { LoadingHelper } from './LoadingHelper'
 
 let stats,
   renderer,
@@ -70,10 +72,10 @@ const raycaster = new Raycaster()
 const intersects = [] //raycast
 let useFrame = () => {}
 let sceneGui
+const l_h = new LoadingHelper({ debug: true })
+console.log('TODO : DYNAMIC IMPORT EACH FILE')
 
 export async function spotLightDemo1(mainGui) {
-  console.log('EXAMPLE BROKEN! ')
-  return
   gui = mainGui
   sceneGui = gui.addFolder('Scene')
   stats = new Stats()
@@ -98,28 +100,29 @@ export async function spotLightDemo1(mainGui) {
   camera.name = 'Camera'
   // scene
   scene = new Scene()
-  //   scene.backgroundBlurriness = 0.8
+  scene.fog = new Fog(0x000000, 10, 20)
 
   scene.add(mainObjects)
 
   //composer
-  composer = new EffectComposer(renderer, { multisampling: 4 })
+  composer = new EffectComposer(renderer)
   composer.addPass(new RenderPass(scene, camera))
+
   bloomEffect = new SelectiveBloomEffect(scene, camera, {
+    resolutionScale: 0.4,
     luminanceThreshold: 0,
-    luminanceSmoothing: 0,
-    intensity: 90,
+    intensity: 120,
     mipmapBlur: true,
+    levels: 4,
+    radius: 0.4,
   })
   bloomEffect.ignoreBackground = true
-  bloomEffect.mipmapBlurPass.radius = 0.3
-  bloomEffect.mipmapBlurPass.levels = 4
 
   // gui.add(bloomEffect, 'intensity', 0, 1000)
-  // gui.add(bloomEffect.luminanceMaterial, 'threshold', 0, 10)
-  // gui.add(bloomEffect.luminanceMaterial, 'smoothing', 0, 10)
-  // gui.add(bloomEffect.mipmapBlurPass, 'levels', 0, 10)
-  // gui.add(bloomEffect.mipmapBlurPass, 'radius', 0, 10)
+  // gui.add(bloomEffect.luminanceMaterial, 'threshold', 0, 10, 1)
+  // gui.add(bloomEffect.luminanceMaterial, 'smoothing', 0, 10, 1)
+  // gui.add(bloomEffect.mipmapBlurPass, 'levels', 1, 10, 1)
+  // gui.add(bloomEffect.mipmapBlurPass, 'radius', 0, 1, 0.01)
 
   const effectPass = new EffectPass(camera, bloomEffect)
   composer.addPass(effectPass)
@@ -128,8 +131,8 @@ export async function spotLightDemo1(mainGui) {
   controls = new OrbitControls(camera, renderer.domElement)
   controls.enableDamping = true // an animation loop is required when either damping or auto-rotation are enabled
   controls.dampingFactor = 0.05
-  controls.minDistance = 0.1
-  controls.maxDistance = 100
+  controls.minDistance = 0.5
+  controls.maxDistance = 20
   controls.maxPolarAngle = Math.PI / 1.5
   controls.target.set(0, 0, 0)
 
@@ -175,37 +178,25 @@ export async function spotLightDemo1(mainGui) {
   // light.position.set(5, 5, 5)
   // scene.add(light)
 
-  const bg_env = new BG_ENV(scene)
+  const bg_env = new BG_ENV(scene, { loadingHelper: l_h })
   bg_env.preset = HDRI_LIST.kloppenheim
   bg_env.setEnvType('HDRI')
-  bg_env.setBGType('Color')
-  bg_env.bgColor.set(0x000000)
-  bg_env.updateAll()
+  bg_env.setBGType('Default')
+
   bg_env.addGui(sceneGui)
-  await loadModels()
 
-  const envVals = {
-    int: 0.15,
-  }
-  function updateEnvInt() {
-    scene.traverse((node) => {
-      if (node.material && node.material.envMapIntensity !== undefined) {
-        node.material.envMapIntensity = envVals.int
-        if (node.material.type === 'MeshPhysicalMaterial') {
-          // console.log(node.material)
-        }
-      }
-    })
-  }
+  scene.backgroundBlurriness = 0.1
+  scene.backgroundIntensity = 0.01
+  scene.environmentIntensity = 0.1
 
-  updateEnvInt()
-
-  sceneGui.add(envVals, 'int', 0, 1).onChange(updateEnvInt)
+  sceneGui.add(scene, 'environmentIntensity', 0, 1)
 
   // gui.add(params, 'pixelRatio', 0.5, window.devicePixelRatio * 3).onChange((v) => {
   //   renderer.setPixelRatio(v)
   //   composer.setSize(window.innerWidth, window.innerHeight)
   // })
+  render()
+  await Promise.all([bg_env.updateAll(), setupScene()])
   animate()
 }
 
@@ -256,11 +247,6 @@ function raycast() {
 function onPointerMove(event) {
   pointer.x = (event.clientX / window.innerWidth) * 2 - 1
   pointer.y = -(event.clientY / window.innerHeight) * 2 + 1
-}
-
-async function loadModels() {
-  await setupScene()
-  renderer.compile(scene, camera)
 }
 
 /**
@@ -373,6 +359,8 @@ async function setupScene() {
     addPoles(AllVolumeMaterials),
   ])
 
+  // renderer.compileAsync(scene, camera)
+
   const rendererSize = new Vector3()
 
   const resizeDepthMap = () => {
@@ -420,9 +408,11 @@ async function setupScene() {
   useFrame = () => {
     tick = clock.getDelta() * params.speed
 
-    // roadOnFrame(tick)
+    roadOnFrame(tick)
     carOnFrame(tick)
-    // poleOnFrame(tick)
+    poleOnFrame(tick)
+
+    scene.environmentRotation.y += camera.position.x > 0 ? tick * 0.01 : -tick * 0.01
 
     if (params.useDepth) {
       //remove depth from material to avoid webgl warnings
@@ -440,7 +430,8 @@ async function setupScene() {
 
 async function addCar(AllVolumeMaterials) {
   // CAR
-  const gltf = await gltfLoader.loadAsync(MODEL_LIST.porsche_1975.url)
+
+  const gltf = await MODEL_LOADER(MODEL_LIST.porsche_1975.url, { loadingHelper: l_h })
   const model = gltf.scene
   model.name = 'car'
 
@@ -474,8 +465,11 @@ async function addCar(AllVolumeMaterials) {
   carParams.emit.material.color.set(0x000000)
   carParams.emit.material.emissive.set('#ffbb73')
   carParams.lights.material.emissiveIntensity = 3
-  // gui.add(carParams.emit.material, 'emissiveIntensity', 0, 50)
-  // gui.add(carParams.lights.material, 'emissiveIntensity', 0, 50)
+  gui.add(carParams.emit.material, 'emissiveIntensity', 0, 50)
+  gui.add(carParams.lights.material, 'emissiveIntensity', 0, 50)
+
+  bloomEffect.selection.add(carParams.emit)
+  // bloomEffect.selection.add(carParams.lights)
 
   const params = {
     distance: 8,
@@ -644,8 +638,6 @@ async function addCar(AllVolumeMaterials) {
       moveTween._valuesStart.x = model.position.x
     })
 
-  bloomEffect.selection.add(carParams.emit)
-
   return (tick) => {
     volumeMaterialL.spotPosition.copy(volumeMeshL.getWorldPosition(vec))
     volumeMaterialR.spotPosition.copy(volumeMeshR.getWorldPosition(vec))
@@ -657,7 +649,7 @@ async function addCar(AllVolumeMaterials) {
 
 async function addRoad() {
   //road
-  const gltfRoad = await gltfLoader.loadAsync(MODEL_LIST.road.url)
+  const gltfRoad = await MODEL_LOADER(MODEL_LIST.road.url, { loadingHelper: l_h })
   const modelRoad = gltfRoad.scene
   modelRoad.name = 'road'
 
@@ -702,20 +694,11 @@ async function addPoles(AllVolumeMaterials) {
   const vec = new Vector3()
 
   const radiusTop = 0.1
-  const gltfPole = await gltfLoader.loadAsync(MODEL_LIST.pole.url)
+  const gltfPole = await MODEL_LOADER(MODEL_LIST.pole.url, { loadingHelper: l_h })
   const modelPole = gltfPole.scene
   modelPole.name = 'pole'
 
   const lampLightColor = new Color('#ffbb73')
-
-  modelPole.traverse((child) => {
-    if (child.isMesh) {
-      child.selectOnRaycast = modelPole
-      child.castShadow = true
-      // child.receiveShadow = true
-    }
-  })
-  // mainObjects.add(modelPole)
 
   modelPole.position.set(-6, 0, 0)
   modelPole.rotation.y = Math.PI / 2
@@ -735,6 +718,7 @@ async function addPoles(AllVolumeMaterials) {
     gap: 15,
     intensity: 1000,
     color: lampLightColor,
+    helper: false,
   }
   const folder = gui.addFolder('Street Lamps')
 
@@ -770,6 +754,8 @@ async function addPoles(AllVolumeMaterials) {
     spotLight.target.position.set(0, 0, 7)
     spotLight.castShadow = true
     spotLight.shadow.bias = -0.0001
+    spotLight.radius = 1
+    spotLight.blurSamples = 4
 
     const lampVolMat = new SpotLightMaterial()
     console.log(lampVolMat.uuid)
@@ -791,7 +777,6 @@ async function addPoles(AllVolumeMaterials) {
 
     const lampGui = folder.addFolder('lamp ' + index)
     lampGui.add(spotLight.shadow, 'bias', -0.0001, 0.0001).onChange(() => {})
-
     lampGui.add(lampVolMat, 'opacity', 0, 2)
     lampGui.add(lampVolMat, 'attenuation', 0, spotLight.distance)
     lampGui.add(lampVolMat, 'anglePower', 0, 15)
@@ -800,6 +785,8 @@ async function addPoles(AllVolumeMaterials) {
 
     pole.add(spotLight, spotLight.target)
     const helper = new SpotLightHelper(spotLight)
+    spotLight.helper = helper
+    helper.visible = lampParams.helper
     scene.add(helper)
     mainObjects.add(pole)
   }
@@ -817,6 +804,12 @@ async function addPoles(AllVolumeMaterials) {
 
       if (pole.position.z < (-lampParams.gap / 2) * lamps.length) {
         pole.position.z += lampParams.gap * lamps.length
+      }
+
+      if (lampParams.helper) {
+        spotLights.forEach((spotLight) => {
+          spotLight.helper.update()
+        })
       }
 
       volMeshes[index].material.spotPosition.copy(volMeshes[index].getWorldPosition(vec))
