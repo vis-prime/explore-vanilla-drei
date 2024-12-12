@@ -8,7 +8,6 @@ import {
   Raycaster,
   Group,
   Color,
-  TextureLoader,
   VSMShadowMap,
   WebGLRenderTarget,
   MathUtils,
@@ -62,7 +61,6 @@ let stats,
   pointer = new Vector2()
 
 const mainObjects = new Group()
-const textureLoader = new TextureLoader()
 
 const gltfLoader = new GLTFLoader()
 const draco = new DRACOLoader()
@@ -412,12 +410,12 @@ async function populatePortal() {
 
   const portalIntro = new Tween(portalMesh.scale)
     .to({ x: 1, y: 1 })
-    .delay(500)
+    .delay(1000)
     .duration(3000)
     .onUpdate(() => {})
     .easing(Easing.Quadratic.InOut)
     .chain(camStartPos)
-
+  render()
   portalIntro.start()
 
   const geometry = new TorusKnotGeometry(0.5, 0.25, 150, 20)
