@@ -266,6 +266,7 @@ export class BG_ENV {
     let texture = this.envCache[key]
 
     if (!texture) {
+      this.loadingHelper?.setGlobalProgress(key, 0)
       texture = exr
         ? await exrLoader.loadAsync(key, (e) => this.loadingHelper?.setGlobalProgress(key, e.loaded / e.total))
         : await rgbeLoader.loadAsync(key, (e) => this.loadingHelper?.setGlobalProgress(key, e.loaded / e.total))
@@ -286,6 +287,7 @@ export class BG_ENV {
     if (key) {
       let texture = this.bgCache[key]
       if (!texture) {
+        this.loadingHelper?.setGlobalProgress(key, 0)
         const blob = await fileLoader.loadAsync(key, (e) =>
           this.loadingHelper?.setGlobalProgress(key, e.loaded / e.total)
         )
@@ -325,6 +327,7 @@ export class BG_ENV {
 
     const loadExr = async () => {
       if (!envDict.exr) return
+      this.loadingHelper?.setGlobalProgress(envDict.exr, 0)
       const texture = await exrLoader.loadAsync(envDict.exr, (e) =>
         this.loadingHelper?.setGlobalProgress(envDict.exr, e.loaded / e.total)
       )
@@ -335,6 +338,7 @@ export class BG_ENV {
 
     const loadHdr = async () => {
       if (!envDict.hdr) return
+      this.loadingHelper?.setGlobalProgress(envDict.hdr, 0)
       const texture = await rgbeLoader.loadAsync(envDict.hdr, (e) =>
         this.loadingHelper?.setGlobalProgress(envDict.hdr, e.loaded / e.total)
       )
@@ -346,6 +350,7 @@ export class BG_ENV {
     const loadImg = async () => {
       const imgUrl = envDict.webP || envDict.avif
       if (imgUrl) {
+        this.loadingHelper?.setGlobalProgress(imgUrl, 0)
         const blob = await fileLoader.loadAsync(imgUrl, (e) =>
           this.loadingHelper?.setGlobalProgress(imgUrl, e.loaded / e.total)
         )

@@ -174,6 +174,7 @@ export async function meshPortalMaterialDemo(mainGui) {
   populatePortal()
 
   const exrLoader = new EXRLoader()
+  l_h.setGlobalProgress(HDRI_LIST.old_hall.exr, 0)
   exrLoader.load(
     HDRI_LIST.old_hall.exr,
     (tex) => {

@@ -57,9 +57,8 @@ export const MODEL_LIST = {
  * @returns {Promise<import("three/examples/jsm/loaders/GLTFLoader").GLTF>} A promise that resolves with the loaded GLTF scene or object.
  */
 export const MODEL_LOADER = async (url, { loadingHelper } = {}) => {
+  loadingHelper?.setGlobalProgress(url, 0)
   return await gltfLoader.loadAsync(url, (e) => {
-    if (loadingHelper) {
-      loadingHelper.setGlobalProgress(url, e.loaded / e.total)
-    }
+    loadingHelper?.setGlobalProgress(url, e.loaded / e.total)
   })
 }
