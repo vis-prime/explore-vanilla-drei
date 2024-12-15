@@ -1,5 +1,7 @@
-const DEG2RAD = Math.PI / 180.0
-const RAD2DEG = 180.0 / Math.PI
+import { MathUtils } from 'three'
+
+const DEG2RAD = MathUtils.DEG2RAD
+const RAD2DEG = MathUtils.RAD2DEG
 
 /**
  * Converts horizontal FoV to vertical FoV.

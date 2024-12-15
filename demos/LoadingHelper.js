@@ -57,16 +57,23 @@ export class LoadingHelper {
   setGlobalProgress(id = '', progress = 0) {
     this.multiProgress.set(id, progress)
 
-    if (this.multiProgress.get(id) === 1) {
-      this.multiProgress.delete(id)
+    let allDone = true
+    for (const val of this.multiProgress.values()) {
+      if (val !== 1) {
+        allDone = false
+        break
+      }
     }
 
-    if (this.multiProgress.size === 0) {
+    if (allDone) {
+      this.multiProgress.clear()
       this.updateProgress(1)
+
       if (this.debug) {
-        const str = `${1} size:${this.multiProgress.size} id:${id.slice(0, 30)}=>${progress.toFixed(2)} `
+        const str = `${100}% items:${this.multiProgress.size} id:${id.slice(0, 30)}=>${progress.toFixed(2)} `
         console.log(str)
       }
+
       return
     }
     // Calculate total progress
