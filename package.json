@@ -9,19 +9,19 @@
     "deploy": "npm version patch && vite build && gh-pages -d dist"
   },
   "devDependencies": {
-    "vite": "^5.4.11"
+    "vite": "^7.1.0"
   },
   "dependencies": {
-    "@pmndrs/vanilla": "^1.20.1",
-    "@tweenjs/tween.js": "^23.1.1",
-    "@types/three": "^0.170.0",
-    "@vitejs/plugin-basic-ssl": "^1.1.0",
-    "gh-pages": "^6.2.0",
+    "@pmndrs/vanilla": "^1.21.1",
+    "@tweenjs/tween.js": "^25.0.0",
+    "@types/three": "^0.179.0",
+    "@vitejs/plugin-basic-ssl": "^2.1.0",
+    "gh-pages": "^6.3.0",
     "lil-gui": "^0.20.0",
-    "postprocessing": "^6.36.4",
+    "postprocessing": "^6.37.7",
     "realism-effects": "^1.1.2",
-    "three": "^0.170.0",
-    "three-stdlib": "^2.34.0",
+    "three": "^0.179.1",
+    "three-stdlib": "^2.36.0",
     "vite-plugin-compression": "^0.5.1"
   },
   "prettier": {
