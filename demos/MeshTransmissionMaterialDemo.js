@@ -25,6 +25,8 @@ import {
   LinearFilter,
   HalfFloatType,
   NoToneMapping,
+  FrontSide,
+  DoubleSide,
   BackSide,
 } from 'three'
 import Stats from 'three/examples/jsm/libs/stats.module'
@@ -507,8 +509,10 @@ async function setupMTM() {
 
 function addPhysicalGui(gui, mat) {
   const fol = gui.addFolder('Physical Material')
+
   fol.addColor(mat, 'color')
   fol.addColor(mat, 'attenuationColor')
+  fol.add(mat, 'side', { FrontSide, BackSide, DoubleSide })
   fol.add(mat, 'attenuationDistance', 0, 2)
   fol.add(mat, 'roughness', 0, 1)
   fol.add(mat, 'transmission', 0, 1)
