@@ -29,7 +29,7 @@ const All_Scenes = {
   },
 
   Volumetric_SpotLight_Car: async (gui) => {
-    const module = await import('./demos/SpotLightDemo1.js')
+    const module = await import('./demos/SpotLightDemoWithCar.js')
     module.default(gui)
   },
 
@@ -136,8 +136,6 @@ gui
   .add(params, 'sceneName', formattedNamesDict)
   .name('DEMO')
   .onChange((v) => {
-    console.log({ v })
-
     updatePageDesc(v)
     window.location.reload()
   })

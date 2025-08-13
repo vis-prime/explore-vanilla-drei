@@ -37,13 +37,14 @@ import { TransformControls } from 'three/examples/jsm/controls/TransformControls
 
 import { HDRI_LIST } from '../hdri/HDRI_LIST'
 
-import { Easing, Tween, update } from '@tweenjs/tween.js'
+import { Easing, Tween, Group as TweenGroup } from '@tweenjs/tween.js'
 import { BloomEffect, EffectComposer, EffectPass, KernelSize, RenderPass, SelectiveBloomEffect } from 'postprocessing'
 
 import { BG_ENV } from './BG_ENV'
 import { MODEL_LIST, MODEL_LOADER } from '../models/MODEL_LIST'
 import { LoadingHelper } from './LoadingHelper'
 
+const TWEEN_GROUP = new TweenGroup()
 let stats,
   renderer,
   composer,
@@ -208,7 +209,7 @@ function onWindowResize() {
 
 function render() {
   stats.update()
-  update() //tween
+  TWEEN_GROUP.update()
   useFrame()
   controls.update()
   // renderer.render(scene, camera)
@@ -586,7 +587,7 @@ async function addCar(AllVolumeMaterials) {
     carParams.body.rotation.z = MathUtils.mapLinear(carParams.steerVal, -1, 1, -tiltLimit, tiltLimit)
   }
 
-  const straightSteer = new Tween(carParams)
+  const straightSteer = new Tween(carParams, TWEEN_GROUP)
     .to({ steerVal: 0 })
     .duration(1000)
     .easing(Easing.Elastic.Out)
@@ -597,7 +598,7 @@ async function addCar(AllVolumeMaterials) {
       steer()
     })
   let pingPong = true
-  const randomSteer = new Tween(carParams)
+  const randomSteer = new Tween(carParams, TWEEN_GROUP)
     .to({ steerVal: 1 })
     .duration(1000)
     .easing(Easing.Back.Out)
@@ -629,7 +630,7 @@ async function addCar(AllVolumeMaterials) {
     randomSteer.startFromCurrentValues()
   }, 2000)
 
-  const moveTween = new Tween(model.position)
+  const moveTween = new Tween(model.position, TWEEN_GROUP)
     .to({ x: 0 })
     .duration(2000)
     .easing(Easing.Quadratic.InOut)
