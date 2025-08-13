@@ -3,6 +3,8 @@ import './style.css'
 import { version } from './package.json'
 import { GUI } from 'lil-gui'
 
+console.log(`Link to drei-vanilla library 'https://github.com/pmndrs/drei-vanilla'`)
+
 let url_string = window.location.href
 let url = new URL(url_string)
 
@@ -11,7 +13,7 @@ let url = new URL(url_string)
  * @enum
  */
 const All_Scenes = {
-  'Transmission Material': async (gui) => {
+  Transmission_Material: async (gui) => {
     const module = await import('./demos/MeshTransmissionMaterialDemo.js')
     module.default(gui)
   },
@@ -21,12 +23,12 @@ const All_Scenes = {
     module.default(gui)
   },
 
-  'Volumetric SpotLight': async (gui) => {
+  Volumetric_SpotLight: async (gui) => {
     const module = await import('./demos/SpotLightDemo.js')
     module.default(gui)
   },
 
-  'Volumetric SpotLight Car': async (gui) => {
+  Volumetric_SpotLight_Car: async (gui) => {
     const module = await import('./demos/SpotLightDemo1.js')
     module.default(gui)
   },
@@ -41,22 +43,22 @@ const All_Scenes = {
     module.default(gui)
   },
 
-  'Reflection Material': async (gui) => {
+  Reflection_Material: async (gui) => {
     const module = await import('./demos/MeshReflectorMaterialDemo.js')
     module.default(gui)
   },
 
-  'Accumulative Shadows': async (gui) => {
+  Accumulative_Shadows: async (gui) => {
     const module = await import('./demos/AccumulativeShadowsDemo.js')
     module.default(gui)
   },
 
-  'Sprite Animator': async (gui) => {
+  Sprite_Animator: async (gui) => {
     const module = await import('./demos/SpriteAnimatorDemo.js')
     module.default(gui)
   },
 
-  'Portal Material': async (gui) => {
+  Portal_Material: async (gui) => {
     const module = await import('./demos/MeshPortalMaterialDemo.js')
     module.default(gui)
   },
@@ -71,7 +73,7 @@ const All_Scenes = {
     module.default(gui)
   },
 
-  'Transmission Material Basic': async (gui) => {
+  Transmission_Material_Basic: async (gui) => {
     const module = await import('./demos/MeshTransmissionMaterialBasicDemo.js')
     module.default(gui)
   },
@@ -81,8 +83,8 @@ const All_Scenes = {
     module.default(gui)
   },
 
-  'Sparkles and Stars': async (gui) => {
-    const module = await import('./demos/SparklesDemo.js')
+  Sparkles_and_Stars: async (gui) => {
+    const module = await import('./demos/SparklesStarsDemo.js')
     module.default(gui)
   },
 }
@@ -90,6 +92,15 @@ const All_Scenes = {
 const wip = [
   //  meshTransmissionMaterialInstant
 ]
+
+const formattedNamesDict = {}
+for (const key in All_Scenes) {
+  let formattedName = key.replace(/_/g, ' ')
+  formattedName = formattedName.charAt(0).toUpperCase() + formattedName.slice(1)
+
+  formattedNamesDict[formattedName] = key
+}
+console.log({ formattedNamesDict })
 
 const params = {
   sceneName: url.searchParams.get('scene') || Object.keys(All_Scenes)[0],
@@ -122,8 +133,8 @@ if (!Object.keys(All_Scenes).includes(params.sceneName)) {
 }
 
 gui
-  .add(params, 'sceneName', Object.keys(All_Scenes))
-  .name('SCENE')
+  .add(params, 'sceneName', formattedNamesDict)
+  .name('DEMO')
   .onChange((v) => {
     console.log({ v })
 
@@ -132,5 +143,5 @@ gui
   })
 
 params.sceneInitFunction = All_Scenes[params.sceneName]
-await params.sceneInitFunction(gui)
+params.sceneInitFunction(gui)
 updatePageDesc(params.sceneName)

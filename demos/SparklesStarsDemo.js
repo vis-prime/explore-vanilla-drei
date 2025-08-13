@@ -18,6 +18,10 @@ import {
   MathUtils,
   Vector3,
   Timer,
+  TorusGeometry,
+  TorusKnotGeometry,
+  IcosahedronGeometry,
+  MeshPhysicalMaterial,
 } from 'three'
 import Stats from 'three/examples/jsm/libs/stats.module'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
@@ -82,11 +86,12 @@ export default async function SparklesAndStarsDemo(mainGui) {
 
   // scene
   scene = new Scene()
+  params.bgColor.set(0x000011)
+  scene.background = params.bgColor
 
   rgbeLoader.load(HDRI_LIST.skidpan.hdr, (texture) => {
     texture.mapping = EquirectangularReflectionMapping
     scene.backgroundBlurriness = 0.1
-    // scene.background = texture
     scene.environment = texture
   })
   scene.add(mainObjects)
@@ -130,8 +135,8 @@ export default async function SparklesAndStarsDemo(mainGui) {
     }
   })
 
-  sceneGui.add(transformControls, 'mode', ['translate', 'rotate', 'scale'])
-  sceneGui.add(scene, 'backgroundBlurriness', 0, 1, 0.01)
+  // sceneGui.add(transformControls, 'mode', ['translate', 'rotate', 'scale'])
+  // sceneGui.add(scene, 'backgroundBlurriness', 0, 1, 0.01)
   sceneGui.addColor(params, 'bgColor').onChange(() => {
     scene.background = params.bgColor
   })
@@ -191,8 +196,16 @@ let cube, monkey
 async function loadModels() {
   // cube
   cube = new Mesh(
-    new BoxGeometry(1, 1, 1),
-    new MeshStandardMaterial({ color: 0xffffff * Math.random(), roughness: 0.3, metalness: 0 })
+    new IcosahedronGeometry(0.5, 2),
+    new MeshPhysicalMaterial({
+      color: 0xffffff * Math.random(),
+      roughness: 0.3,
+      metalness: 1,
+      flatShading: true,
+      sheen: 1,
+      sheenColor: 0xffffff * Math.random(),
+      sheenRoughness: 0.5,
+    })
   )
   cube.name = 'cube'
   cube.castShadow = true
@@ -281,7 +294,7 @@ function setupAdvancedSparkles() {
     maxSpeed: 10,
 
     minSize: 0.3,
-    maxSize: 10,
+    maxSize: 20,
 
     minColor: 0,
     maxColor: 1,
@@ -334,8 +347,24 @@ function setupAdvancedSparkles() {
 }
 
 function setupStars() {
-  const stars = new Stars({ radius: 50, depth: 25, fade: true })
+  /**
+   * @type {import('../wip/Stars').StarsProps}
+   */
+  const starParams = {
+    radius: 50,
+    depth: 25,
+    count: 1000,
+    fade: true,
+    factor: 5,
+    saturation: 1,
+  }
+  const stars = new Stars(starParams)
 
   scene.add(stars)
   allSparklesStars.push(stars)
+
+  const updateStars = () => stars.rebuildAttributes(starParams)
+  const folder = gui.addFolder('Stars')
+  folder.add(starParams, 'count', 10, 10000, 10).onChange(updateStars)
+  folder.add(starParams, 'factor', 0.5, 50, 0.1).onChange(updateStars)
 }
