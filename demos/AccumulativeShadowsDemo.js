@@ -99,7 +99,7 @@ const api = {
   resetPlm: () => {},
 }
 
-export async function AccumulativeShadowsDemo(mainGui) {
+export default async function AccumulativeShadowsDemo(mainGui) {
   gui = mainGui
   sceneGui = gui.addFolder('Scene')
   stats = new Stats()

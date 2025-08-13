@@ -65,7 +65,7 @@ const intersects = [] //raycast
 let useFrame = () => {}
 let sceneGui
 
-export async function meshReflectorMaterialDemo(mainGui) {
+export default async function meshReflectorMaterialDemo(mainGui) {
   gui = mainGui
   sceneGui = gui.addFolder('Scene')
   stats = new Stats()

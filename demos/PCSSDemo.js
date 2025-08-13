@@ -55,7 +55,7 @@ const raycaster = new Raycaster()
 const intersects = []
 let sceneGui, sunLight
 
-export async function pcssDemo(mainGui) {
+export default async function pcssDemo(mainGui) {
   gui = mainGui
   sceneGui = gui.addFolder('Scene')
   stats = new Stats()

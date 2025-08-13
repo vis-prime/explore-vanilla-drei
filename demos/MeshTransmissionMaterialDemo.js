@@ -74,7 +74,7 @@ let sceneGui
 let envObject
 let pmremGenerator
 
-export async function meshTransmissionMaterialDemo(mainGui) {
+export default async function meshTransmissionMaterialDemo(mainGui) {
   gui = mainGui
   sceneGui = gui.addFolder('Scene')
   stats = new Stats()

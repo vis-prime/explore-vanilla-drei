@@ -45,7 +45,7 @@ let sceneGui, model
  * @type {import('@pmndrs/vanilla').OutlinesType}
  */
 let outlines
-export async function OutlinesDemo(mainGui) {
+export default async function OutlinesDemo(mainGui) {
   gui = mainGui
   sceneGui = gui.addFolder('Scene')
   stats = new Stats()

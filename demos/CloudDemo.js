@@ -46,7 +46,7 @@ const intersects = [] //raycast
 let useFrame = () => {} // runs on every frame frame
 let sceneGui
 
-export async function CloudDemo(mainGui) {
+export default async function CloudDemo(mainGui) {
   gui = mainGui
   sceneGui = gui.addFolder('Scene')
   stats = new Stats()

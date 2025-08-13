@@ -29,7 +29,7 @@ import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { TransformControls } from 'three/examples/jsm/controls/TransformControls'
 import { GroundedSkybox } from 'three/addons/objects/GroundedSkybox'
-import { Easing, Tween, update } from '@tweenjs/tween.js'
+import { Easing, Tween, Group as TweenGroup } from '@tweenjs/tween.js'
 import { MODEL_LIST, MODEL_LOADER } from '../models/MODEL_LIST'
 import { HDRI_LIST } from '../hdri/HDRI_LIST'
 import { EXRLoader } from 'three/examples/jsm/loaders/EXRLoader'
@@ -37,6 +37,7 @@ import { MeshPortalMaterial } from '@pmndrs/vanilla'
 import { calculateVerticalFoV } from './Helpers'
 import { LoadingHelper } from './LoadingHelper'
 
+const TWEEN_GROUP = new TweenGroup()
 const l_h = new LoadingHelper()
 let stats,
   /**
@@ -99,7 +100,7 @@ const wheelsPortal = {
 }
 let carPosSet = () => {}
 
-export async function meshPortalMaterialDemo(mainGui) {
+export default async function meshPortalMaterialDemo(mainGui) {
   gui = mainGui
   gui.close()
   stats = new Stats()
@@ -208,7 +209,7 @@ function onWindowResize() {
 function render() {
   stats.update()
   controls.update()
-  update() // tween
+  TWEEN_GROUP.update()
   if (params.renderOnlyPortal) {
     renderer.render(portalScene, camera)
   } else {
@@ -350,7 +351,7 @@ async function populatePortal() {
   await renderer.compileAsync(scene, camera)
   await renderer.compileAsync(portalScene, camera)
 
-  const carReverse = new Tween(car.position)
+  const carReverse = new Tween(car.position, TWEEN_GROUP)
     .onStart(() => {})
     .to({ z: 0 })
     .duration(3000)
@@ -366,7 +367,7 @@ async function populatePortal() {
     tarStart: new Vector3(),
     tarEnd: new Vector3(0, 0, 0),
   }
-  const camRestore = new Tween(obj)
+  const camRestore = new Tween(obj, TWEEN_GROUP)
     .to({ val: 1 })
     .delay(100)
     .onStart(() => {
@@ -390,7 +391,7 @@ async function populatePortal() {
       }, 1000)
     })
 
-  const carIntro = new Tween(car.position)
+  const carIntro = new Tween(car.position, TWEEN_GROUP)
     .onStart(() => {})
     .to({ z: 1 })
     .delay(100)
@@ -403,13 +404,13 @@ async function populatePortal() {
     .chain(camRestore)
     .onComplete(() => {})
 
-  const camStartPos = new Tween(camera.position)
+  const camStartPos = new Tween(camera.position, TWEEN_GROUP)
     .to({ x: 1.5, y: 0.2, z: 0.25 })
     .duration(2000)
     .easing(Easing.Quadratic.InOut)
     .chain(carIntro)
 
-  const portalIntro = new Tween(portalMesh.scale)
+  const portalIntro = new Tween(portalMesh.scale, TWEEN_GROUP)
     .to({ x: 1, y: 1 })
     .delay(1000)
     .duration(3000)

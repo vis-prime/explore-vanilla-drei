@@ -27,7 +27,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { TransformControls } from 'three/examples/jsm/controls/TransformControls'
 import { MODEL_LIST } from '../models/MODEL_LIST'
 import { HDRI_LIST } from '../hdri/HDRI_LIST'
-import { Sparkles } from '@pmndrs/vanilla'
+import { Sparkles, Stars } from '@pmndrs/vanilla'
 
 let stats,
   renderer,
@@ -56,11 +56,11 @@ const intersects = [] //raycast
 let sceneGui
 
 /**
- * @type {Sparkles[]}
+ * @type {Sparkles[] | Stars[]}
  */
-let allSparkles = []
+let allSparklesStars = []
 
-export async function SparklesDemo(mainGui) {
+export default async function SparklesAndStarsDemo(mainGui) {
   gui = mainGui
   sceneGui = gui.addFolder('Scene')
   stats = new Stats()
@@ -86,7 +86,7 @@ export async function SparklesDemo(mainGui) {
   rgbeLoader.load(HDRI_LIST.skidpan.hdr, (texture) => {
     texture.mapping = EquirectangularReflectionMapping
     scene.backgroundBlurriness = 0.1
-    scene.background = texture
+    // scene.background = texture
     scene.environment = texture
   })
   scene.add(mainObjects)
@@ -137,7 +137,7 @@ export async function SparklesDemo(mainGui) {
   })
 
   await loadModels()
-  setupSparkles()
+  setupSparklesAndStars()
 }
 
 function onWindowResize() {
@@ -152,7 +152,7 @@ function render() {
   const elapsedTime = timer.getElapsed()
   stats.update()
 
-  for (const sparkles of allSparkles) {
+  for (const sparkles of allSparklesStars) {
     // Update each sparkles instance
     sparkles.update(elapsedTime)
   }
@@ -215,9 +215,10 @@ async function loadModels() {
   animate()
 }
 
-function setupSparkles() {
+function setupSparklesAndStars() {
   setupSimpleSparkles()
   setupAdvancedSparkles()
+  setupStars()
 }
 
 function setupSimpleSparkles() {
@@ -236,7 +237,7 @@ function setupSimpleSparkles() {
   const sparkles = new Sparkles(sparkleParameters)
   sparkles.setPixelRatio(renderer.getPixelRatio())
 
-  allSparkles.push(sparkles)
+  allSparklesStars.push(sparkles)
 
   cube.add(sparkles)
 
@@ -315,7 +316,7 @@ function setupAdvancedSparkles() {
   advancedSparkles.position.y = 0.5
   monkey.add(advancedSparkles)
 
-  allSparkles.push(advancedSparkles)
+  allSparklesStars.push(advancedSparkles)
 
   const updateSparkles = () => {
     randomiseValues(randomParams.minRandom, randomParams.maxRandom)
@@ -330,4 +331,11 @@ function setupAdvancedSparkles() {
   sFol.add(randomParams, 'maxSize', 0, 100, 0.01).onChange(updateSparkles)
   sFol.add(randomParams, 'minColor', 0, 1, 0.01).onChange(updateSparkles)
   sFol.add(randomParams, 'maxColor', 0, 1, 0.01).onChange(updateSparkles)
+}
+
+function setupStars() {
+  const stars = new Stars({ radius: 50, depth: 25, fade: true })
+
+  scene.add(stars)
+  allSparklesStars.push(stars)
 }

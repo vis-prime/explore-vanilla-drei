@@ -51,7 +51,7 @@ let sceneGui
 
 const spritesInstances = []
 
-export async function SpriteAnimatorDemo(mainGui) {
+export default async function SpriteAnimatorDemo(mainGui) {
   gui = mainGui
   sceneGui = gui.addFolder('Scene')
   stats = new Stats()

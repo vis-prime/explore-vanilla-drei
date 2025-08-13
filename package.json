@@ -9,10 +9,10 @@
     "deploy": "npm version patch && vite build && gh-pages -d dist"
   },
   "devDependencies": {
-    "vite": "^7.1.0"
+    "vite": "^7.1.2"
   },
   "dependencies": {
-    "@pmndrs/vanilla": "^1.22.0",
+    "@pmndrs/vanilla": "^1.23.0",
     "@tweenjs/tween.js": "^25.0.0",
     "@types/three": "^0.179.0",
     "@vitejs/plugin-basic-ssl": "^2.1.0",

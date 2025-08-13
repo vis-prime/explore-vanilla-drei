@@ -63,7 +63,7 @@ let activeModel
 
 const l_h = new LoadingHelper()
 
-export async function CausticsDemo(mainGui) {
+export default async function CausticsDemo(mainGui) {
   gui = mainGui
   sceneGui = gui.addFolder('Scene')
   stats = new Stats()

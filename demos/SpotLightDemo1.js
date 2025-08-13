@@ -75,7 +75,7 @@ let sceneGui
 const l_h = new LoadingHelper({ debug: true })
 console.log('TODO : DYNAMIC IMPORT EACH FILE')
 
-export async function spotLightDemo1(mainGui) {
+export default async function spotLightDemo1(mainGui) {
   gui = mainGui
   sceneGui = gui.addFolder('Scene')
   stats = new Stats()

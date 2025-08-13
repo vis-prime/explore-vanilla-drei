@@ -75,7 +75,7 @@ const intersects = [] //raycast
 let useFrame = () => {}
 let sceneGui
 
-export async function spotLightDemo(mainGui) {
+export default async function spotLightDemo(mainGui) {
   gui = mainGui
   sceneGui = gui.addFolder('Scene')
   stats = new Stats()

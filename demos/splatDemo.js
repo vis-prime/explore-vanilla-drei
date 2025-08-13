@@ -31,7 +31,7 @@ const intersects = [] //raycast
 let onEachFrame = () => {} // runs on every frame frame
 let sceneGui, model
 
-export async function SplatDemo(mainGui) {
+export default async function SplatDemo(mainGui) {
   gui = mainGui
   sceneGui = gui.addFolder('Scene')
   stats = new Stats()

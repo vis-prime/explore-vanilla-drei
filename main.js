@@ -2,23 +2,6 @@ import './style.css'
 
 import { version } from './package.json'
 import { GUI } from 'lil-gui'
-import { meshTransmissionMaterialDemo } from './demos/MeshTransmissionMaterialDemo'
-import { pcssDemo } from './demos/PCSSDemo'
-import { spotLightDemo } from './demos/SpotLightDemo'
-import { spotLightDemo1 } from './demos/SpotLightDemo1'
-
-import { realismEffectsDemo } from './demos/realismEffectsDemo'
-import { meshReflectorMaterialDemo } from './demos/MeshReflectorMaterialDemo'
-import { meshTransmissionMaterialBasic } from './demos/MeshTransmissionMaterialBasicDemo'
-import { CausticsDemo } from './demos/CausticsDemo'
-import { AccumulativeShadowsDemo } from './demos/AccumulativeShadowsDemo'
-import { SpriteAnimatorDemo } from './demos/SpriteAnimatorDemo'
-import { meshPortalMaterialDemo } from './demos/MeshPortalMaterialDemo'
-// import { meshTransmissionMaterialInstant } from './demos/MeshTransmissionMaterialInstantDemo'
-import { OutlinesDemo } from './demos/OutlineDemo'
-import { SplatDemo } from './demos/splatDemo'
-import { CloudDemo } from './demos/CloudDemo'
-import { SparklesDemo } from './demos/SparklesDemo'
 
 let url_string = window.location.href
 let url = new URL(url_string)
@@ -28,24 +11,80 @@ let url = new URL(url_string)
  * @enum
  */
 const All_Scenes = {
-  MeshTransmissionMaterial: meshTransmissionMaterialDemo,
+  'Transmission Material': async (gui) => {
+    const module = await import('./demos/MeshTransmissionMaterialDemo.js')
+    module.default(gui)
+  },
 
-  PCSS: pcssDemo,
-  SpotLight: spotLightDemo,
-  SpotLight1: spotLightDemo1,
-  RealismEffects: realismEffectsDemo,
-  Caustics: CausticsDemo,
-  MeshReflectionMaterial: meshReflectorMaterialDemo,
-  AccumulativeShadows: AccumulativeShadowsDemo,
-  SpriteAnimator: SpriteAnimatorDemo,
-  MeshPortalMaterial: meshPortalMaterialDemo,
-  Outlines: OutlinesDemo,
-  Splat: SplatDemo,
+  PCSS: async (gui) => {
+    const module = await import('./demos/PCSSDemo.js')
+    module.default(gui)
+  },
 
-  MeshTransmissionMaterialBasic: meshTransmissionMaterialBasic,
-  // MeshTransmissionMaterialInstant: meshTransmissionMaterialInstant,
-  Cloud: CloudDemo,
-  Sparkles: SparklesDemo,
+  'Volumetric SpotLight': async (gui) => {
+    const module = await import('./demos/SpotLightDemo.js')
+    module.default(gui)
+  },
+
+  'Volumetric SpotLight Car': async (gui) => {
+    const module = await import('./demos/SpotLightDemo1.js')
+    module.default(gui)
+  },
+
+  RealismEffects: async (gui) => {
+    const module = await import('./demos/realismEffectsDemo.js')
+    module.default(gui)
+  },
+
+  Caustics: async (gui) => {
+    const module = await import('./demos/CausticsDemo.js')
+    module.default(gui)
+  },
+
+  'Reflection Material': async (gui) => {
+    const module = await import('./demos/MeshReflectorMaterialDemo.js')
+    module.default(gui)
+  },
+
+  'Accumulative Shadows': async (gui) => {
+    const module = await import('./demos/AccumulativeShadowsDemo.js')
+    module.default(gui)
+  },
+
+  'Sprite Animator': async (gui) => {
+    const module = await import('./demos/SpriteAnimatorDemo.js')
+    module.default(gui)
+  },
+
+  'Portal Material': async (gui) => {
+    const module = await import('./demos/MeshPortalMaterialDemo.js')
+    module.default(gui)
+  },
+
+  Outlines: async (gui) => {
+    const module = await import('./demos/OutlineDemo.js')
+    module.default(gui)
+  },
+
+  Splat: async (gui) => {
+    const module = await import('./demos/splatDemo.js')
+    module.default(gui)
+  },
+
+  'Transmission Material Basic': async (gui) => {
+    const module = await import('./demos/MeshTransmissionMaterialBasicDemo.js')
+    module.default(gui)
+  },
+
+  Cloud: async (gui) => {
+    const module = await import('./demos/CloudDemo.js')
+    module.default(gui)
+  },
+
+  'Sparkles and Stars': async (gui) => {
+    const module = await import('./demos/SparklesDemo.js')
+    module.default(gui)
+  },
 }
 
 const wip = [
@@ -93,5 +132,5 @@ gui
   })
 
 params.sceneInitFunction = All_Scenes[params.sceneName]
-params.sceneInitFunction(gui)
+await params.sceneInitFunction(gui)
 updatePageDesc(params.sceneName)

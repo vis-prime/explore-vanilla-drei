@@ -307,7 +307,7 @@
 //   loop()
 // }
 
-export async function realismEffectsDemo(gui) {
+export default async function realismEffectsDemo(gui) {
   // add a div in the center of the screen
   const div = document.createElement('div')
   div.style.position = 'absolute'
