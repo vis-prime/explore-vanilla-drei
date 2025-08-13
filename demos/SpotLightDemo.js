@@ -415,7 +415,7 @@ function setupSpotLight() {
     materialType: matOptions.volumeMaterial,
     helper: false,
     useDepth: false,
-    depthResolution: 256,
+    depthResolution: 1,
     updateVolumeGeometry,
     animateTarget: false,
     animateLight: false,
@@ -462,7 +462,7 @@ function setupSpotLight() {
     })
 
     folder.add(testParams, 'useDepth').onChange(updateDepthTexture)
-    folder.add(testParams, 'depthResolution', 128, 2048, 128).onChange(updateDepthTexture)
+    folder.add(testParams, 'depthResolution', 0.1, 1, 0.1).onChange(updateDepthTexture)
 
     folder.add(volumeMaterial, 'opacity', 0, 2)
     folder.add(volumeMaterial, 'attenuation', 0, distance)
@@ -527,9 +527,9 @@ function useDepthBuffer({ size, frames = Infinity } = {}) {
 
   const rendererSize = new Vector3()
   gl.getSize(rendererSize)
-
-  const w = size || rendererSize.x
-  const h = size || rendererSize.y
+  rendererSize.multiplyScalar(gl.getPixelRatio())
+  const w = size * rendererSize.x
+  const h = size * rendererSize.y
 
   console.log('depth tex res', w, h)
 
