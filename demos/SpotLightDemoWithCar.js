@@ -274,7 +274,11 @@ const updateVolumeGeometry = (light, mesh, radiusTop) => {
   mesh.geometry = getSpotGeo(light.distance, radiusTop, radiusBottom)
 }
 
+let depthFBO
 function useDepthBuffer({ size, frames = Infinity } = {}) {
+  /**
+   * @type {WebGLRenderer}
+   */
   const gl = renderer
 
   const rendererSize = new Vector3()
@@ -291,11 +295,20 @@ function useDepthBuffer({ size, frames = Infinity } = {}) {
   depthTexture.name = 'Depth_Buffer'
 
   let count = 0
-  const depthFBO = useFBO(w, h, { depthTexture })
+
+  if (!depthFBO) {
+    depthFBO = useFBO(w, h)
+  } else {
+    depthFBO.depthTexture.dispose()
+  }
+
+  depthFBO.depthTexture = depthTexture
+  depthFBO.setSize(w, h)
 
   const useFrame = () => {
     if (frames === Infinity || count < frames) {
       gl.setRenderTarget(depthFBO)
+      gl.clear()
       gl.render(scene, camera)
       gl.setRenderTarget(null)
       count++
@@ -315,7 +328,7 @@ export function useFBO(
   /** Height in pixels */
   height,
   /**Settings */
-  settings
+  settings = {}
 ) {
   const gl = renderer
   const _width = width
