@@ -73,7 +73,6 @@ const intersects = [] //raycast
 let useFrame = () => {}
 let sceneGui
 const l_h = new LoadingHelper({ debug: true })
-console.log('TODO : DYNAMIC IMPORT EACH FILE')
 
 export default async function spotLightDemo1(mainGui) {
   gui = mainGui
