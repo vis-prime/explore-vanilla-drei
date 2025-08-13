@@ -279,8 +279,9 @@ function useDepthBuffer({ size, frames = Infinity } = {}) {
 
   const rendererSize = new Vector3()
   gl.getSize(rendererSize)
-  const w = size || rendererSize.x
-  const h = size || rendererSize.y
+  rendererSize.multiplyScalar(gl.getPixelRatio())
+  const w = size * rendererSize.x
+  const h = size * rendererSize.y
 
   console.log('depth tex res', w, h)
 
@@ -346,7 +347,7 @@ async function setupScene() {
   const params = {
     speed: 10,
     useDepth: false,
-    depthResolution: 1024,
+    depthResolution: 1,
   }
 
   // const roadOnFrame = await addRoad()
@@ -398,7 +399,7 @@ async function setupScene() {
   // updateDepthTexture()
 
   gui.add(params, 'useDepth').onChange(updateDepthTexture)
-  gui.add(params, 'depthResolution', 128, 1024, 128).onChange(updateDepthTexture)
+  gui.add(params, 'depthResolution', 0.1, 1, 0.1).onChange(updateDepthTexture)
 
   gui.add(params, 'speed', 0.1, 20).onChange()
   const clock = new Clock(true)

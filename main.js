@@ -100,7 +100,6 @@ for (const key in All_Scenes) {
 
   formattedNamesDict[formattedName] = key
 }
-console.log({ formattedNamesDict })
 
 const params = {
   sceneName: url.searchParams.get('scene') || Object.keys(All_Scenes)[0],
@@ -115,7 +114,6 @@ if (params.sceneName === 'MeshTransmissionMaterial1') {
 }
 
 function updatePageDesc(path) {
-  console.log({ path })
   const paramsU = new URLSearchParams(window.location.search)
   paramsU.set('scene', path)
   window.history.replaceState({}, '', `${window.location.pathname}?${paramsU}`)

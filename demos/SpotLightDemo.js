@@ -41,11 +41,11 @@ import { TransformControls } from 'three/examples/jsm/controls/TransformControls
 import { HDRI_LIST } from '../hdri/HDRI_LIST'
 import { SpotLightMaterial } from '@pmndrs/vanilla'
 
-import { Easing, Tween, update } from '@tweenjs/tween.js'
+import { Easing, Tween, Group as TweenGroup } from '@tweenjs/tween.js'
 import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader'
 import { MODEL_LIST, MODEL_LOADER } from '../models/MODEL_LIST'
 import { LoadingHelper } from './LoadingHelper'
-
+const TWEEN_GROUP = new TweenGroup()
 let stats,
   renderer,
   raf,
@@ -220,7 +220,7 @@ function onWindowResize() {
 
 function render() {
   stats.update()
-  update() //tween
+  TWEEN_GROUP.update()
   useFrame()
   controls.update()
   renderer.render(scene, camera)
@@ -569,7 +569,7 @@ function useDepthBuffer({ size, frames = Infinity } = {}) {
  * @returns
  */
 function getRandomPosTween(vec, range, duration, delay) {
-  const tween = new Tween(vec)
+  const tween = new Tween(vec, TWEEN_GROUP)
     .to(
       {
         x: MathUtils.randFloatSpread(range),
