@@ -220,9 +220,7 @@ async function loadModels() {
   // monkey
   const gltf = await gltfLoader.loadAsync(MODEL_LIST.monkey.url)
   const model = gltf.scene
-  const box3 = new Box3().setFromObject(model, true)
-  const center = box3.getCenter(new Vector3())
-  console.log('Model center:', center)
+
   model.name = 'suzanne'
   model.traverse((child) => {
     if (child.isMesh) {
@@ -264,8 +262,6 @@ function setupSimpleSparkles() {
   allSparklesStars.push(sparkles)
 
   icoSph.add(sparkles)
-
-  console.log('Sparkles added to the scene', { sparkles })
 
   sparkles.update(0) // Initial update to set up the sparkles
 
