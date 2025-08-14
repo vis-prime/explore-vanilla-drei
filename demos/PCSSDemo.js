@@ -23,9 +23,9 @@ import { TransformControls } from 'three/examples/jsm/controls/TransformControls
 
 import { pcss } from '@pmndrs/vanilla'
 
-import { Easing, Tween, update } from '@tweenjs/tween.js'
+import { Easing, Tween, Group as TweenGroup } from '@tweenjs/tween.js'
 import { MODEL_LIST } from '../models/MODEL_LIST'
-
+const TWEEN_GROUP = new TweenGroup()
 let stats,
   renderer,
   raf,
@@ -174,7 +174,7 @@ function addPCSSGui(gui) {
     .name('Animate 💡')
     .onChange((v) => {
       if (!tw) {
-        tw = new Tween(sunLight.position)
+        tw = new Tween(sunLight.position, TWEEN_GROUP)
           .to({ x: MathUtils.randFloatSpread(5), y: MathUtils.randFloat(0.1, 5) })
           .duration(3000)
           .repeat(Infinity)
@@ -234,7 +234,7 @@ function onWindowResize() {
 
 function render() {
   stats.update()
-  update() //tween
+  TWEEN_GROUP.update()
   controls.update()
   renderer.render(scene, camera)
 }

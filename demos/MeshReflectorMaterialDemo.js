@@ -35,11 +35,11 @@ import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { TransformControls } from 'three/examples/jsm/controls/TransformControls'
 import { TEXTURES_LIST } from '../textures/TEXTURES_LIST'
-import { Easing, Tween, update } from '@tweenjs/tween.js'
+import { Easing, Tween, Group as TweenGroup } from '@tweenjs/tween.js'
 import { BG_ENV } from './BG_ENV'
 import { MODEL_LIST } from '../models/MODEL_LIST'
 import { MeshReflectorMaterial, BlurPass } from '@pmndrs/vanilla'
-
+const TWEEN_GROUP = new TweenGroup()
 let stats,
   renderer,
   raf,
@@ -160,7 +160,7 @@ function onWindowResize() {
 
 function render() {
   stats.update()
-  update() // tween
+  TWEEN_GROUP.update()
   // Update the inertia on the orbit controls
   controls.update()
   useFrame()
@@ -260,7 +260,7 @@ async function loadModels() {
   wheels.steerL = model.getObjectByName('wheel_L')
   wheels.steerR = model.getObjectByName('wheel_R')
   const steerLimit = MathUtils.degToRad(30)
-  const tween = new Tween(wheels)
+  const tween = new Tween(wheels, TWEEN_GROUP)
     .to({ steerVal: 1 }, 3000)
     .easing(Easing.Elastic.Out)
     .delay(3000)

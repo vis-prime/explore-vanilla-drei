@@ -20,11 +20,11 @@ import {
   SpotLightHelper,
   MathUtils,
 } from 'three'
-import { Easing, Tween, update } from '@tweenjs/tween.js'
+import { Easing, Tween, Group as TweenGroup } from '@tweenjs/tween.js'
 // Model and Env
 import { BG_ENV } from './BG_ENV'
 import { Clouds, CLOUD_URL, Cloud } from '@pmndrs/vanilla'
-
+const TWEEN_GROUP = new TweenGroup()
 let stats,
   renderer,
   raf,
@@ -127,7 +127,7 @@ function onWindowResize() {
 
 function render() {
   stats.update()
-  update()
+  TWEEN_GROUP.update()
   // Update the inertia on the orbit controls
   controls.update()
   useFrame()
@@ -242,7 +242,7 @@ async function setupCloud() {
     addCloudGui(cl)
     console.warn({ [cl.name]: cl })
 
-    const t = new Tween(controls.target).to(cl.position, 500).easing(Easing.Quadratic.InOut).start()
+    const t = new Tween(controls.target, TWEEN_GROUP).to(cl.position, 500).easing(Easing.Quadratic.InOut).start()
   }
   gui
     .add({ visible: false }, 'visible')
