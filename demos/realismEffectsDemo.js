@@ -11,15 +11,16 @@
 // import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader'
 // import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
 // import { SSGIDebugGUI } from '../wip/SSGIDebugGUI'
-// import {
-//   CircleGeometry,
-//   Mesh,
-//   MeshStandardMaterial,
-//   PerspectiveCamera,
-//   Scene,
-//   SRGBColorSpace,
-//   WebGLRenderer,
-// } from 'three'
+import {
+  //   CircleGeometry,
+  //   Mesh,
+  //   MeshStandardMaterial,
+  //   PerspectiveCamera,
+  //   Scene,
+  //   SRGBColorSpace,
+  //   WebGLRenderer,
+  REVISION,
+} from 'three'
 // import { BloomEffect, EffectComposer, EffectPass, FXAAEffect, KernelSize, RenderPass } from 'postprocessing'
 // import { BG_ENV } from './BG_ENV'
 // import { MODEL_LIST } from '../models/MODEL_LIST'
@@ -316,7 +317,7 @@ export default async function realismEffectsDemo(gui) {
   div.style.transform = 'translate(-50%, -50%)'
   div.style.fontSize = '50px'
   div.style.pointerEvents = 'none'
-  div.innerHTML = 'Realism Effects Demo BROKEN'
+  div.innerHTML = `Realism Effects Demo Incompatible with Three.js r${REVISION}`
   document.body.appendChild(div)
 }
 

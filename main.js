@@ -83,7 +83,7 @@ const All_Scenes = {
     module.default(gui)
   },
 
-  Sparkles_and_Stars: async (gui) => {
+  Sparkles_Stars_Trails: async (gui) => {
     const module = await import('./demos/SparklesStarsDemo.js')
     module.default(gui)
   },
@@ -102,7 +102,7 @@ for (const key in All_Scenes) {
 }
 
 const params = {
-  sceneName: url.searchParams.get('scene') || Object.keys(All_Scenes)[0],
+  sceneName: url.searchParams.get('scene') || 'Accumulative_Shadows',
   sceneInitFunction: () => {},
 }
 

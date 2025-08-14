@@ -78,7 +78,7 @@ const shadowParams = {
   blend: 40,
   scale: 10,
   opacity: 0.8,
-  alphaTest: 0.75,
+  alphaTest: 0.7,
 }
 
 const lightParams = {
