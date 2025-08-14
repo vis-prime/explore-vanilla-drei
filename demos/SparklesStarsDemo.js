@@ -31,6 +31,8 @@ import { TransformControls } from 'three/examples/jsm/controls/TransformControls
 import { MODEL_LIST } from '../models/MODEL_LIST'
 import { HDRI_LIST } from '../hdri/HDRI_LIST'
 import { Sparkles, Stars, Trail } from '@pmndrs/vanilla'
+import { Easing, Tween, Group as TweenGroup } from '@tweenjs/tween.js'
+const TWEEN_GROUP = new TweenGroup()
 
 let stats,
   renderer,
@@ -140,7 +142,7 @@ export default async function SparklesAndStarsDemo(mainGui) {
   })
 
   await loadModels()
-  setupSparklesAndStars()
+  setupAll()
 }
 const allOnResizeFunctions = []
 function onWindowResize() {
@@ -160,12 +162,13 @@ function render() {
   const elapsedTime = timer.getElapsed()
   const tick = timer.getDelta()
   stats.update()
+  TWEEN_GROUP.update()
+  controls.update()
 
   for (const sparkles of allSparklesStars) {
     // Update each sparkles instance
     sparkles.update(elapsedTime, tick)
   }
-  controls.update()
 
   renderer.render(scene, camera)
 }
@@ -233,7 +236,7 @@ async function loadModels() {
   animate()
 }
 
-function setupSparklesAndStars() {
+function setupAll() {
   setupSimpleSparkles()
   setupAdvancedSparkles()
   setupStars()
