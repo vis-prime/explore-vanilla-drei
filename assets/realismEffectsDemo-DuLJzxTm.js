@@ -1,1 +1,0 @@
-async function n(t){const e=document.createElement("div");e.style.position="absolute",e.style.top="50%",e.style.left="50%",e.style.transform="translate(-50%, -50%)",e.style.fontSize="50px",e.style.pointerEvents="none",e.innerHTML="Realism Effects Demo BROKEN",document.body.appendChild(e)}export{n as default};
