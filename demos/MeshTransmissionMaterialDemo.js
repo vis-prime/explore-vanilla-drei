@@ -38,7 +38,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { TransformControls } from 'three/examples/jsm/controls/TransformControls'
 import { MeshTransmissionMaterial, MeshDiscardMaterial } from '@pmndrs/vanilla'
 import { HDRI_LIST } from '../hdri/HDRI_LIST'
-import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader'
+import { HDRLoader } from 'three/examples/jsm/loaders/HDRLoader'
 import { MODEL_LIST } from '../models/MODEL_LIST'
 
 let stats,
@@ -60,7 +60,7 @@ const params = {
 const mainObjects = new Group()
 const textureLoader = new TextureLoader()
 const exrLoader = new EXRLoader()
-const rgbeLoader = new RGBELoader()
+const hdrLoader = new HDRLoader()
 const gltfLoader = new GLTFLoader()
 const draco = new DRACOLoader()
 let transformControls
@@ -206,7 +206,7 @@ async function setupEnvironment() {
     }
 
     if (envDict.hdr) {
-      const texture = await rgbeLoader.loadAsync(envDict.hdr)
+      const texture = await hdrLoader.loadAsync(envDict.hdr)
       texture.mapping = EquirectangularReflectionMapping
       scene.environment = texture
       console.log('exr loaded')

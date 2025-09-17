@@ -42,7 +42,7 @@ import { HDRI_LIST } from '../hdri/HDRI_LIST'
 import { SpotLightMaterial } from '@pmndrs/vanilla'
 
 import { Easing, Tween, Group as TweenGroup } from '@tweenjs/tween.js'
-import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader'
+import { HDRLoader } from 'three/examples/jsm/loaders/HDRLoader'
 import { MODEL_LIST, MODEL_LOADER } from '../models/MODEL_LIST'
 import { LoadingHelper } from './LoadingHelper'
 const TWEEN_GROUP = new TweenGroup()
@@ -64,7 +64,7 @@ const params = {
 }
 const mainObjects = new Group()
 const exrLoader = new EXRLoader()
-const rgbeLoader = new RGBELoader()
+const hdrLoader = new HDRLoader()
 const gltfLoader = new GLTFLoader()
 const draco = new DRACOLoader()
 let transformControls
@@ -177,7 +177,7 @@ async function setupEnvironment() {
       })
 
     if (envDict.hdr)
-      rgbeLoader.load(envDict.hdr, (texture) => {
+      hdrLoader.load(envDict.hdr, (texture) => {
         texture.mapping = EquirectangularReflectionMapping
         scene.environment = texture
       })

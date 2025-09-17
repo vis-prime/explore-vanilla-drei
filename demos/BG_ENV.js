@@ -17,7 +17,7 @@ import {
   FileLoader,
 } from 'three'
 import { EXRLoader } from 'three/examples/jsm/loaders/EXRLoader'
-import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader'
+import { HDRLoader } from 'three/examples/jsm/loaders/HDRLoader'
 import { GroundProjectedSkybox } from '../hdri/GroundProjectedSkybox'
 import { HDRI_LIST } from '../hdri/HDRI_LIST'
 import { LoadingHelper } from './LoadingHelper'
@@ -26,7 +26,7 @@ const fileLoader = new FileLoader()
 fileLoader.setResponseType('blob')
 const textureLoader = new TextureLoader()
 const exrLoader = new EXRLoader()
-const rgbeLoader = new RGBELoader()
+const hdrLoader = new HDRLoader()
 
 /**
  * @typedef {Object} BgOptions
@@ -158,7 +158,7 @@ export class BG_ENV {
 
   useFullFloat() {
     exrLoader.setDataType(FloatType)
-    rgbeLoader.setDataType(FloatType)
+    hdrLoader.setDataType(FloatType)
   }
 
   /**
@@ -269,7 +269,7 @@ export class BG_ENV {
       this.loadingHelper?.setGlobalProgress(key, 0)
       texture = exr
         ? await exrLoader.loadAsync(key, (e) => this.loadingHelper?.setGlobalProgress(key, e.loaded / e.total))
-        : await rgbeLoader.loadAsync(key, (e) => this.loadingHelper?.setGlobalProgress(key, e.loaded / e.total))
+        : await hdrLoader.loadAsync(key, (e) => this.loadingHelper?.setGlobalProgress(key, e.loaded / e.total))
       this.envCache[key] = texture
       texture.mapping = EquirectangularReflectionMapping
     }
@@ -339,7 +339,7 @@ export class BG_ENV {
     const loadHdr = async () => {
       if (!envDict.hdr) return
       this.loadingHelper?.setGlobalProgress(envDict.hdr, 0)
-      const texture = await rgbeLoader.loadAsync(envDict.hdr, (e) =>
+      const texture = await hdrLoader.loadAsync(envDict.hdr, (e) =>
         this.loadingHelper?.setGlobalProgress(envDict.hdr, e.loaded / e.total)
       )
       texture.mapping = EquirectangularReflectionMapping

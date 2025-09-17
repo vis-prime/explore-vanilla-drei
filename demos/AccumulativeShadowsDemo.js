@@ -20,7 +20,7 @@ import {
 } from 'three'
 import Stats from 'three/examples/jsm/libs/stats.module'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
-import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader'
+import { HDRLoader } from 'three/examples/jsm/loaders/HDRLoader'
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { TransformControls } from 'three/examples/jsm/controls/TransformControls'
@@ -42,7 +42,7 @@ const params = {
   printCam: () => {},
 }
 const mainObjects = new Group()
-const rgbeLoader = new RGBELoader()
+const hdrLoader = new HDRLoader()
 const gltfLoader = new GLTFLoader()
 const draco = new DRACOLoader()
 let transformControls
@@ -122,7 +122,7 @@ export default async function AccumulativeShadowsDemo(mainGui) {
   // scene
   scene = new Scene()
 
-  rgbeLoader.load(HDRI_LIST.skidpan.hdr, (texture) => {
+  hdrLoader.load(HDRI_LIST.skidpan.hdr, (texture) => {
     texture.mapping = EquirectangularReflectionMapping
     scene.backgroundBlurriness = 0.7
     scene.background = texture
