@@ -87,6 +87,11 @@ const All_Scenes = {
     const module = await import('./demos/SparklesStarsDemo.js')
     module.default(gui)
   },
+
+  FisheyeCamera: async (gui) => {
+    const module = await import('./demos/FisheyeCameraDemo.js')
+    module.default(gui)
+  },
 }
 
 const wip = [
