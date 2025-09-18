@@ -6,6 +6,7 @@ import room_url from './room_comp.glb?url'
 import vase_url from './vase_2k_comp.glb?url'
 import bunny_url from './stanford _bunny_comp.glb?url'
 import bunny_drei_url from './bunny-transformed.glb?url'
+import hintze_hall_url from './hintze_hall_2k_comp.glb?url'
 
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader'
@@ -44,6 +45,9 @@ export const MODEL_LIST = {
   },
   bunnyDrei: {
     url: bunny_drei_url,
+  },
+  hintze_hall: {
+    url: hintze_hall_url,
   },
 }
 

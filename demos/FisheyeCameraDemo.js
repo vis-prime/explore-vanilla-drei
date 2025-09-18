@@ -105,10 +105,10 @@ export default async function meshTransmissionMaterialInstant(mainGui) {
   bg_env.preset = HDRI_LIST.skidpan
   bg_env.setBGType('Default')
   bg_env.setEnvType('HDRI')
-  bg_env.updateAll()
-  bg_env.addGui(sceneGui)
 
-  await setupScene()
+  await Promise.all([bg_env.updateAll(), setupScene()])
+
+  // bg_env.addGui(sceneGui)
 
   animate()
 }
@@ -165,7 +165,10 @@ function updatePointer(event) {
 }
 
 async function setupScene() {
-  const gltf = await MODEL_LOADER('./models/hintze_hall_2k_comp.glb', { loadingHelper: l_h })
+  console.log(
+    `"Hintze-Hall - VR Tour" (https://skfb.ly/p8zyZ) by Another-me is licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/).`
+  )
+  const gltf = await MODEL_LOADER(MODEL_LIST.hintze_hall.url, { loadingHelper: l_h })
   const model = gltf.scene
 
   model.traverse((child) => {
@@ -220,10 +223,6 @@ function setupFishEyeCamera() {
 
   setupCameraCurve()
 }
-
-console.log(
-  `"Hintze-Hall - VR Tour" (https://skfb.ly/p8zyZ) by Another-me is licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/).`
-)
 
 function setupCameraCurve() {
   // Function to create a CurvePath from segments
