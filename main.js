@@ -88,7 +88,7 @@ const All_Scenes = {
     module.default(gui)
   },
 
-  FisheyeCamera: async (gui) => {
+  Fisheye: async (gui) => {
     const module = await import('./demos/FisheyeCameraDemo.js')
     module.default(gui)
   },
